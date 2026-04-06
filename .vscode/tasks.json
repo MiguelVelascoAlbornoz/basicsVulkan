@@ -1,0 +1,60 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "cppbuild",
+            "label": "Build release",
+            "command": "C:\\MinGW\\bin\\g++.exe",
+            "args": [
+                "-O3",
+                "-Wall",
+                "-Wextra",
+                "-Werror",
+                "-Wno-unused-result",
+                "-DPROJECT_NAME=\"\\\"${workspaceFolderBasename}\\\"\"",
+                "${workspaceFolder}\\src\\main\\*.cpp",
+                "-o",
+                "${workspaceFolder}\\out\\Release\\${workspaceFolderBasename}.exe"
+            ],
+            "options": {
+                "cwd": "${fileDirname}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "detail": "Task to build project release"
+        },
+        {
+    "label": "Build debug",
+    "type": "cppbuild",
+    "command": "g++",
+    "args": [
+        "-g",                     // información de debug
+        "-O0",                    // sin optimización
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-Wno-unused-result",
+        "-D_DEBUG",
+        "-DPROJECT_NAME=\"\\\"${workspaceFolderBasename}\\\"\"",
+        "${workspaceFolder}\\src\\main\\*.cpp",
+        "-o",
+        "${workspaceFolder}\\out\\Debug\\${workspaceFolderBasename}.exe"
+    ],
+    "options": {
+        "cwd": "${fileDirname}"
+    },
+    "problemMatcher": [
+        "$gcc"
+    ],
+    "group": {
+        "kind": "build",
+        "isDefault": true
+    }
+}
+    ]
+}
