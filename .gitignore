@@ -1,0 +1,7 @@
+DoxyFile
+
+#Unnecessary files off docs
+html/*
+!html/index.html
+!html/css/
+!html/js/main.js
