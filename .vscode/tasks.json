@@ -24,6 +24,7 @@
 
                 // sources
                 "${workspaceFolder}\\src\\main\\*.cpp", 
+                "${workspaceFolder}\\src\\renderer\\*.cpp",
                 "-o", 
                 "${workspaceFolder}\\out\\Release\\${workspaceFolderBasename}.exe" // output
 
@@ -60,7 +61,8 @@
         "-I${workspaceFolder}\\src\\external\\includes", // include path for SDL
         "-L${workspaceFolder}\\src\\external\\libs", // library path for SDL
         // sources
-        "${workspaceFolder}\\src\\main\\*.cpp", 
+        "${workspaceFolder}\\src\\main\\*.cpp",
+        "${workspaceFolder}\\src\\renderer\\*.cpp", 
         "-o", 
         "${workspaceFolder}\\out\\Release\\${workspaceFolderBasename}.exe", // output
     ],

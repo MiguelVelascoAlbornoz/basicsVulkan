@@ -23,10 +23,7 @@
  * En el comando de compilar los archivos fuentes van antes de las librerias
  * */
 
-
-#include <stdio.h>
-#include <iostream>
-#include <SDL3/SDL.h>
+#include "../renderer/Window.h"
 
 
 #ifndef PROJECT_NAME /** @brief .exe file and window name*/
