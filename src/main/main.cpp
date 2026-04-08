@@ -25,14 +25,6 @@
 
 #include "../renderer/Window.h"
 
-
-#ifndef PROJECT_NAME /** @brief .exe file and window name*/
-#define PROJECT_NAME "Unknown"
-#endif
-#ifndef PROJECT_VERSION /** @brief Version of the project*/
-#define PROJECT_VERSION "0.0.0"
-#endif
-
 int main() {
     std::cout << PROJECT_NAME << std::endl;
     std::cout << PROJECT_VERSION << std::endl;
@@ -41,5 +33,7 @@ int main() {
     #else
         std::cout << "Release mode" << std::endl;
     #endif
+    Window window;
+
     return 0;
 }

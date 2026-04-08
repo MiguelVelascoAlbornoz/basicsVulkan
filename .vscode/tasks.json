@@ -2,11 +2,17 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "type": "cppbuild",
+            "type": "shell",
+            "options" : {
+                "shell": {
+                    "executable": "cmd",
+                    "args": ["/d", "/c"]
+                }
+            },
             "label": "Build release",
-            "command": "C:\\MinGW\\bin\\g++.exe",
+            "command": "g++",
             //comando entero: 
-//g++ -O3 -Wall -Wextra -Werror -Wno-unused-result -DPROJECT_NAME="BasicsVulkan" -DPROJECT_VERSION="1.0.0" -Isrc\external\includes -Lsrc\external\libs src\main\*.cpp -o out\Release\BasicsVulkan.exe -lSDL3
+//g++ -O3 -Wall -Wextra -Werror -Wno-unused-result -DPROJECT_NAME=BasicsVulkan -DPROJECT_VERSION=ghjk -Isrc\external\includes -Lsrc\external\libs\SDL3 src\main\main.cpp src\renderer\Window.cpp -o out\Release\BasicsVulkan.exe -lSDL3
             "args": [
                 // flags
                 "-O3",
@@ -16,22 +22,21 @@
                 "-Wno-unused-result",
 
                 // defines
-                "-DPROJECT_NAME=\"\\\"${workspaceFolderBasename}\\\"\"", // define project name for use in code
-                "-DPROJECT_VERSION=\"\\\"1.0.0\\\"\"", // define project version for use in code
-
-                "-I${workspaceFolder}\\src\\external\\includes", // includes
-                "-L${workspaceFolder}\\src\\external\\libs", // libraries
-
+                "-DPROJECT_NAME=\\\"${workspaceFolderBasename}\\\"",
+                "-DPROJECT_VERSION=\\\"1.0.0\\\"",
+                // includes
+                "-I${workspaceFolder}\\src\\external\\includes", 
+                // libraries 
+                "-L${workspaceFolder}\\src\\external\\libs\\SDL3", 
                 // sources
-                "${workspaceFolder}\\src\\main\\*.cpp", 
-                "${workspaceFolder}\\src\\renderer\\*.cpp",
+                "${workspaceFolder}\\src\\main\\main.cpp", 
+                "${workspaceFolder}\\src\\renderer\\Window.cpp",
                 "-o", 
-                "${workspaceFolder}\\out\\Release\\${workspaceFolderBasename}.exe" // output
-
+                // output
+                "${workspaceFolder}\\out\\Release\\${workspaceFolderBasename}.exe",         
+                "-lSDL3",
             ],
-            "options": {
-                "cwd": "${fileDirname}"
-            },
+            
             "problemMatcher": [
                 "$gcc"
             ],
@@ -54,17 +59,21 @@
         "-Wno-unused-result",
 
         // defines
+        // defines
+        "-DPROJECT_NAME=\\\"${workspaceFolderBasename}\\\"",
+        "-DPROJECT_VERSION=\\\"1.0.0\\\"",
         "-D_DEBUG",
-        "-DPROJECT_NAME=\"\\\"${workspaceFolderBasename}\\\"\"", // define project name for use in code
-        "-DPROJECT_VERSION=\"\\\"1.0.0\\\"\"", // define project version for use in code
-                
-        "-I${workspaceFolder}\\src\\external\\includes", // include path for SDL
-        "-L${workspaceFolder}\\src\\external\\libs", // library path for SDL
+        // includes
+        "-I${workspaceFolder}\\src\\external\\includes", 
+        // libraries 
+        "-L${workspaceFolder}\\src\\external\\libs\\SDL3", 
         // sources
-        "${workspaceFolder}\\src\\main\\*.cpp",
-        "${workspaceFolder}\\src\\renderer\\*.cpp", 
+        "${workspaceFolder}\\src\\main\\main.cpp", 
+        "${workspaceFolder}\\src\\renderer\\Window.cpp",
         "-o", 
-        "${workspaceFolder}\\out\\Release\\${workspaceFolderBasename}.exe", // output
+        // output
+        "${workspaceFolder}\\out\\Debug\\${workspaceFolderBasename}.exe",         
+        "-lSDL3",
     ],
     "options": {
         "cwd": "${fileDirname}"
