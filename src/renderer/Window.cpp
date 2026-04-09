@@ -31,3 +31,23 @@ Window::~Window()
     SDL_DestroyRenderer(renderer);
     SDL_Quit(); 
 }
+
+#include <vulkan/vulkan.h>
+#include <iostream>
+
+bool Window::testVulkan() {
+    VkInstance instance;
+
+    VkInstanceCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+
+    VkResult result = vkCreateInstance(&createInfo, nullptr, &instance);
+    if (result == VK_SUCCESS) {
+        std::cout << "Vulkan está disponible!\n";
+        vkDestroyInstance(instance, nullptr);
+        return true;
+    } else {
+        std::cout << "Vulkan NO está disponible. Código: " << result << "\n";
+        return false;
+    }
+}

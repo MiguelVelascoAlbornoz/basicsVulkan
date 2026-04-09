@@ -6,8 +6,6 @@
 #ifndef WINDOW_H
 #define WINDOW_H
 
-#define SDL3_STATIC
-
 #ifndef PROJECT_NAME /** @brief .exe file and window name*/
 #define PROJECT_NAME "Unknown"
 #endif
@@ -17,7 +15,9 @@
 
 #include <stdio.h>
 #include <iostream>
+#include <Vulkan/vulkan.h>
 #include <SDL3/SDL.h>
+#include "glm/glm.hpp"
 class Window {
      
 private:
@@ -34,6 +34,11 @@ private:
     Window();
     ~Window();
     bool isError() const { return error; } /**< @brief Check if there was an error during initialization. */    
+    
+    /**
+     * @brief Print vulkan information and tests if library is succesfully installed 
+     */
+    static bool testVulkan();
 };
 
-#endif
+#endif  

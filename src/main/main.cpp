@@ -24,7 +24,7 @@
  * */
 
 #include "../renderer/Window.h"
-#include "glm/glm.hpp"
+
 
 int main() {
     std::cout << PROJECT_NAME << std::endl;
@@ -34,8 +34,9 @@ int main() {
     #else
         std::cout << "Release mode" << std::endl;
     #endif
-    Window window;
 
+    Window window;
+    Window::testVulkan();
 
     return 0;
 }

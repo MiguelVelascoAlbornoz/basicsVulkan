@@ -35,7 +35,8 @@
                 "-o", 
                 // output
                 "${workspaceFolder}\\out\\Release\\${workspaceFolderBasename}.exe",         
-                "-lSDL3"
+                "-lSDL3",
+                "-lvulkan-1"
             ],
             
             "problemMatcher": [
