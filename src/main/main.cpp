@@ -24,6 +24,7 @@
  * */
 
 #include "../renderer/Window.h"
+#include "glm/glm.hpp"
 
 int main() {
     std::cout << PROJECT_NAME << std::endl;
@@ -34,6 +35,7 @@ int main() {
         std::cout << "Release mode" << std::endl;
     #endif
     Window window;
+
 
     return 0;
 }
