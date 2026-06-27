@@ -3,6 +3,20 @@
     "tasks": [
         {
             "type": "shell",
+            "label": "Build Release with python launch",
+            "command": "py",
+            "args": ["launch.py","release"],
+            "detail": "Task to compile only necessary files"
+        },
+        {
+            "type": "shell",
+            "label": "Build debug with python launch",
+            "command": "py",
+            "args": ["launch.py","debug"],
+            "detail": "Task to compile only necessary files"
+        },
+        {
+            "type": "shell",
             "options" : {
                 "shell": {
                     "executable": "cmd",
@@ -11,33 +25,64 @@
             },
             "label": "Build release",
             "command": "g++",
+            
             //comando entero: 
 //g++ -O3 -Wall -Wextra -Werror -Wno-unused-result -DPROJECT_NAME=BasicsVulkan -DPROJECT_VERSION=ghjk -Isrc\external\includes -Lsrc\external\libs\SDL3 src\main\main.cpp src\renderer\Window.cpp -o out\Release\BasicsVulkan.exe -lSDL3
             "args": [
                 // flags
-                "-O3",
-                "-Wall",
-                "-Wextra",
-                "-Werror",
-                "-Wno-unused-result",
+                "-O0",
+      
 
                 // defines
                 "-DPROJECT_NAME=\\\"${workspaceFolderBasename}\\\"",
                 "-DPROJECT_VERSION=\\\"1.0.0\\\"",
                 // includes
-                "-I${workspaceFolder}\\src\\external\\includes",  
+                "-I${workspaceFolder}\\external\\includes",  
                 // libraries 
-                "-L${workspaceFolder}\\src\\external\\libs\\SDL3",
-                "-L${workspaceFolder}\\src\\external\\libs\\Vulkan",
+                "-L${workspaceFolder}\\external\\libs",
                 // sources
-                "${workspaceFolder}\\src\\main\\main.cpp", 
-                "${workspaceFolder}\\src\\renderer\\Window.cpp",
+                "${workspaceFolder}\\src\\main\\main.cpp",
+                
+                "${workspaceFolder}\\src\\world\\World.cpp",
+                "${workspaceFolder}\\src\\world\\startMenu.cpp",
+                "${workspaceFolder}\\src\\world\\Simulation.cpp",
+
+                "${workspaceFolder}\\src\\renderer\\Animation.cpp",
+                "${workspaceFolder}\\src\\renderer\\Camera.cpp",
+                "${workspaceFolder}\\src\\renderer\\GIF.cpp",
+                "${workspaceFolder}\\src\\renderer\\Image.cpp",
+                "${workspaceFolder}\\src\\renderer\\Renderer.cpp",
+                "${workspaceFolder}\\src\\renderer\\Shader.cpp",
+                "${workspaceFolder}\\src\\renderer\\Shaders.cpp",
+                "${workspaceFolder}\\src\\renderer\\Textures.cpp",
+                "${workspaceFolder}\\src\\renderer\\VAO.cpp",
+
+
+                "${workspaceFolder}\\src\\world\\bombsGame\\Bomb.cpp",
+                "${workspaceFolder}\\src\\world\\bombsGame\\BombCap.cpp",
+                "${workspaceFolder}\\src\\world\\bombsGame\\BombsGame.cpp",
+                "${workspaceFolder}\\src\\world\\CardsGame\\Card.cpp",
+                "${workspaceFolder}\\src\\world\\CardsGame\\CardsGame.cpp",
+                "${workspaceFolder}\\src\\world\\findGame\\Face.cpp",
+                "${workspaceFolder}\\src\\world\\findGame\\FindGame.cpp",
+                "${workspaceFolder}\\src\\world\\findGame\\PlusTimeGui.cpp",
+                "${workspaceFolder}\\src\\world\\asteroidsGame\\AsteroidsGame.cpp",
+                "${workspaceFolder}\\src\\world\\asteroidsGame\\Body.cpp",
+                "${workspaceFolder}\\src\\world\\asteroidsGame\\Bullet.cpp",
+                "${workspaceFolder}\\src\\world\\asteroidsGame\\Player.cpp",
                 "-o", 
                 // output
                 "${workspaceFolder}\\out\\Release\\${workspaceFolderBasename}.exe",         
-                "-lSDL3",
-                "-lvulkan-1"
-            ],
+                "-lglew32",
+                "-lglfw3",
+                "-lstbImage",
+                "-limGUIgl",
+                "-lgdi32",
+                "-lopengl32",
+                //"-lirrKlang",
+                "-likpFlac",
+                "-likpMP3",
+                "-luser32"       ],
             
             "problemMatcher": [
                 "$gcc"
@@ -49,46 +94,70 @@
             "detail": "Task to build project release"
         },
         {
-    "label": "Build debug",
-    "type": "cppbuild",
-    "command": "g++",
-    "args": [
-        "-g",                     // información de debug
-        "-O0",                    // sin optimización
-        "-Wall",
-        "-Wextra",
-        "-Werror",
-        "-Wno-unused-result",
-
-        // defines
-        // defines
-        "-DPROJECT_NAME=\\\"${workspaceFolderBasename}\\\"",
-        "-DPROJECT_VERSION=\\\"1.0.0\\\"",
-        "-D_DEBUG",
-        // includes
-        "-I${workspaceFolder}\\src\\external\\includes", 
-        // libraries 
-        "-L${workspaceFolder}\\src\\external\\libs\\SDL3",
-        "-L${workspaceFolder}\\src\\external\\libs\\Vulkan",
-        // sources
-        "${workspaceFolder}\\src\\main\\main.cpp", 
-        "${workspaceFolder}\\src\\renderer\\Window.cpp",
-        "-o", 
-        // output
-        "${workspaceFolder}\\out\\Debug\\${workspaceFolderBasename}.exe",         
-        "-lSDL3d",
-        "-lvulkan-1"
-    ],
-    "options": {
-        "cwd": "${fileDirname}"
-    },
-    "problemMatcher": [
-        "$gcc"
-    ],
-    "group": {
-        "kind": "build",
-        "isDefault": true
-    }
-}
+            "label": "Build debug",
+            "type": "cppbuild",
+            "command": "g++",
+            "args": [
+                "-g",                     // información de debug
+                "-O0",                    // sin optimización
+                "-Wall",
+                "-Wextra",
+                "-Werror",
+                "-Wno-unused-result",
+                "-DPROJECT_NAME=\"${workspaceFolderBasename}\"",
+                "-DPROJECT_VERSION=\"1.0.0\"",
+                "-D_DEBUG",
+                "-I${workspaceFolder}\\external\\includes",
+                "-L${workspaceFolder}\\external\\libs",
+                "${workspaceFolder}\\src\\main\\main.cpp",
+                "${workspaceFolder}\\src\\world\\World.cpp",
+                "${workspaceFolder}\\src\\world\\startMenu.cpp",
+                "${workspaceFolder}\\src\\world\\Simulation.cpp",
+                "${workspaceFolder}\\src\\renderer\\Animation.cpp",
+                "${workspaceFolder}\\src\\renderer\\Camera.cpp",
+                "${workspaceFolder}\\src\\renderer\\GIF.cpp",
+                "${workspaceFolder}\\src\\renderer\\Image.cpp",
+                "${workspaceFolder}\\src\\renderer\\Renderer.cpp",
+                "${workspaceFolder}\\src\\renderer\\Shader.cpp",
+                "${workspaceFolder}\\src\\renderer\\Shaders.cpp",
+                "${workspaceFolder}\\src\\renderer\\Textures.cpp",
+                "${workspaceFolder}\\src\\renderer\\VAO.cpp",
+                "${workspaceFolder}\\src\\world\\bombsGame\\Bomb.cpp",
+                "${workspaceFolder}\\src\\world\\bombsGame\\BombCap.cpp",
+                "${workspaceFolder}\\src\\world\\bombsGame\\BombsGame.cpp",
+                "${workspaceFolder}\\src\\world\\CardsGame\\Card.cpp",
+                "${workspaceFolder}\\src\\world\\CardsGame\\CardsGame.cpp",
+                "${workspaceFolder}\\src\\world\\findGame\\Face.cpp",
+                "${workspaceFolder}\\src\\world\\findGame\\FindGame.cpp",
+                "${workspaceFolder}\\src\\world\\findGame\\PlusTimeGui.cpp",
+                "${workspaceFolder}\\src\\world\\asteroidsGame\\AsteroidsGame.cpp",
+                "${workspaceFolder}\\src\\world\\asteroidsGame\\Body.cpp",
+                "${workspaceFolder}\\src\\world\\asteroidsGame\\Bullet.cpp",
+                "${workspaceFolder}\\src\\world\\asteroidsGame\\Player.cpp",
+                "${workspaceFolder}\\app_rc.o",
+                "-o",
+                "${workspaceFolder}\\out\\Debug\\${workspaceFolderBasename}.exe",
+                "-lglew32",
+                "-lglfw3",
+                "-lstbImage",
+                "-limGUIgl",
+                "-lgdi32",
+                "-lopengl32",
+              //  "-lirrKlang",
+                "-likpFlac",
+                "-likpMP3",
+                "-luser32"
+            ],
+            "options": {
+                "cwd": "${fileDirname}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
     ]
 }

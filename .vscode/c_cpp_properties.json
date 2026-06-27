@@ -3,7 +3,7 @@
         {
             "name": "Win32",
             "includePath": [
-                "${workspaceFolder}/src/external/includes"
+                "${workspaceFolder}\\external\\includes"
             ],
             "defines": [
                 "PROJECT_VERSION=\"1.0.0\"",

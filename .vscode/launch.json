@@ -11,9 +11,9 @@
             "program": "${workspaceFolder}\\out\\Release\\${workspaceFolderBasename}.exe",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${fileDirname}",
+            "cwd": "${workspaceFolder}",
             "environment": [],
-            "preLaunchTask": "Build release",
+            "preLaunchTask": "Build Release with python launch",
             "console": "integratedTerminal"
         },
         {
@@ -23,10 +23,10 @@
             "miDebuggerPath": "C:\\MinGW\\mingw64\\bin\\gdb.exe",
             "program": "${workspaceFolder}\\out\\Debug\\${workspaceFolderBasename}.exe",
             "args": [],
-            "stopAtEntry": true,
-            "cwd": "${fileDirname}",
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
             "MIMode": "gdb",
-            "preLaunchTask": "Build debug",
+            "preLaunchTask": "Build debug with python launch",
         }
 
         
