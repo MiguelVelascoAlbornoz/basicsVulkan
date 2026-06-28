@@ -5,6 +5,7 @@
 #include <imGUI\imgui_impl_sdl3.h>
 #include <imGUI\imgui_impl_sdlrenderer3.h>
 #include <SDL3/SDL_vulkan.h>
+#include <algorithm>
 
 bool Renderer::pickPhysicalDevice() {
     
@@ -150,7 +151,107 @@ bool Renderer::createLogicalDevice()
 
 bool Renderer::createSwapchain(Window *window)
 {
-    window->getWidth();
+    // Capacidades de la surface
+    VkSurfaceCapabilitiesKHR capabilities;
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &capabilities);
+
+    //Ver los formatos soportados
+    uint32_t formatCount;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, nullptr);
+    std::vector<VkSurfaceFormatKHR> formats(formatCount);
+    vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, formats.data());
+    
+    // Modos de presentación soportados
+    uint32_t presentModeCount;
+    vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, nullptr);
+    std::vector<VkPresentModeKHR> presentModes(presentModeCount);
+    vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, presentModes.data());
+
+    #ifdef _DEBUG
+    std::cout << "(VULKAN) Supported surface formats:" << std::endl;
+    for (const auto& format : formats) {
+        std::cout << " - Format: " << format.format << ", Color Space: " << format.colorSpace << std::endl;
+    }
+    std::cout << "(VULKAN) Supported present modes:" << std::endl;
+    for (const auto& mode : presentModes) {
+        std::cout << " - Present Mode: " << mode << std::endl;
+    }
+    #endif
+
+    // Elegir formato (preferir BGRA8 con SRGB)
+    if (formats.empty()) {
+        std::cerr << "(VULKAN) Error: No se encontraron formatos de superficie compatibles." << std::endl;
+        return false;
+    }
+    VkSurfaceFormatKHR chosenFormat = formats[0]; // fallback
+    for (const auto& f : formats) {
+        if (f.format == VK_FORMAT_B8G8R8A8_SRGB &&
+            f.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+            chosenFormat = f;
+            break;
+        }
+    }
+
+    // Elegir modo de presentación (preferir MAILBOX, fallback FIFO)
+    VkPresentModeKHR chosenPresentMode = VK_PRESENT_MODE_FIFO_KHR; // siempre disponible
+    for (const auto& m : presentModes) {
+        if (m == VK_PRESENT_MODE_MAILBOX_KHR) {
+            chosenPresentMode = m;
+            break;
+        }
+    }
+
+    // Tamaño del swapchain
+    VkExtent2D extent;
+    if (capabilities.currentExtent.width != UINT32_MAX) {
+        extent = capabilities.currentExtent;
+    } else {
+        extent = {
+            (uint32_t)window->getWidth(),
+            (uint32_t)window->getHeight()
+        };
+        extent.width  = std::clamp(extent.width,  capabilities.minImageExtent.width,  capabilities.maxImageExtent.width);
+        extent.height = std::clamp(extent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+    }
+     // Número de imágenes (triple buffering si es posible)
+    uint32_t imageCount = capabilities.minImageCount + 1;
+    if (capabilities.maxImageCount > 0 && imageCount > capabilities.maxImageCount) {
+        imageCount = capabilities.maxImageCount;
+    }
+
+    VkSwapchainCreateInfoKHR createInfo{};
+    createInfo.sType            = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    createInfo.surface          = surface;
+    createInfo.minImageCount    = imageCount;
+    createInfo.imageFormat      = chosenFormat.format;
+    createInfo.imageColorSpace  = chosenFormat.colorSpace;
+    createInfo.imageExtent      = extent;
+    createInfo.imageArrayLayers = 1;
+    createInfo.imageUsage       = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE; // graphics y present son la misma familia
+    createInfo.preTransform     = capabilities.currentTransform;
+    createInfo.compositeAlpha   = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    createInfo.presentMode      = chosenPresentMode;
+    createInfo.clipped          = VK_TRUE;
+    createInfo.oldSwapchain     = VK_NULL_HANDLE;
+
+    if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapchain) != VK_SUCCESS) {
+        SDL_Log("(VULKAN) Error: No se pudo crear el swapchain.");
+        return false;
+    }
+        // Obtener las imágenes del swapchain
+    vkGetSwapchainImagesKHR(device, swapchain, &imageCount, nullptr);
+    swapchainImages.resize(imageCount);
+    vkGetSwapchainImagesKHR(device, swapchain, &imageCount, swapchainImages.data());
+
+    // Guardar formato y extent para usarlos después
+    swapchainFormat = chosenFormat.format;
+    swapchainExtent = extent;
+
+    #ifdef _DEBUG
+    SDL_Log("(VULKAN) Swapchain creado: %dx%d, %d imagenes", extent.width, extent.height, imageCount);
+    #endif
+
     return true;
 }
 

@@ -61,6 +61,21 @@ class Renderer {
      * 3. Creates the logical device and retrieves the handles to the specified queues.
      */
     bool createLogicalDevice();
+    /**
+     * @brief Creates a swapchain for the selected physical device and logical device, which is a series of images that are presented to the screen in a loop.
+     * @details The steps are:
+     *  1. Obtener las capacidades de la superficie
+     *  2. Obtener los formatos soportados
+     * 3. Obtener los modos de presentación
+     * 4. Elegir:
+     *    - formato (VK_FORMAT_B8G8R8A8_SRGB,   
+     *   - present mode (FIFO, MAILBOX...)
+     *   - tamaño (window->getWidth(), window->getHeight())
+     * 5. Rellenar VkSwapchainCreateInfoKHR
+     * 6. vkCreateSwapchainKHR()
+     * 7. Obtener las imágenes del swapchain
+     * 8. Crear un ImageView para cada imagen
+     **/
     bool createSwapchain(Window* window);
     bool createRenderPass();
     bool createPipeline();
@@ -74,7 +89,10 @@ class Renderer {
     VkQueue          presentQueue = NULL;
     uint32_t graphicsQueueFamilyIndex = 0xFFFFFFFF;
     uint32_t presentQueueFamilyIndex = 0xFFFFFFFF;
-    VkSwapchainKHR   swapchain = NULL;
+    VkSwapchainKHR             swapchain      = VK_NULL_HANDLE;
+    std::vector<VkImage>       swapchainImages;
+    VkFormat                   swapchainFormat;
+    VkExtent2D                 swapchainExtent;
     VkRenderPass     renderPass = NULL;
     VkPipeline       pipeline = NULL;
 };
