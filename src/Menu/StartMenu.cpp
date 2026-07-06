@@ -23,7 +23,7 @@ void fileSelectedCallback(void* userdata, const char* const* filelist, int filte
 
 void StartMenu::render()
 {
-     ImGui::Begin("Start Menu",NULL,ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize);
+     ImGui::Begin("Start Menu",NULL, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize);
         if (ImGui::Button("Select Sound File") ){
             SDL_DialogFileFilter filters[] = {
                 { "Sound Files", "wav;mp3;ogg" }

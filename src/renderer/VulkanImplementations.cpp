@@ -3,7 +3,6 @@
 #include <iostream>
 #include <imGUI\imgui.h>
 #include <imGUI\imgui_impl_sdl3.h>
-#include <imGUI\imgui_impl_sdlrenderer3.h>
 #include <SDL3/SDL_vulkan.h>
 #include <algorithm>
 

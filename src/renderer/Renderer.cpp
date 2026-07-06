@@ -156,14 +156,57 @@ Renderer::Renderer(Window *window)
 
 Renderer::~Renderer()
 {
+    vkDeviceWaitIdle(device);
     //ImGui
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplSDL3_Shutdown();
     ImGui::DestroyContext();
    
-    vkDestroyDevice(device, nullptr);         // antes que la instancia
-    vkDestroySurfaceKHR(instance, surface, nullptr); // antes que la instancia
-    vkDestroyInstance(instance, nullptr);     // último
+    // 3. Sincronización (semáforos y fences, uno por frame in-flight normalmente)
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
+        vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
+        vkDestroyFence(device, inFlightFences[i], nullptr);
+    }
+
+    // 4. Command pool (destruye automáticamente los command buffers alocados de él)
+    vkDestroyCommandPool(device, commandPool, nullptr);
+
+    // 5. Framebuffers (uno por imagen del swapchain)
+    for (auto framebuffer : swapchainFramebuffers) {
+        vkDestroyFramebuffer(device, framebuffer, nullptr);
+    }
+
+    // 6. Pipeline y su layout
+    vkDestroyPipeline(device, pipeline, nullptr);
+    vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+
+    // 7. Render pass
+    vkDestroyRenderPass(device, renderPass, nullptr);
+
+    // 8. Image views del swapchain
+    for (auto imageView : swapchainImageViews) {
+        vkDestroyImageView(device, imageView, nullptr);
+    }
+
+    // 9. Swapchain
+    vkDestroySwapchainKHR(device, swapchain, nullptr);
+
+    // 10. Buffers de vértices/índices/uniforms y su memoria
+  
+
+    // 11. Descriptor pool / descriptor set layout (si usas uniforms/texturas)
+
+
+    // 12. Device (después de TODO lo que dependía de él)
+    vkDestroyDevice(device, nullptr);
+
+    // 13. Surface (depende de la instancia, no del device)
+    vkDestroySurfaceKHR(instance, surface, nullptr);
+
+    // 14. Instancia (lo último, siempre)
+    vkDestroyInstance(instance, nullptr);
+
 }
 /**
  * @brief Records the draw commands for a single frame into the given command buffer.

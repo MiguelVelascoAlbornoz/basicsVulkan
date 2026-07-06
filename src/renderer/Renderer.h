@@ -91,6 +91,7 @@ private:
 
     /**
      * @brief Creates the render pass, which describes the attachments (color, depth, etc.) used during rendering and how they are handled across subpasses.
+     * 
      * @details Defines:
      * 1. A color attachment description (format taken from swapchainFormat, load/store ops, initial/final layout).
      * 2. A single subpass that references the color attachment.

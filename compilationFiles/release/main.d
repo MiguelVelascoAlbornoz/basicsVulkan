@@ -1,6 +1,6 @@
-compilationFiles\debug\VulkanImplementations.o: \
- src\renderer\VulkanImplementations.cpp src\renderer\Renderer.h \
- external/includes/Vulkan/vulkan.h external/includes/Vulkan/vk_platform.h \
+compilationFiles\release\main.o: src\main\main.cpp src\main\../App/App.h \
+ src\main\../App/../renderer/Renderer.h external/includes/Vulkan/vulkan.h \
+ external/includes/Vulkan/vk_platform.h \
  external/includes/Vulkan/vulkan_core.h \
  external/includes/vk_video/vulkan_video_codec_h264std.h \
  external/includes/vk_video/vulkan_video_codecs_common.h \
@@ -18,7 +18,7 @@ compilationFiles\debug\VulkanImplementations.o: \
  external/includes/vk_video/vulkan_video_codec_vp9std.h \
  external/includes/vk_video/vulkan_video_codec_vp9std_decode.h \
  external/includes/vk_video/vulkan_video_codec_vp9std.h \
- src\renderer\Window.h external/includes/SDL3/SDL.h \
+ src\main\../App/../renderer/Window.h external/includes/SDL3/SDL.h \
  external/includes/SDL3/SDL_stdinc.h \
  external/includes/SDL3/SDL_platform_defines.h \
  external/includes/SDL3/SDL_begin_code.h \
@@ -54,11 +54,13 @@ compilationFiles\debug\VulkanImplementations.o: \
  external/includes/SDL3/SDL_storage.h external/includes/SDL3/SDL_system.h \
  external/includes/SDL3/SDL_time.h external/includes/SDL3/SDL_timer.h \
  external/includes/SDL3/SDL_tray.h external/includes/SDL3/SDL_version.h \
- external/includes/SDL3/SDL_oldnames.h src\renderer\../Menu/Menu.h \
- external/includes/imGUI\imgui.h external/includes/imGUI\imconfig.h \
- external/includes/imGUI\imgui_impl_sdl3.h \
- external/includes/SDL3/SDL_vulkan.h
-src\renderer\Renderer.h:
+ external/includes/SDL3/SDL_oldnames.h \
+ src\main\../App/../renderer/../Menu/Menu.h \
+ src\main\../App/../Menu/MenuManager.h \
+ src\main\../App/../Menu/StartMenu.h src\main\../App/../Menu/Menu.h \
+ src\main\../App/../Menu/../renderer/Window.h
+src\main\../App/App.h:
+src\main\../App/../renderer/Renderer.h:
 external/includes/Vulkan/vulkan.h:
 external/includes/Vulkan/vk_platform.h:
 external/includes/Vulkan/vulkan_core.h:
@@ -78,7 +80,7 @@ external/includes/vk_video/vulkan_video_codec_av1std_encode.h:
 external/includes/vk_video/vulkan_video_codec_vp9std.h:
 external/includes/vk_video/vulkan_video_codec_vp9std_decode.h:
 external/includes/vk_video/vulkan_video_codec_vp9std.h:
-src\renderer\Window.h:
+src\main\../App/../renderer/Window.h:
 external/includes/SDL3/SDL.h:
 external/includes/SDL3/SDL_stdinc.h:
 external/includes/SDL3/SDL_platform_defines.h:
@@ -139,8 +141,8 @@ external/includes/SDL3/SDL_timer.h:
 external/includes/SDL3/SDL_tray.h:
 external/includes/SDL3/SDL_version.h:
 external/includes/SDL3/SDL_oldnames.h:
-src\renderer\../Menu/Menu.h:
-external/includes/imGUI\imgui.h:
-external/includes/imGUI\imconfig.h:
-external/includes/imGUI\imgui_impl_sdl3.h:
-external/includes/SDL3/SDL_vulkan.h:
+src\main\../App/../renderer/../Menu/Menu.h:
+src\main\../App/../Menu/MenuManager.h:
+src\main\../App/../Menu/StartMenu.h:
+src\main\../App/../Menu/Menu.h:
+src\main\../App/../Menu/../renderer/Window.h:
