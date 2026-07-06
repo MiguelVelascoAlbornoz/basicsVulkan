@@ -21,6 +21,10 @@ App::App() {
     if (renderer->error) {
         std::cerr << "Failed to initialize renderer." << std::endl;
         return;
+    } else {
+        #ifdef _DEBUG
+        std::cout << "Renderer initialized successfully." << std::endl;
+        #endif
     }
     
     menuManager = new MenuManager(window);

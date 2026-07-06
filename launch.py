@@ -54,7 +54,7 @@ libsDirs = ["-Lexternal/libs"] #Lista de dirs de libs, cada dir tem de ser prece
 libs = {
     "debug": [],
     "release": ["-static-libgcc", "-static-libstdc++"],
-    "all": ["-limGUI","-lSDL3","-lvulkan-1"]
+    "all": ["-limGUI_SDL3_Vulkan","-lSDL3","-lvulkan-1"]
 }
 #Configurações de paths, extensões, libs e flags
 compilationPath = Path("compilationFiles") #Path onde fica todo o relacionado com a compilação

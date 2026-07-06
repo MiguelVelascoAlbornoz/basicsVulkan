@@ -45,7 +45,7 @@ bool Renderer::pickPhysicalDevice() {
         if (!devices.empty()) {
             physicalDevice = devices[0];
         } else {
-            std::cerr << "(VULKAN) Error: No se encontraron dispositivos físicos compatibles con Vulkan." << std::endl;
+            std::cerr << "(VULKAN) Error in pickPhysicalDevive(): No se encontraron dispositivos físicos compatibles con Vulkan." << std::endl;
             return false; // Retorna false si no se encuentra un dispositivo físico
         }
     }
@@ -101,15 +101,15 @@ bool Renderer::createLogicalDevice()
 
     // Ahora sí verificar errores
     if (graphicsFamily == 0xFFFFFFFF) {
-        SDL_Log("(VULKAN) Error: No se encontró familia de colas con soporte de gráficos.");
+        SDL_Log("(VULKAN) Error in createLogicalDevice(): No se encontró familia de colas con soporte de gráficos.");
         return false;
     }
     if (presentFamily == 0xFFFFFFFF) {
-        SDL_Log("(VULKAN) Error: No se encontró familia de colas con soporte de presentación.");
+        SDL_Log("(VULKAN) Error in createLogicalDevice(): No se encontró familia de colas con soporte de presentación.");
         return false;
     }
     if (presentFamily != graphicsFamily) {
-        SDL_Log("(VULKAN) Error: La familia de colas de gráficos y presentación no coincide.");
+        SDL_Log("(VULKAN) Error in createLogicalDevice(): La familia de colas de gráficos y presentación no coincide.");
         return false;
     }
     
@@ -132,7 +132,7 @@ bool Renderer::createLogicalDevice()
     createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
     if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {
-        SDL_Log("(VULKAN) Error: No se pudo crear el dispositivo lógico.");
+        SDL_Log("(VULKAN) Error in createLogicalDevice(): No se pudo crear el dispositivo lógico.");
        return false;
     } else {
         #ifdef _DEBUG
@@ -180,7 +180,7 @@ bool Renderer::createSwapchain(Window *window)
 
     // Elegir formato (preferir BGRA8 con SRGB)
     if (formats.empty()) {
-        std::cerr << "(VULKAN) Error: No se encontraron formatos de superficie compatibles." << std::endl;
+        SDL_Log("(VULKAN) Error in createSwapChain(): No se encontraron formatos de superficie compatibles.");
         return false;
     }
     VkSurfaceFormatKHR chosenFormat = formats[0]; // fallback
@@ -236,7 +236,7 @@ bool Renderer::createSwapchain(Window *window)
     createInfo.oldSwapchain     = VK_NULL_HANDLE;
 
     if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapchain) != VK_SUCCESS) {
-        SDL_Log("(VULKAN) Error: No se pudo crear el swapchain.");
+        SDL_Log("(VULKAN) Error in createSwapChain(): No se pudo crear el swapchain.");
         return false;
     }
         // Obtener las imágenes del swapchain
@@ -257,10 +257,350 @@ bool Renderer::createSwapchain(Window *window)
 
 bool Renderer::createRenderPass()
 {
+    // Descripción del color attachment (la imagen de la swapchain)
+    VkAttachmentDescription colorAttachment{};
+    colorAttachment.format         = swapchainFormat;
+    colorAttachment.samples        = VK_SAMPLE_COUNT_1_BIT;
+    colorAttachment.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    colorAttachment.storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
+    colorAttachment.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    colorAttachment.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
+    colorAttachment.finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+    // Referencia al attachment desde la subpass
+    VkAttachmentReference colorAttachmentRef{};
+    colorAttachmentRef.attachment = 0;
+    colorAttachmentRef.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    // Definición de la subpass
+    VkSubpassDescription subpass{};
+    subpass.pipelineBindPoint    = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpass.colorAttachmentCount = 1;
+    subpass.pColorAttachments    = &colorAttachmentRef;
+
+    // Dependencia: esperar a que la imagen esté disponible antes de escribir en ella
+    VkSubpassDependency dependency{};
+    dependency.srcSubpass    = VK_SUBPASS_EXTERNAL;
+    dependency.dstSubpass    = 0;
+    dependency.srcStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.srcAccessMask = 0;
+    dependency.dstStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+    // Crear el render pass
+    VkRenderPassCreateInfo renderPassInfo{};
+    renderPassInfo.sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    renderPassInfo.attachmentCount = 1;
+    renderPassInfo.pAttachments    = &colorAttachment;
+    renderPassInfo.subpassCount    = 1;
+    renderPassInfo.pSubpasses      = &subpass;
+    renderPassInfo.dependencyCount = 1;
+    renderPassInfo.pDependencies   = &dependency;
+
+    if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
+        SDL_Log("(VULKAN) Error in createRenderPass(): No se pudo crear el render pass.");
+        return false;
+    }
+
+    #ifdef _DEBUG
+    SDL_Log("(VULKAN) Render pass creado correctamente.");
+    #endif
+
     return true;
 }
+/**
+ * @brief Reads a binary file and stores its contents in a buffer.
+ * @param filename The path to the binary file to read.
+ */
+static bool readFile(std::string filename, std::vector<char> &buffer) {
+    FILE* file = NULL;
+    file = fopen(filename.c_str(), "rb");
+    if (!file) {
+        return false;
+    }
+    char tempByte;
+    while (fread(&tempByte, sizeof(char), 1, file) == 1) {
+        buffer.push_back(tempByte);
+    }
+    fclose(file);
+    return true;
 
+}
+bool Renderer::createImageViews()
+{
+    swapchainImageViews.resize(swapchainImages.size());
+
+    for (size_t i = 0; i < swapchainImages.size(); i++) {
+
+        VkImageViewCreateInfo viewInfo{};
+        viewInfo.sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        viewInfo.image    = swapchainImages[i];
+        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        viewInfo.format   = swapchainFormat;
+
+        // Sin swizzle, cada canal mapea a sí mismo
+        viewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+        viewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+        viewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+        viewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+        // Qué parte de la imagen describe esta vista
+        viewInfo.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+        viewInfo.subresourceRange.baseMipLevel   = 0;
+        viewInfo.subresourceRange.levelCount     = 1;
+        viewInfo.subresourceRange.baseArrayLayer = 0;
+        viewInfo.subresourceRange.layerCount     = 1;
+
+        if (vkCreateImageView(device, &viewInfo, nullptr, &swapchainImageViews[i]) != VK_SUCCESS) {
+            SDL_Log("(VULKAN) Error in createImageViews()");
+            return false;
+        }
+    }
+
+    #ifdef _DEBUG
+    SDL_Log("(VULKAN) image views creados correctamente.");
+    #endif
+
+    return true;
+}
+VkShaderModule Renderer::createShaderModule(const std::vector<char>& code) {
+    VkShaderModuleCreateInfo createInfo{};
+    createInfo.sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    createInfo.codeSize = code.size();
+    createInfo.pCode    = reinterpret_cast<const uint32_t*>(code.data());
+
+    VkShaderModule shaderModule;
+    if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
+        throw std::runtime_error("createShaderModule(): No se pudo crear el shader module.");
+    }
+    return shaderModule;
+}
 bool Renderer::createPipeline()
 {
+    // 1. Cargar shaders compilados (SPIR-V)
+    std::vector<char> vertShaderCode;
+    std::vector<char> fragShaderCode;
+
+    bool result = readFile("assets/shaders/default.vert.spv", vertShaderCode);
+
+    result += readFile("assets/shaders/default.frag.spv", fragShaderCode);
+    if (!result) {
+        SDL_Log("(VULKAN) Error in createPipeline(): No se pudieron cargar los shaders.");
+        return false;
+    }
+
+    VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
+    VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
+
+    VkPipelineShaderStageCreateInfo vertStageInfo{};
+    vertStageInfo.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    vertStageInfo.stage  = VK_SHADER_STAGE_VERTEX_BIT;
+    vertStageInfo.module = vertShaderModule;
+    vertStageInfo.pName  = "main";
+
+    VkPipelineShaderStageCreateInfo fragStageInfo{};
+    fragStageInfo.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    fragStageInfo.stage  = VK_SHADER_STAGE_FRAGMENT_BIT;
+    fragStageInfo.module = fragShaderModule;
+    fragStageInfo.pName  = "main";
+
+    VkPipelineShaderStageCreateInfo shaderStages[] = { vertStageInfo, fragStageInfo };
+
+    // 2. Vertex input (vacío por ahora, si el shader genera vértices internamente)
+    VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
+    vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    vertexInputInfo.vertexBindingDescriptionCount   = 0;
+    vertexInputInfo.vertexAttributeDescriptionCount = 0;
+
+    // 3. Input assembly
+    VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
+    inputAssembly.sType    = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    inputAssembly.primitiveRestartEnable = VK_FALSE;
+
+    // 4. Viewport y scissor (dinámicos, recomendado)
+    VkPipelineViewportStateCreateInfo viewportState{};
+    viewportState.sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    viewportState.viewportCount = 1;
+    viewportState.scissorCount  = 1;
+
+    std::vector<VkDynamicState> dynamicStates = {
+        VK_DYNAMIC_STATE_VIEWPORT,
+        VK_DYNAMIC_STATE_SCISSOR
+    };
+    VkPipelineDynamicStateCreateInfo dynamicState{};
+    dynamicState.sType             = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+    dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
+    dynamicState.pDynamicStates    = dynamicStates.data();
+
+    // 5. Rasterizer
+    VkPipelineRasterizationStateCreateInfo rasterizer{};
+    rasterizer.sType                   = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    rasterizer.depthClampEnable        = VK_FALSE;
+    rasterizer.rasterizerDiscardEnable = VK_FALSE;
+    rasterizer.polygonMode             = VK_POLYGON_MODE_FILL;
+    rasterizer.lineWidth               = 1.0f;
+    rasterizer.cullMode                = VK_CULL_MODE_BACK_BIT;
+    rasterizer.frontFace               = VK_FRONT_FACE_CLOCKWISE;
+    rasterizer.depthBiasEnable         = VK_FALSE;
+
+    // 6. Multisampling (deshabilitado)
+    VkPipelineMultisampleStateCreateInfo multisampling{};
+    multisampling.sType                = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    multisampling.sampleShadingEnable  = VK_FALSE;
+    multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
+    // 7. Color blending
+    VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+    colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+                                           VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    colorBlendAttachment.blendEnable = VK_FALSE;
+
+    VkPipelineColorBlendStateCreateInfo colorBlending{};
+    colorBlending.sType           = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    colorBlending.logicOpEnable   = VK_FALSE;
+    colorBlending.attachmentCount = 1;
+    colorBlending.pAttachments    = &colorBlendAttachment;
+
+    // 8. Pipeline layout (vacío por ahora: sin descriptor sets ni push constants)
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+
+    if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
+        SDL_Log("(VULKAN) Error in createPipeline(): No se pudo crear el pipeline layout.");
+        return false;
+    }
+
+    // 9. Crear el pipeline gráfico
+    VkGraphicsPipelineCreateInfo pipelineInfo{};
+    pipelineInfo.sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    pipelineInfo.stageCount          = 2;
+    pipelineInfo.pStages             = shaderStages;
+    pipelineInfo.pVertexInputState   = &vertexInputInfo;
+    pipelineInfo.pInputAssemblyState = &inputAssembly;
+    pipelineInfo.pViewportState      = &viewportState;
+    pipelineInfo.pRasterizationState = &rasterizer;
+    pipelineInfo.pMultisampleState   = &multisampling;
+    pipelineInfo.pColorBlendState    = &colorBlending;
+    pipelineInfo.pDynamicState       = &dynamicState;
+    pipelineInfo.layout              = pipelineLayout;
+    pipelineInfo.renderPass          = renderPass;
+    pipelineInfo.subpass             = 0;
+
+    if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS) {
+        SDL_Log("(VULKAN) Error in createPipeline(): No se pudo crear el graphics pipeline.");
+        return false;
+    }
+
+    // Los shader modules ya no se necesitan una vez creado el pipeline
+    vkDestroyShaderModule(device, fragShaderModule, nullptr);
+    vkDestroyShaderModule(device, vertShaderModule, nullptr);
+
+    #ifdef _DEBUG
+    SDL_Log("(VULKAN) Pipeline gráfico creado correctamente.");
+    #endif
+
+    return true;
+}
+bool Renderer::createFramebuffers()
+{
+    // Un framebuffer por cada image view de la swapchain
+    swapchainFramebuffers.resize(swapchainImageViews.size());
+
+    for (size_t i = 0; i < swapchainImageViews.size(); i++) {
+
+        VkImageView attachments[] = {
+            swapchainImageViews[i]
+        };
+
+        VkFramebufferCreateInfo framebufferInfo{};
+        framebufferInfo.sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebufferInfo.renderPass      = renderPass;           // debe ser compatible con este render pass
+        framebufferInfo.attachmentCount = 1;
+        framebufferInfo.pAttachments    = attachments;
+        framebufferInfo.width           = swapchainExtent.width;
+        framebufferInfo.height          = swapchainExtent.height;
+        framebufferInfo.layers          = 1;
+
+        if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &swapchainFramebuffers[i]) != VK_SUCCESS) {
+            SDL_Log("(VULKAN) Error in createFrameBuffers(): No se pudo crear el framebuffer.");
+            return false;
+        }
+    }
+
+    #ifdef _DEBUG
+    SDL_Log("(VULKAN) framebuffers creados correctamente.");
+    #endif
+
+    return true;
+}
+bool Renderer::createCommandPool()
+{
+    VkCommandPoolCreateInfo poolInfo{};
+    poolInfo.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    poolInfo.flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    poolInfo.queueFamilyIndex = graphicsQueueFamilyIndex; // el índice que guardaste al elegir el physical device
+
+    if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
+        SDL_Log("(VULKAN) Error: No se pudo crear el command pool.");
+        return false;
+    }
+
+    #ifdef _DEBUG
+    SDL_Log("(VULKAN) Command pool creado correctamente.");
+    #endif
+
+    return true;
+}
+bool Renderer::createCommandBuffers()
+{
+    commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+
+    VkCommandBufferAllocateInfo allocInfo{};
+    allocInfo.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.commandPool        = commandPool;
+    allocInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandBufferCount = (uint32_t)commandBuffers.size();
+
+    if (vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data()) != VK_SUCCESS) {
+        SDL_Log("(VULKAN) Error: No se pudieron crear los command buffers.");
+        return false;
+    }
+
+    #ifdef _DEBUG
+    SDL_Log("(VULKAN) %d command buffers creados correctamente.", MAX_FRAMES_IN_FLIGHT);
+    #endif
+
+    return true;
+}
+bool Renderer::createSyncObjects()
+{
+    imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+    renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+    inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+
+    VkSemaphoreCreateInfo semaphoreInfo{};
+    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    VkFenceCreateInfo fenceInfo{};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT; // arranca "señalado" para no bloquear el primer frame
+
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        bool ok = vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) == VK_SUCCESS
+               && vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) == VK_SUCCESS
+               && vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[i]) == VK_SUCCESS;
+
+        if (!ok) {
+            SDL_Log("(VULKAN) Error: No se pudieron crear los objetos de sincronizacion del frame %d.", i);
+            return false;
+        }
+    }
+
+    #ifdef _DEBUG
+    SDL_Log("(VULKAN) Objetos de sincronizacion creados correctamente.");
+    #endif
+
     return true;
 }

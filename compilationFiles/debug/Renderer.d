@@ -57,8 +57,8 @@ compilationFiles\debug\Renderer.o: src\renderer\Renderer.cpp \
  external/includes/SDL3/SDL_oldnames.h src\renderer\../Menu/Menu.h \
  external/includes/imGUI\imgui.h external/includes/imGUI\imconfig.h \
  external/includes/imGUI\imgui_impl_sdl3.h \
- external/includes/imGUI\imgui_impl_sdlrenderer3.h \
- external/includes/SDL3/SDL_vulkan.h
+ external/includes/imGUI\imgui_impl_vulkan.h \
+ external/includes/vulkan/vulkan.h external/includes/SDL3/SDL_vulkan.h
 src\renderer\Renderer.h:
 external/includes/Vulkan/vulkan.h:
 external/includes/Vulkan/vk_platform.h:
@@ -144,5 +144,6 @@ src\renderer\../Menu/Menu.h:
 external/includes/imGUI\imgui.h:
 external/includes/imGUI\imconfig.h:
 external/includes/imGUI\imgui_impl_sdl3.h:
-external/includes/imGUI\imgui_impl_sdlrenderer3.h:
+external/includes/imGUI\imgui_impl_vulkan.h:
+external/includes/vulkan/vulkan.h:
 external/includes/SDL3/SDL_vulkan.h:
