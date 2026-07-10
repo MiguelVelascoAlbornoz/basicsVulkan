@@ -126,8 +126,13 @@ void Renderer::initVulkan(Window* window)  {
      !createLogicalDevice() ||
       !createSwapchain(window) ||
        !createImageViews() ||
-        !createRenderPass() ||
-         !createPipeline() || 
+        !createRenderPass()) {
+            error = true;
+        return;
+        }
+        pipeline =new Pipeline(device, renderPass);
+        if (
+           
           !createFramebuffers() ||
            !createCommandPool() ||
             !createCommandBuffers() ||
@@ -177,9 +182,7 @@ Renderer::~Renderer()
         vkDestroyFramebuffer(device, framebuffer, nullptr);
     }
 
-    // 6. Pipeline y su layout
-    vkDestroyPipeline(device, pipeline, nullptr);
-    vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+    delete pipeline; // Destruye pipeline y pipelineLayout
 
     // 7. Render pass
     vkDestroyRenderPass(device, renderPass, nullptr);
@@ -236,7 +239,7 @@ void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
 
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+    pipeline->bind(commandBuffer); // bind the graphics pipeline (shaders + fixed-function state);
 
     // Viewport y scissor son dinámicos en el pipeline, hay que setearlos cada frame
     VkViewport viewport{};
@@ -356,5 +359,5 @@ void Renderer::updateGUI(Menu* menu)
      */
     ImGui::Render();
 
-    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffers[currentFrame], pipeline);
+    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffers[currentFrame], VK_NULL_HANDLE );
 }

@@ -7,11 +7,10 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
-#include <Vulkan/vulkan.h>
 #include "Window.h"
 #include <functional>
 #include "../Menu/Menu.h"
-
+#include "Pipeline.h"
 /**
  * @brief The Renderer class encapsulates the creation and management of an SDL renderer, including error management and GUI initialization.
  * It provides methods to initialize the renderer, manage errors, and set up the GUI.
@@ -114,19 +113,8 @@ private:
      */
     bool createPipelineLayout();
 
-    /**
-     * @brief Creates the graphics pipeline, which bundles shader stages, vertex input, input assembly, viewport/scissor, rasterization, multisampling, color blending, and dynamic state into a single immutable object.
-     * @details Steps:
-     * 1. Load and wrap vertex/fragment SPIR-V shaders via createShaderModule().
-     * 2. Configure vertex input and input assembly (topology).
-     * 3. Configure viewport/scissor as dynamic state.
-     * 4. Configure rasterizer, multisampling, and color blending state.
-     * 5. Reference pipelineLayout and renderPass.
-     * 6. vkCreateGraphicsPipelines().
-     * 7. Destroy the shader modules (no longer needed once the pipeline is built).
-     * @note Requires createPipelineLayout() and createRenderPass() to have run first.
-     */
-    bool createPipeline();
+
+
 
     /**
      * @brief Creates one VkFramebuffer per swapchain image view, binding them to renderPass.
@@ -206,11 +194,11 @@ std::vector<VkFramebuffer> swapchainFramebuffers;
 VkRenderPass renderPass = VK_NULL_HANDLE;
 
 /// @brief Layout del pipeline: descriptor set layouts y push constant ranges (vacío por ahora).
-VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
+//VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
 
 /// @brief Pipeline gráfico: shaders + estado de rasterización/blending/etc. empaquetados como un solo objeto inmutable.
-VkPipeline pipeline = VK_NULL_HANDLE;
-
+//VkPipeline pipeline = VK_NULL_HANDLE;
+Pipeline* pipeline; /**< @brief Pipeline gráfico: shaders + estado de rasterización/blending/etc. empaquetados como un solo objeto inmutable. */
 // ==================== Comandos ====================
 
 /// @brief Pool desde el cual se asignan los command buffers.

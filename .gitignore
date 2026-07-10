@@ -6,3 +6,4 @@ html/*
 !html/css/
 !html/js/main.js
 *.o
+*.d

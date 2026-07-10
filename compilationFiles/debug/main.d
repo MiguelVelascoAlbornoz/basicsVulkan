@@ -1,23 +1,5 @@
 compilationFiles\debug\main.o: src\main\main.cpp src\main\../App/App.h \
- src\main\../App/../renderer/Renderer.h external/includes/Vulkan/vulkan.h \
- external/includes/Vulkan/vk_platform.h \
- external/includes/Vulkan/vulkan_core.h \
- external/includes/vk_video/vulkan_video_codec_h264std.h \
- external/includes/vk_video/vulkan_video_codecs_common.h \
- external/includes/vk_video/vulkan_video_codec_h264std_encode.h \
- external/includes/vk_video/vulkan_video_codec_h264std.h \
- external/includes/vk_video/vulkan_video_codec_h265std.h \
- external/includes/vk_video/vulkan_video_codec_h265std_encode.h \
- external/includes/vk_video/vulkan_video_codec_h265std.h \
- external/includes/vk_video/vulkan_video_codec_h264std_decode.h \
- external/includes/vk_video/vulkan_video_codec_h265std_decode.h \
- external/includes/vk_video/vulkan_video_codec_av1std.h \
- external/includes/vk_video/vulkan_video_codec_av1std_decode.h \
- external/includes/vk_video/vulkan_video_codec_av1std.h \
- external/includes/vk_video/vulkan_video_codec_av1std_encode.h \
- external/includes/vk_video/vulkan_video_codec_vp9std.h \
- external/includes/vk_video/vulkan_video_codec_vp9std_decode.h \
- external/includes/vk_video/vulkan_video_codec_vp9std.h \
+ src\main\../App/../renderer/Renderer.h \
  src\main\../App/../renderer/Window.h external/includes/SDL3/SDL.h \
  external/includes/SDL3/SDL_stdinc.h \
  external/includes/SDL3/SDL_platform_defines.h \
@@ -56,30 +38,30 @@ compilationFiles\debug\main.o: src\main\main.cpp src\main\../App/App.h \
  external/includes/SDL3/SDL_tray.h external/includes/SDL3/SDL_version.h \
  external/includes/SDL3/SDL_oldnames.h \
  src\main\../App/../renderer/../Menu/Menu.h \
+ src\main\../App/../renderer/Pipeline.h external/includes/Vulkan/vulkan.h \
+ external/includes/Vulkan/vk_platform.h \
+ external/includes/Vulkan/vulkan_core.h \
+ external/includes/vk_video/vulkan_video_codec_h264std.h \
+ external/includes/vk_video/vulkan_video_codecs_common.h \
+ external/includes/vk_video/vulkan_video_codec_h264std_encode.h \
+ external/includes/vk_video/vulkan_video_codec_h264std.h \
+ external/includes/vk_video/vulkan_video_codec_h265std.h \
+ external/includes/vk_video/vulkan_video_codec_h265std_encode.h \
+ external/includes/vk_video/vulkan_video_codec_h265std.h \
+ external/includes/vk_video/vulkan_video_codec_h264std_decode.h \
+ external/includes/vk_video/vulkan_video_codec_h265std_decode.h \
+ external/includes/vk_video/vulkan_video_codec_av1std.h \
+ external/includes/vk_video/vulkan_video_codec_av1std_decode.h \
+ external/includes/vk_video/vulkan_video_codec_av1std.h \
+ external/includes/vk_video/vulkan_video_codec_av1std_encode.h \
+ external/includes/vk_video/vulkan_video_codec_vp9std.h \
+ external/includes/vk_video/vulkan_video_codec_vp9std_decode.h \
+ external/includes/vk_video/vulkan_video_codec_vp9std.h \
  src\main\../App/../Menu/MenuManager.h \
  src\main\../App/../Menu/StartMenu.h src\main\../App/../Menu/Menu.h \
  src\main\../App/../Menu/../renderer/Window.h
 src\main\../App/App.h:
 src\main\../App/../renderer/Renderer.h:
-external/includes/Vulkan/vulkan.h:
-external/includes/Vulkan/vk_platform.h:
-external/includes/Vulkan/vulkan_core.h:
-external/includes/vk_video/vulkan_video_codec_h264std.h:
-external/includes/vk_video/vulkan_video_codecs_common.h:
-external/includes/vk_video/vulkan_video_codec_h264std_encode.h:
-external/includes/vk_video/vulkan_video_codec_h264std.h:
-external/includes/vk_video/vulkan_video_codec_h265std.h:
-external/includes/vk_video/vulkan_video_codec_h265std_encode.h:
-external/includes/vk_video/vulkan_video_codec_h265std.h:
-external/includes/vk_video/vulkan_video_codec_h264std_decode.h:
-external/includes/vk_video/vulkan_video_codec_h265std_decode.h:
-external/includes/vk_video/vulkan_video_codec_av1std.h:
-external/includes/vk_video/vulkan_video_codec_av1std_decode.h:
-external/includes/vk_video/vulkan_video_codec_av1std.h:
-external/includes/vk_video/vulkan_video_codec_av1std_encode.h:
-external/includes/vk_video/vulkan_video_codec_vp9std.h:
-external/includes/vk_video/vulkan_video_codec_vp9std_decode.h:
-external/includes/vk_video/vulkan_video_codec_vp9std.h:
 src\main\../App/../renderer/Window.h:
 external/includes/SDL3/SDL.h:
 external/includes/SDL3/SDL_stdinc.h:
@@ -142,6 +124,26 @@ external/includes/SDL3/SDL_tray.h:
 external/includes/SDL3/SDL_version.h:
 external/includes/SDL3/SDL_oldnames.h:
 src\main\../App/../renderer/../Menu/Menu.h:
+src\main\../App/../renderer/Pipeline.h:
+external/includes/Vulkan/vulkan.h:
+external/includes/Vulkan/vk_platform.h:
+external/includes/Vulkan/vulkan_core.h:
+external/includes/vk_video/vulkan_video_codec_h264std.h:
+external/includes/vk_video/vulkan_video_codecs_common.h:
+external/includes/vk_video/vulkan_video_codec_h264std_encode.h:
+external/includes/vk_video/vulkan_video_codec_h264std.h:
+external/includes/vk_video/vulkan_video_codec_h265std.h:
+external/includes/vk_video/vulkan_video_codec_h265std_encode.h:
+external/includes/vk_video/vulkan_video_codec_h265std.h:
+external/includes/vk_video/vulkan_video_codec_h264std_decode.h:
+external/includes/vk_video/vulkan_video_codec_h265std_decode.h:
+external/includes/vk_video/vulkan_video_codec_av1std.h:
+external/includes/vk_video/vulkan_video_codec_av1std_decode.h:
+external/includes/vk_video/vulkan_video_codec_av1std.h:
+external/includes/vk_video/vulkan_video_codec_av1std_encode.h:
+external/includes/vk_video/vulkan_video_codec_vp9std.h:
+external/includes/vk_video/vulkan_video_codec_vp9std_decode.h:
+external/includes/vk_video/vulkan_video_codec_vp9std.h:
 src\main\../App/../Menu/MenuManager.h:
 src\main\../App/../Menu/StartMenu.h:
 src\main\../App/../Menu/Menu.h:
