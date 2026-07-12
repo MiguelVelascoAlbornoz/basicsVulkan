@@ -7,10 +7,11 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
-#include "Window.h"
+
 #include <functional>
 #include "../Menu/Menu.h"
 #include "Pipeline.h"
+#include "SwapChain.h"
 /**
  * @brief The Renderer class encapsulates the creation and management of an SDL renderer, including error management and GUI initialization.
  * It provides methods to initialize the renderer, manage errors, and set up the GUI.
@@ -48,6 +49,12 @@ private:
      * @details This method sets up the Vulkan instance, surface, physical device, logical device, swapchain, render pass, and pipeline. If any of the initialization steps fail, it sets the error flag to true and prints an error message to the standard error stream.
      */
     void initVulkan(Window *window);
+    /**
+     * @brief Initializes the Vulkan instance, which is the entry point to the Vulkan API.
+     * @details This method creates a Vulkan instance with the required extensions and validation layers. If the instance creation fails, it sets the error flag to true and prints an error message to the standard error stream.
+     * @return true if the Vulkan instance was created successfully, false otherwise.
+     */
+    bool createVulkanInstance();
 
     // Métodos de inicialización
     /**
@@ -64,29 +71,6 @@ private:
      * 3. Creates the logical device and retrieves the handles to the specified queues.
      */
     bool createLogicalDevice();
-
-    /**
-     * @brief Creates a swapchain for the selected physical device and logical device, which is a series of images that are presented to the screen in a loop.
-     * @details The steps are:
-     *  1. Obtener las capacidades de la superficie
-     *  2. Obtener los formatos soportados
-     * 3. Obtener los modos de presentación
-     * 4. Elegir:
-     *    - formato (VK_FORMAT_B8G8R8A8_SRGB,
-     *   - present mode (FIFO, MAILBOX...)
-     *   - tamaño (window->getWidth(), window->getHeight())
-     * 5. Rellenar VkSwapchainCreateInfoKHR
-     * 6. vkCreateSwapchainKHR()
-     * 7. Obtener las imágenes del swapchain
-     * 8. Crear un ImageView para cada imagen
-     **/
-    bool createSwapchain(Window *window);
-
-    /**
-     * @brief Creates the image views for each image in the swapchain, so they can be used as attachments in the framebuffers.
-     * @details A VkImage by itself cannot be accessed directly by the pipeline; it needs a VkImageView that describes how to interpret it (format, type, mip levels, array layers). Creates one VkImageView per VkImage in swapchainImages, storing them in swapchainImageViews.
-     */
-    bool createImageViews();
 
     /**
      * @brief Creates the render pass, which describes the attachments (color, depth, etc.) used during rendering and how they are handled across subpasses.
@@ -116,11 +100,7 @@ private:
 
 
 
-    /**
-     * @brief Creates one VkFramebuffer per swapchain image view, binding them to renderPass.
-     * @details A framebuffer is the concrete binding between a render pass and the actual memory (image views) it will render into. Requires createImageViews() and createRenderPass() to have run first. Stored in swapchainFramebuffers, indexed the same way as swapchainImageViews.
-     */
-    bool createFramebuffers();
+
 
     /**
      * @brief Creates the command pool from which command buffers are allocated.
@@ -168,36 +148,13 @@ uint32_t graphicsQueueFamilyIndex = 0xFFFFFFFF;
 /// @brief Índice de la queue family que soporta presentación en la superficie.
 uint32_t presentQueueFamilyIndex = 0xFFFFFFFF;
 
-// ==================== Swapchain ====================
-
-/// @brief Swapchain, conjunto de imágenes que se presentan en la ventana en ciclo.
-VkSwapchainKHR swapchain = VK_NULL_HANDLE;
-
-/// @brief Imágenes propias de la swapchain (no se destruyen manualmente, las libera vkDestroySwapchainKHR).
-std::vector<VkImage> swapchainImages;
-
-/// @brief Vistas (VkImageView) de cada imagen de la swapchain, necesarias para usarlas como attachments.
-std::vector<VkImageView> swapchainImageViews;
-
-/// @brief Formato de color elegido para la swapchain (ej. VK_FORMAT_B8G8R8A8_SRGB).
-VkFormat swapchainFormat;
-
-/// @brief Resolución (ancho x alto) de las imágenes de la swapchain.
-VkExtent2D swapchainExtent;
-
-/// @brief Framebuffers, uno por cada image view de la swapchain, usados en vkCmdBeginRenderPass.
-std::vector<VkFramebuffer> swapchainFramebuffers;
 
 // ==================== Pipeline gráfico ====================
 
 /// @brief Render pass, describe los attachments y su manejo a lo largo de las subpasses.
 VkRenderPass renderPass = VK_NULL_HANDLE;
 
-/// @brief Layout del pipeline: descriptor set layouts y push constant ranges (vacío por ahora).
-//VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
-
-/// @brief Pipeline gráfico: shaders + estado de rasterización/blending/etc. empaquetados como un solo objeto inmutable.
-//VkPipeline pipeline = VK_NULL_HANDLE;
+SwapChain* swapChain;
 Pipeline* pipeline; /**< @brief Pipeline gráfico: shaders + estado de rasterización/blending/etc. empaquetados como un solo objeto inmutable. */
 // ==================== Comandos ====================
 

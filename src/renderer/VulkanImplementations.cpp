@@ -6,6 +6,47 @@
 #include <SDL3/SDL_vulkan.h>
 #include <algorithm>
 
+
+bool Renderer::createVulkanInstance(){
+
+    /**
+     * Create Vulkan instance
+     */
+        // Extensions necesarias para SDL3
+    Uint32 extensionCount = 0;
+    const char* const* extensions = SDL_Vulkan_GetInstanceExtensions(&extensionCount);
+    #ifdef _DEBUG
+        std::cout << "(VULKAN) Extensions:" << std::endl;
+    for (unsigned int i = 0; i < extensionCount; ++i) {
+        std::cout << " - " << extensions[i] << std::endl;
+    }
+    #endif
+
+    VkApplicationInfo appInfo{};
+    appInfo.sType      = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+    appInfo.pApplicationName   = PROJECT_NAME;
+    //appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+    appInfo.pEngineName        = "BasicsVulkan";
+    appInfo.engineVersion      = VK_MAKE_VERSION(1, 0, 0);
+    appInfo.apiVersion         = VK_API_VERSION_1_0;
+
+    VkInstanceCreateInfo createInfo{};
+    createInfo.sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    createInfo.pApplicationInfo        = &appInfo;
+    createInfo.enabledExtensionCount   = extensionCount;
+    createInfo.ppEnabledExtensionNames = extensions;
+
+    VkResult result = vkCreateInstance(&createInfo, nullptr, &instance);
+    if (result == VK_SUCCESS) {
+        #ifdef _DEBUG
+        std::cout << "(VULKAN) Vulkan está disponible!\n";
+        #endif
+    } else {
+        std::cout << "(VULKAN) Vulkan no está disponible. Código: " << result << "\n";
+        error = true;
+        return;
+    }
+}
 bool Renderer::pickPhysicalDevice() {
     
     // Implementación de selección de dispositivo físico
@@ -148,117 +189,12 @@ bool Renderer::createLogicalDevice()
     return true;
 }
 
-bool Renderer::createSwapchain(Window *window)
-{
-    // Capacidades de la surface
-    VkSurfaceCapabilitiesKHR capabilities;
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &capabilities);
-
-    //Ver los formatos soportados
-    uint32_t formatCount;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, nullptr);
-    std::vector<VkSurfaceFormatKHR> formats(formatCount);
-    vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, formats.data());
-    
-    // Modos de presentación soportados
-    uint32_t presentModeCount;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, nullptr);
-    std::vector<VkPresentModeKHR> presentModes(presentModeCount);
-    vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, presentModes.data());
-
-    #ifdef _DEBUG
-    std::cout << "(VULKAN) Supported surface formats:" << std::endl;
-    for (const auto& format : formats) {
-        std::cout << " - Format: " << format.format << ", Color Space: " << format.colorSpace << std::endl;
-    }
-    std::cout << "(VULKAN) Supported present modes:" << std::endl;
-    for (const auto& mode : presentModes) {
-        std::cout << " - Present Mode: " << mode << std::endl;
-    }
-    #endif
-
-    // Elegir formato (preferir BGRA8 con SRGB)
-    if (formats.empty()) {
-        SDL_Log("(VULKAN) Error in createSwapChain(): No se encontraron formatos de superficie compatibles.");
-        return false;
-    }
-    VkSurfaceFormatKHR chosenFormat = formats[0]; // fallback
-    for (const auto& f : formats) {
-        if (f.format == VK_FORMAT_B8G8R8A8_SRGB &&
-            f.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-            chosenFormat = f;
-            break;
-        }
-    }
-
-    // Elegir modo de presentación (preferir MAILBOX, fallback FIFO)
-    VkPresentModeKHR chosenPresentMode = VK_PRESENT_MODE_FIFO_KHR; // siempre disponible
-    for (const auto& m : presentModes) {
-        if (m == VK_PRESENT_MODE_MAILBOX_KHR) {
-            chosenPresentMode = m;
-            break;
-        }
-    }
-
-    // Tamaño del swapchain
-    VkExtent2D extent;
-    if (capabilities.currentExtent.width != UINT32_MAX) {
-        extent = capabilities.currentExtent;
-    } else {
-        extent = {
-            (uint32_t)window->getWidth(),
-            (uint32_t)window->getHeight()
-        };
-        extent.width  = std::clamp(extent.width,  capabilities.minImageExtent.width,  capabilities.maxImageExtent.width);
-        extent.height = std::clamp(extent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
-    }
-     // Número de imágenes (triple buffering si es posible)
-    uint32_t imageCount = capabilities.minImageCount + 1;
-    if (capabilities.maxImageCount > 0 && imageCount > capabilities.maxImageCount) {
-        imageCount = capabilities.maxImageCount;
-    }
-
-    VkSwapchainCreateInfoKHR createInfo{};
-    createInfo.sType            = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    createInfo.surface          = surface;
-    createInfo.minImageCount    = imageCount;
-    createInfo.imageFormat      = chosenFormat.format;
-    createInfo.imageColorSpace  = chosenFormat.colorSpace;
-    createInfo.imageExtent      = extent;
-    createInfo.imageArrayLayers = 1;
-    createInfo.imageUsage       = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE; // graphics y present son la misma familia
-    createInfo.preTransform     = capabilities.currentTransform;
-    createInfo.compositeAlpha   = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-    createInfo.presentMode      = chosenPresentMode;
-    createInfo.clipped          = VK_TRUE;
-    createInfo.oldSwapchain     = VK_NULL_HANDLE;
-
-    if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapchain) != VK_SUCCESS) {
-        SDL_Log("(VULKAN) Error in createSwapChain(): No se pudo crear el swapchain.");
-        return false;
-    }
-        // Obtener las imágenes del swapchain
-    vkGetSwapchainImagesKHR(device, swapchain, &imageCount, nullptr);
-    swapchainImages.resize(imageCount);
-    vkGetSwapchainImagesKHR(device, swapchain, &imageCount, swapchainImages.data());
-
-    // Guardar formato y extent para usarlos después
-    swapchainFormat = chosenFormat.format;
-    swapchainExtent = extent;
-
-    #ifdef _DEBUG
-    SDL_Log("(VULKAN) Swapchain creado: %dx%d, %d imagenes", extent.width, extent.height, imageCount);
-    #endif
-
-    return true;
-}
 
 bool Renderer::createRenderPass()
 {
     // Descripción del color attachment (la imagen de la swapchain)
     VkAttachmentDescription colorAttachment{};
-    colorAttachment.format         = swapchainFormat;
+    colorAttachment.format         = swapChain->getSwapchainImageFormat();
     colorAttachment.samples        = VK_SAMPLE_COUNT_1_BIT;
     colorAttachment.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
     colorAttachment.storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
@@ -309,43 +245,7 @@ bool Renderer::createRenderPass()
     return true;
 }
 
-bool Renderer::createImageViews()
-{
-    swapchainImageViews.resize(swapchainImages.size());
 
-    for (size_t i = 0; i < swapchainImages.size(); i++) {
-
-        VkImageViewCreateInfo viewInfo{};
-        viewInfo.sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        viewInfo.image    = swapchainImages[i];
-        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        viewInfo.format   = swapchainFormat;
-
-        // Sin swizzle, cada canal mapea a sí mismo
-        viewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-        viewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-        viewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-        viewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-
-        // Qué parte de la imagen describe esta vista
-        viewInfo.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-        viewInfo.subresourceRange.baseMipLevel   = 0;
-        viewInfo.subresourceRange.levelCount     = 1;
-        viewInfo.subresourceRange.baseArrayLayer = 0;
-        viewInfo.subresourceRange.layerCount     = 1;
-
-        if (vkCreateImageView(device, &viewInfo, nullptr, &swapchainImageViews[i]) != VK_SUCCESS) {
-            SDL_Log("(VULKAN) Error in createImageViews()");
-            return false;
-        }
-    }
-
-    #ifdef _DEBUG
-    SDL_Log("(VULKAN) image views creados correctamente.");
-    #endif
-
-    return true;
-}
 VkShaderModule Renderer::createShaderModule(const std::vector<char>& code) {
     VkShaderModuleCreateInfo createInfo{};
     createInfo.sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -358,38 +258,7 @@ VkShaderModule Renderer::createShaderModule(const std::vector<char>& code) {
     }
     return shaderModule;
 }
-bool Renderer::createFramebuffers()
-{
-    // Un framebuffer por cada image view de la swapchain
-    swapchainFramebuffers.resize(swapchainImageViews.size());
 
-    for (size_t i = 0; i < swapchainImageViews.size(); i++) {
-
-        VkImageView attachments[] = {
-            swapchainImageViews[i]
-        };
-
-        VkFramebufferCreateInfo framebufferInfo{};
-        framebufferInfo.sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        framebufferInfo.renderPass      = renderPass;           // debe ser compatible con este render pass
-        framebufferInfo.attachmentCount = 1;
-        framebufferInfo.pAttachments    = attachments;
-        framebufferInfo.width           = swapchainExtent.width;
-        framebufferInfo.height          = swapchainExtent.height;
-        framebufferInfo.layers          = 1;
-
-        if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &swapchainFramebuffers[i]) != VK_SUCCESS) {
-            SDL_Log("(VULKAN) Error in createFrameBuffers(): No se pudo crear el framebuffer.");
-            return false;
-        }
-    }
-
-    #ifdef _DEBUG
-    SDL_Log("(VULKAN) framebuffers creados correctamente.");
-    #endif
-
-    return true;
-}
 bool Renderer::createCommandPool()
 {
     VkCommandPoolCreateInfo poolInfo{};

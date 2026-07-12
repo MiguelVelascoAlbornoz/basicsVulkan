@@ -13,6 +13,7 @@
 #define PROJECT_VERSION "0.0.0"
 #endif
 #include <SDL3/SDL.h>
+#include "Vulkan/vulkan.h"
 
 /**
  * @brief The Window class encapsulates the creation and management of an SDL window, including event handling and error management.
@@ -37,7 +38,7 @@ public:
     int getHeight() const { return height; } /**< @brief Get the height of the window. */
     int getEventState(EventType event) const { return flags[static_cast<int>(event)]; } /**< @brief Get the state of a specific event. */
     SDL_Window* window; /**< @brief SDL window pointer. */
-    
+    VkSurfaceKHR surface; /**< @brief Vulkan surface pointer, used for rendering with Vulkan. */
 private:
     unsigned int extensionCount; /**< @brief Count of Vulkan instance extensions required by SDL. */
     const char* const* extensions; /**< @brief Array of Vulkan instance extensions required by SDL. */

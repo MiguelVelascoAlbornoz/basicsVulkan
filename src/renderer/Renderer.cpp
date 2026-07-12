@@ -38,21 +38,21 @@ void Renderer::initGUI(Window* window)
     vkCreateDescriptorPool(device, &poolInfo, nullptr, &imguiDescriptorPool);
 
     ImGui_ImplVulkan_InitInfo info = {};
-info.Instance            = instance;
-info.PhysicalDevice      = physicalDevice;
-info.Device              = device;
-info.QueueFamily         = graphicsQueueFamilyIndex;
-info.Queue               = graphicsQueue;
-info.DescriptorPool      = imguiDescriptorPool;
-info.MinImageCount       = 2;
-info.ImageCount          = static_cast<uint32_t>(swapchainImages.size());
-info.Allocator           = nullptr;
-info.CheckVkResultFn     = nullptr;
+    info.Instance            = instance;
+    info.PhysicalDevice      = physicalDevice;
+    info.Device              = device;
+    info.QueueFamily         = graphicsQueueFamilyIndex;
+    info.Queue               = graphicsQueue;
+    info.DescriptorPool      = imguiDescriptorPool;
+    info.MinImageCount       = 2;
+    info.ImageCount          = swapChain->getImageCount();
+    info.Allocator           = nullptr;
+    info.CheckVkResultFn     = nullptr;
 
 
-info.PipelineInfoMain.RenderPass   = renderPass;
-info.PipelineInfoMain.Subpass      = 0;
-info.PipelineInfoMain.MSAASamples  = VK_SAMPLE_COUNT_1_BIT;
+    info.PipelineInfoMain.RenderPass   = renderPass;
+    info.PipelineInfoMain.Subpass      = 0;
+    info.PipelineInfoMain.MSAASamples  = VK_SAMPLE_COUNT_1_BIT;
 
     bool ok2 = ImGui_ImplVulkan_Init(&info);
 
@@ -73,40 +73,8 @@ info.PipelineInfoMain.MSAASamples  = VK_SAMPLE_COUNT_1_BIT;
 
 void Renderer::initVulkan(Window* window)  {
 
-    /**
-     * Create Vulkan instance
-     */
-        // Extensions necesarias para SDL3
-    Uint32 extensionCount = 0;
-    const char* const* extensions = SDL_Vulkan_GetInstanceExtensions(&extensionCount);
-    #ifdef _DEBUG
-        std::cout << "(VULKAN) Extensions:" << std::endl;
-    for (unsigned int i = 0; i < extensionCount; ++i) {
-        std::cout << " - " << extensions[i] << std::endl;
-    }
-    #endif
-
-    VkApplicationInfo appInfo{};
-    appInfo.sType      = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    appInfo.pApplicationName   = PROJECT_NAME;
-    //appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.pEngineName        = "BasicsVulkan";
-    appInfo.engineVersion      = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.apiVersion         = VK_API_VERSION_1_0;
-
-    VkInstanceCreateInfo createInfo{};
-    createInfo.sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    createInfo.pApplicationInfo        = &appInfo;
-    createInfo.enabledExtensionCount   = extensionCount;
-    createInfo.ppEnabledExtensionNames = extensions;
-
-    VkResult result = vkCreateInstance(&createInfo, nullptr, &instance);
-    if (result == VK_SUCCESS) {
-        #ifdef _DEBUG
-        std::cout << "(VULKAN) Vulkan está disponible!\n";
-        #endif
-    } else {
-        std::cout << "(VULKAN) Vulkan no está disponible. Código: " << result << "\n";
+    bool vulkanInstanceResult = createVulkanInstance();
+    if (!vulkanInstanceResult) {
         error = true;
         return;
     }
@@ -122,18 +90,27 @@ void Renderer::initVulkan(Window* window)  {
         std::cout << "(VULKAN) Vulkan surface created successfully.\n";
         #endif
     }
+    window->surface = surface;
     if (!pickPhysicalDevice() ||
-     !createLogicalDevice() ||
-      !createSwapchain(window) ||
-       !createImageViews() ||
-        !createRenderPass()) {
+     !createLogicalDevice() ) {
             error = true;
-        return;
+            return;
+        }
+        swapChain = new SwapChain(physicalDevice,device,window);
+        if (swapChain->error){
+            error = true;
+            return;
+        }
+        if (!createRenderPass() || !swapChain->createFramebuffers(renderPass)){
+            error = true;
+            return;
         }
         pipeline =new Pipeline(device, renderPass);
+        if (pipeline->error) {
+            error = true;
+            return;
+        }
         if (
-           
-          !createFramebuffers() ||
            !createCommandPool() ||
             !createCommandBuffers() ||
              !createSyncObjects()
@@ -178,29 +155,16 @@ Renderer::~Renderer()
     vkDestroyCommandPool(device, commandPool, nullptr);
 
     // 5. Framebuffers (uno por imagen del swapchain)
-    for (auto framebuffer : swapchainFramebuffers) {
-        vkDestroyFramebuffer(device, framebuffer, nullptr);
-    }
+    swapChain->destroyFrameBuffers(device);
 
     delete pipeline; // Destruye pipeline y pipelineLayout
 
     // 7. Render pass
     vkDestroyRenderPass(device, renderPass, nullptr);
 
-    // 8. Image views del swapchain
-    for (auto imageView : swapchainImageViews) {
-        vkDestroyImageView(device, imageView, nullptr);
-    }
+    delete swapChain;
 
-    // 9. Swapchain
-    vkDestroySwapchainKHR(device, swapchain, nullptr);
-
-    // 10. Buffers de vértices/índices/uniforms y su memoria
   
-
-    // 11. Descriptor pool / descriptor set layout (si usas uniforms/texturas)
-
-
     // 12. Device (después de TODO lo que dependía de él)
     vkDestroyDevice(device, nullptr);
 
@@ -228,10 +192,11 @@ void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
 
     VkClearValue clearColor = { {{0.0f, 0.0f, 0.0f, 1.0f}} }; // negro
 
+    VkExtent2D swapchainExtent = swapChain->getSwapchainExtent();
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType             = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassInfo.renderPass        = renderPass;
-    renderPassInfo.framebuffer       = swapchainFramebuffers[imageIndex];
+    renderPassInfo.framebuffer       = swapChain->getFramebuffer(imageIndex);
     renderPassInfo.renderArea.offset = {0, 0};
     renderPassInfo.renderArea.extent = swapchainExtent;
     renderPassInfo.clearValueCount   = 1;
@@ -286,12 +251,8 @@ void Renderer::update(Menu* renderMenu)
 
     // 2. Adquirir la siguiente imagen disponible de la swapchain
     uint32_t imageIndex;
-    VkResult result = vkAcquireNextImageKHR(device, swapchain, UINT64_MAX,
-        imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
-
-    if (result == VK_ERROR_OUT_OF_DATE_KHR) return;
-    if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-        SDL_Log("(VULKAN) Error al adquirir imagen in update().");
+    
+    if (!swapChain->acquireNextImage(imageAvailableSemaphores[currentFrame], &imageIndex)){
         return;
     }
 
@@ -323,21 +284,7 @@ void Renderer::update(Menu* renderMenu)
     }
 
     // 6. Presentar la imagen ya renderizada
-    VkPresentInfoKHR presentInfo{};
-    presentInfo.sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-    presentInfo.waitSemaphoreCount = 1;
-    presentInfo.pWaitSemaphores    = signalSemaphores;
-    presentInfo.swapchainCount     = 1;
-    presentInfo.pSwapchains        = &swapchain;
-    presentInfo.pImageIndices      = &imageIndex;
-
-    result = vkQueuePresentKHR(presentQueue, &presentInfo);
-
-    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
-        // recreateSwapchain(); // implementar más adelante
-    } else if (result != VK_SUCCESS) {
-        SDL_Log("(VULKAN) Error: fallo al presentar la imagen.");
-    }
+    swapChain->presentImage(presentQueue, imageIndex, signalSemaphores);
 
     // 7. Avanzar al siguiente frame en vuelo (round-robin entre los N slots)
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
