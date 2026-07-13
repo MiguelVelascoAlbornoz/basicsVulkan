@@ -152,10 +152,20 @@ uint32_t presentQueueFamilyIndex = 0xFFFFFFFF;
 // ==================== Pipeline gráfico ====================
 
 /// @brief Render pass, describe los attachments y su manejo a lo largo de las subpasses.
+/** @note RenderPass define:
+ * 
+- Cuántos attachments hay (color, depth, etc.)
+
+- Sus formatos
+
+- Cómo se cargan/guardan
+
+- Los subpasses
+ */
 VkRenderPass renderPass = VK_NULL_HANDLE;
 
-SwapChain* swapChain;
-Pipeline* pipeline; /**< @brief Pipeline gráfico: shaders + estado de rasterización/blending/etc. empaquetados como un solo objeto inmutable. */
+SwapChain* swapChain = NULL;
+Pipeline* pipeline = NULL; /**< @brief Pipeline gráfico: shaders + estado de rasterización/blending/etc. empaquetados como un solo objeto inmutable. */
 // ==================== Comandos ====================
 
 /// @brief Pool desde el cual se asignan los command buffers.
@@ -170,12 +180,12 @@ std::vector<VkCommandBuffer> commandBuffers;
 static const int MAX_FRAMES_IN_FLIGHT = 2;
 
 /// @brief Semáforos señalados cuando la imagen de la swapchain está lista para dibujar en ella. Uno por frame en vuelo.
-std::vector<VkSemaphore> imageAvailableSemaphores;
+std::vector<VkSemaphore> imageAvailableSemaphores = {};
 
 /// @brief Semáforos señalados cuando terminó de dibujarse el frame, antes de presentar. Uno por frame en vuelo.
-std::vector<VkSemaphore> renderFinishedSemaphores;
+std::vector<VkSemaphore> renderFinishedSemaphores = {};
 
-std::vector<VkFence> inFlightFences; /**< @brief Vallas (fences) que bloquean la CPU hasta que la GPU terminó de procesar un frame. Uno por frame en vuelo. */
+std::vector<VkFence> inFlightFences = {}; /**< @brief Vallas (fences) que bloquean la CPU hasta que la GPU terminó de procesar un frame. Uno por frame en vuelo. */
 
 /// @brief Índice del frame actual dentro del ciclo de MAX_FRAMES_IN_FLIGHT.
 uint32_t currentFrame = 0;

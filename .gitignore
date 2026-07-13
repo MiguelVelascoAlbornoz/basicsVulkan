@@ -7,3 +7,4 @@ html/*
 !html/js/main.js
 *.o
 *.d
+*.spv

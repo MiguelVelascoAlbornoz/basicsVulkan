@@ -43,9 +43,9 @@ bool Renderer::createVulkanInstance(){
         #endif
     } else {
         std::cout << "(VULKAN) Vulkan no está disponible. Código: " << result << "\n";
-        error = true;
-        return;
+        return false;
     }
+    return true;
 }
 bool Renderer::pickPhysicalDevice() {
     

@@ -105,7 +105,8 @@ void Renderer::initVulkan(Window* window)  {
             error = true;
             return;
         }
-        pipeline =new Pipeline(device, renderPass);
+    
+        pipeline =new Pipeline(device, renderPass,"default");
         if (pipeline->error) {
             error = true;
             return;
@@ -145,41 +146,62 @@ Renderer::~Renderer()
     ImGui::DestroyContext();
    
     // 3. Sincronización (semáforos y fences, uno por frame in-flight normalmente)
+    if (!imageAvailableSemaphores.empty() || !renderFinishedSemaphores.empty() || !inFlightFences.empty()) {
+
+    
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
-        vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
-        vkDestroyFence(device, inFlightFences[i], nullptr);
+        if (imageAvailableSemaphores[i] != VK_NULL_HANDLE) {
+            vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
+            break;
+
+        }
+        if (renderFinishedSemaphores.empty() || renderFinishedSemaphores[i] != VK_NULL_HANDLE) {
+            vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
+            break;
+        }
+        if (inFlightFences.empty()  || inFlightFences[i] != VK_NULL_HANDLE) {
+            vkDestroyFence(device, inFlightFences[i], nullptr);
+            break;
+        }
+      
+      }
+    }
+    // 4. Command pool (destruye automáticamente los command buffers alocados de él)
+    if (commandPool != VK_NULL_HANDLE) {
+        vkDestroyCommandPool(device, commandPool, nullptr);
     }
 
-    // 4. Command pool (destruye automáticamente los command buffers alocados de él)
-    vkDestroyCommandPool(device, commandPool, nullptr);
-
     // 5. Framebuffers (uno por imagen del swapchain)
-    swapChain->destroyFrameBuffers(device);
-
-    delete pipeline; // Destruye pipeline y pipelineLayout
+    if (swapChain) {
+        swapChain->destroyFrameBuffers(device);
+    }
+    if (pipeline) {
+        delete pipeline;
+    }
 
     // 7. Render pass
-    vkDestroyRenderPass(device, renderPass, nullptr);
-
-    delete swapChain;
-
+    if (renderPass != VK_NULL_HANDLE) {
+        vkDestroyRenderPass(device, renderPass, nullptr);
+    }
+    if (swapChain) {
+        delete swapChain;
+    }
   
     // 12. Device (después de TODO lo que dependía de él)
-    vkDestroyDevice(device, nullptr);
-
+    if (device != VK_NULL_HANDLE) {
+        vkDeviceWaitIdle(device);
+    }
     // 13. Surface (depende de la instancia, no del device)
-    vkDestroySurfaceKHR(instance, surface, nullptr);
+    if (surface != VK_NULL_HANDLE){
+        vkDestroySurfaceKHR(instance, surface, nullptr);
+    }
 
     // 14. Instancia (lo último, siempre)
-    vkDestroyInstance(instance, nullptr);
-
+    if (instance != VK_NULL_HANDLE) {
+        vkDestroyInstance(instance, nullptr);
+    }
 }
-/**
- * @brief Records the draw commands for a single frame into the given command buffer.
- * @param commandBuffer The command buffer to record into (already allocated, will be reset before recording).
- * @param imageIndex Index of the swapchain image/framebuffer to render into.
- */
+
 void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
 {
     VkCommandBufferBeginInfo beginInfo{};

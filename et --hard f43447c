@@ -1,0 +1,25 @@
+[33m4eb7a57[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m HEAD@{0}: rebase (abort): returning to refs/heads/main
+[33m4eb7a57[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m HEAD@{1}: rebase (abort): returning to refs/heads/main
+[33mc9aa079[m HEAD@{2}: commit: NO SE QUE PSSA
+[33m0d20abe[m HEAD@{3}: commit: Descartar
+[33md632215[m HEAD@{4}: commit: Cambios descartados
+[33mf43447c[m HEAD@{5}: reset: moving to HEAD
+[33mf43447c[m HEAD@{6}: commit: Maked ~Renderer() and now ImGUI reads events again
+[33m7aabd67[m HEAD@{7}: commit: Implement Vulkan rendering backend with shader support and synchronization objects
+[33mb1f261f[m HEAD@{8}: commit: feat: Implement swapchain creation in Renderer class
+[33m0ae42ac[m HEAD@{9}: commit: feat: Add initial implementation of Renderer and Window classes with Vulkan support
+[33md68d75e[m HEAD@{10}: commit: -Added testVulkan()
+[33mb5d2ed8[m HEAD@{11}: reset: moving to b5d2ed81587dae08b76ff90c2e2c110095ea7725
+[33m00647cb[m HEAD@{12}: commit: A
+[33m7094bbb[m HEAD@{13}: commit: Revert "Trash commit"
+[33m8015d55[m HEAD@{14}: reset: moving to 8015d552df08fa9959b5f61f69e8c606c92cf478
+[33m8015d55[m HEAD@{15}: commit: Trash commit
+[33mb5d2ed8[m HEAD@{16}: commit: GLM and Vulkan libraries implemented
+[33m2426e08[m HEAD@{17}: commit (amend): -Project version define now exists. Changed ming32 by ming64 compiler. -Window class constructor created
+[33md172873[m HEAD@{18}: commit: -Project version define added
+[33m136b1f6[m HEAD@{19}: commit: Restructure project in preparation for Window class implementation
+[33m4eb7a57[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m HEAD@{20}: commit: Added preprocessor variable for project version
+[33ma407ae2[m HEAD@{21}: commit: -Added preprocessor variable for project version
+[33ma46638e[m HEAD@{22}: commit: Add Doxygen configuration and initial HTML documentation structure
+[33m8c76a2f[m HEAD@{23}: commit: Add main.cpp with basic project structure and debug/release mode output
+[33m5059ccd[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{24}: clone: from https://github.com/MiguelVelascoAlbornoz/basicsVulkan.git

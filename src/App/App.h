@@ -21,13 +21,18 @@ public:
     void startMenu();
     void initMenus();
     App();
-    Window* window; /**< window pointer, must be deleted must be deleted and end*/
-    Renderer* renderer; /**< renderer pointer, must be deleted at end */
-    MenuManager* menuManager; /**< menu manager pointer, must be deleted at end */
+    Window* window = NULL; /**< window pointer, must be deleted must be deleted and end*/
+    Renderer* renderer = NULL; /**< renderer pointer, must be deleted at end */
+    MenuManager* menuManager= NULL; /**< menu manager pointer, must be deleted at end */
     ~App() {
         delete window;
-        delete renderer;
-        delete menuManager;
+        if (renderer) {
+            delete renderer;
+        }
+       
+        if (menuManager) {
+            delete menuManager;
+        }
     }
 private:
     /**
