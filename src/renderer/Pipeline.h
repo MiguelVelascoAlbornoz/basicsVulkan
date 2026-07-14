@@ -4,10 +4,17 @@
 #include <Vulkan/vulkan.h>
 #include <vector>
 #include <string>
+#include "VulkanDevice.h"
 
 class Pipeline {
 
     public:
+        /**
+     * @brief Wraps SPIR-V bytecode into a VkShaderModule so it can be used in a pipeline shader stage.
+     * @param code The raw SPIR-V bytecode, read from a compiled .spv file.
+     * @details Vulkan does not compile GLSL; this only packages bytecode that was already compiled offline (e.g. with glslc) into a Vulkan object. codeSize must be a multiple of 4, since SPIR-V is a stream of 32-bit words.
+     * @return A valid VkShaderModule handle. Throws std::runtime_error if creation fails.
+     */
         VkShaderModule createShaderModule( const std::vector<char> &code);
         /**
          * @brief Loads a shader from a file, compiles it to SPIR-V, and creates a Vulkan shader module.
@@ -28,15 +35,14 @@ class Pipeline {
          * 7. Destroy the shader modules (no longer needed once the pipeline is built).
          * @note Requires createPipelineLayout() and createRenderPass() to have run first.
          */
-        Pipeline(VkDevice device, VkRenderPass renderPass, std::string shaderName);
+        Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, std::string shaderName);
         ~Pipeline();
-        VkDevice device = VK_NULL_HANDLE;
         bool error = false;
         void bind(VkCommandBuffer commandBuffer) {
             vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
         }
     private:
-        
+        VulkanDevice* vulkanDevice = NULL;
         VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
         VkPipeline graphicsPipeline = VK_NULL_HANDLE;
 };

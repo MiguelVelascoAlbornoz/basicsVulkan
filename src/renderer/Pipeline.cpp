@@ -1,8 +1,11 @@
 #include "Pipeline.h"
 #include <cstdlib>
+#include <memory>
 #include <iostream>
 
 VkShaderModule Pipeline::createShaderModule(const std::vector<char>& code) {
+    VkDevice device = vulkanDevice->getDevice();
+
     VkShaderModuleCreateInfo createInfo{};
     createInfo.sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     createInfo.codeSize = code.size();
@@ -34,6 +37,23 @@ static bool readFile(std::string filename, std::vector<char> &buffer) {
     return true;
 
 }
+std::string execCommand(const std::string& cmd) {
+    std::vector<char> buffer;
+    std::string result;
+
+#ifdef _WIN32
+    std::unique_ptr<FILE, decltype(&_pclose)> pipe(_popen(cmd.c_str(), "r"), _pclose);
+#else
+    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
+#endif
+
+    if (!pipe) throw std::runtime_error("popen() falló");
+    char tempByte;
+    while (fread(&tempByte, sizeof(char), 1, pipe.get()) == 1) {
+        buffer.push_back(tempByte);
+    }
+    return std::string(buffer.begin(), buffer.end());
+}
 bool Pipeline::loadShader(std::string shaderName, VkShaderModule &shaderModule, std::string shaderType) {
 
     std::string shaderPath = std::string("assets/shaders/"+shaderType+"/") + shaderName + "."+shaderType;
@@ -44,16 +64,16 @@ bool Pipeline::loadShader(std::string shaderName, VkShaderModule &shaderModule, 
     #ifdef _DEBUG
     std::cout << "(VULKAN) Compilando shader: " << shaderPath << std::endl;
     #endif
-    int result = system(("glslc "+shaderPath+" -o "+shaderPathSPV).c_str());
-    printf("\n");
- 
-    if (result) {
-        std::cout << ("(VULKAN) Error in loadShaders(): Error al ejecutar el compilador del shader: "+std::string(shaderName))+"."+shaderType << std::endl;
-        return false;
-    }
+    std::string commandOut = execCommand(("glslc "+shaderPath+" -o "+shaderPathSPV).c_str());
+    std::cout << commandOut << std::endl;
+
+   // if (result) {
+   //     std::cout << ("(VULKAN) Error in loadShaders(): Error al ejecutar el compilador del shader: "+std::string(shaderName))+"."+shaderType << std::endl;
+   //     return false;
+   // }
 
     std::vector<char> shaderCode;
-    result = readFile(shaderPathSPV, shaderCode);
+    bool result = readFile(shaderPathSPV, shaderCode);
     if (!result) {
         std::cout << ("(VULKAN) Error in loadShaders(): Shader \""+ std::string(shaderName) +"\" no compilado.") << std::endl;
         return false;
@@ -63,9 +83,10 @@ bool Pipeline::loadShader(std::string shaderName, VkShaderModule &shaderModule, 
     return true;
 }
  
-Pipeline::Pipeline(VkDevice device, VkRenderPass renderPass, std::string shaderName)
+Pipeline::Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, std::string shaderName)
 {
-    this->device = device;
+    this->vulkanDevice = vulkanDevice;
+    VkDevice device = vulkanDevice->getDevice();
     
     VkShaderModule vertShaderModule;
     VkShaderModule fragShaderModule;
@@ -189,6 +210,8 @@ Pipeline::Pipeline(VkDevice device, VkRenderPass renderPass, std::string shaderN
 
 Pipeline::~Pipeline()
 {   
+    VkDevice device = vulkanDevice->getDevice();
+
     if (device != VK_NULL_HANDLE) {
         if (graphicsPipeline != VK_NULL_HANDLE) {
             vkDestroyPipeline(device, graphicsPipeline, nullptr);

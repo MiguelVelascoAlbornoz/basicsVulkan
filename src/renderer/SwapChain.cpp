@@ -2,9 +2,14 @@
 #include <iostream>
 #include <algorithm>
 #include "Window.h"
-SwapChain::SwapChain(VkPhysicalDevice physicalDevice,VkDevice device,Window* window)
-{
-    this->device = device;
+
+SwapChain::SwapChain(VulkanDevice* vulkanDevice,Window* window)
+{  
+
+    this->vulkanDevice = vulkanDevice;
+    VkPhysicalDevice physicalDevice = vulkanDevice->getPhysicalDevice();
+    VkDevice device = vulkanDevice->getDevice();
+
     VkSurfaceKHR surface = window->surface;
     // Capacidades de la surface
     VkSurfaceCapabilitiesKHR capabilities;
@@ -116,6 +121,8 @@ SwapChain::SwapChain(VkPhysicalDevice physicalDevice,VkDevice device,Window* win
 }
 SwapChain::~SwapChain()
 {
+    VkDevice device = vulkanDevice->getDevice();
+
     // 8. Image views del swapchain
     for (auto imageView : swapchainImageViews) {
         vkDestroyImageView(device, imageView, nullptr);
@@ -126,6 +133,8 @@ SwapChain::~SwapChain()
 }
 bool SwapChain::createImageViews()
 {
+    VkDevice device = vulkanDevice->getDevice();
+
     swapchainImageViews.resize(swapchainImages.size());
 
     for (size_t i = 0; i < swapchainImages.size(); i++) {
@@ -163,6 +172,7 @@ bool SwapChain::createImageViews()
 }
 bool SwapChain::createFramebuffers(VkRenderPass renderPass)
 {
+    VkDevice device = vulkanDevice->getDevice();
     // Un framebuffer por cada image view de la swapchain
     swapchainFramebuffers.resize(swapchainImageViews.size());
 
@@ -204,6 +214,8 @@ void SwapChain::destroyFrameBuffers(VkDevice device) {
 
 bool SwapChain::acquireNextImage(VkSemaphore imageAvailableSemaphore, uint32_t *pImageIndex)
 {
+    VkDevice device = vulkanDevice->getDevice();
+
     VkResult result = vkAcquireNextImageKHR(device, swapchain, UINT64_MAX,
         imageAvailableSemaphore, VK_NULL_HANDLE, pImageIndex);
     if (result == VK_ERROR_OUT_OF_DATE_KHR) return false;
@@ -214,7 +226,7 @@ bool SwapChain::acquireNextImage(VkSemaphore imageAvailableSemaphore, uint32_t *
     return true;
 }
 
-bool SwapChain::presentImage(VkQueue presentQueue, uint32_t imageIndex, VkSemaphore* renderFinishedSemaphore)
+bool SwapChain::presentImage(uint32_t imageIndex, VkSemaphore* renderFinishedSemaphore)
 {
     VkPresentInfoKHR presentInfo{};
     presentInfo.sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -224,13 +236,7 @@ bool SwapChain::presentImage(VkQueue presentQueue, uint32_t imageIndex, VkSemaph
     presentInfo.pSwapchains        = &swapchain;
     presentInfo.pImageIndices      = &imageIndex;
 
-    VkResult result = vkQueuePresentKHR(presentQueue, &presentInfo);
-
-    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
-        // recreateSwapchain(); // implementar más adelante
-        return false;
-    } else if (result != VK_SUCCESS) {
-        SDL_Log("(VULKAN) Error: fallo al presentar la imagen.");
+    if (!vulkanDevice->presentKHR(&presentInfo)) {
         return false;
     }
     return true;

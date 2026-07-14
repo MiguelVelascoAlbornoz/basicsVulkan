@@ -7,7 +7,6 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
-
 #include <functional>
 #include "../Menu/Menu.h"
 #include "Pipeline.h"
@@ -27,7 +26,7 @@ class Renderer {
          * @brief Destructor of the Renderer class.
          * @details Destroys the SDL renderer to clean up resources when the Renderer object is destroyed.
          */
-        ~Renderer();;
+        ~Renderer();
         bool error = false; /**< @brief Flag to indicate if there was an error during initialization. */
         SDL_Renderer* renderer;
         void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
@@ -42,7 +41,6 @@ class Renderer {
          */
         void updateGUI(Menu* menu);
 
-        void updateGUI();
 private:
     void initGUI(Window *window);
     /**< @brief Initializes Vulkan for rendering.
@@ -56,21 +54,6 @@ private:
      */
     bool createVulkanInstance();
 
-    // Métodos de inicialización
-    /**
-     * @brief Sees which ones are the availables GPUs and picks the best one for the application.
-     * @details This method enumerates the available physical devices (GPUs) in the system in DEBUG mode
-     */
-    bool pickPhysicalDevice();
-
-    /**
-     * @brief Creates a logical device from the selected physical device which is the comunication channel between the application and the GPU.
-     * @details 3 main objectives:
-     * 1. Especifies which queues the application will use for rendering and presentation.
-     * 2. Especifies the features and extensions that the application requires from the physical device.
-     * 3. Creates the logical device and retrieves the handles to the specified queues.
-     */
-    bool createLogicalDevice();
 
     /**
      * @brief Creates the render pass, which describes the attachments (color, depth, etc.) used during rendering and how they are handled across subpasses.
@@ -83,36 +66,7 @@ private:
      */
     bool createRenderPass();
 
-    /**
-     * @brief Wraps SPIR-V bytecode into a VkShaderModule so it can be used in a pipeline shader stage.
-     * @param code The raw SPIR-V bytecode, read from a compiled .spv file.
-     * @details Vulkan does not compile GLSL; this only packages bytecode that was already compiled offline (e.g. with glslc) into a Vulkan object. codeSize must be a multiple of 4, since SPIR-V is a stream of 32-bit words.
-     * @return A valid VkShaderModule handle. Throws std::runtime_error if creation fails.
-     */
-    VkShaderModule createShaderModule(const std::vector<char> &code);
 
-    /**
-     * @brief Creates the pipeline layout, which describes the descriptor set layouts and push constant ranges accessible to the shaders.
-     * @details Currently empty (no descriptor sets, no push constants), but required before createPipeline() since VkGraphicsPipelineCreateInfo needs a valid VkPipelineLayout.
-     */
-    bool createPipelineLayout();
-
-
-
-
-
-
-    /**
-     * @brief Creates the command pool from which command buffers are allocated.
-     * @details Command buffers allocated from this pool are submitted to the graphics queue family (graphicsFamilyIndex). Uses VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT to allow individual command buffers to be reset/re-recorded each frame.
-     */
-    bool createCommandPool();
-
-    /**
-     * @brief Allocates the primary command buffers used to record draw commands, one per frame in flight.
-     * @details Allocated from commandPool with VK_COMMAND_BUFFER_LEVEL_PRIMARY (submittable directly to a queue). The number allocated is MAX_FRAMES_IN_FLIGHT.
-     */
-    bool createCommandBuffers();
 
     /**
      * @brief Creates the synchronization primitives needed to coordinate CPU/GPU and GPU/GPU work per frame in flight.
@@ -133,21 +87,6 @@ VkSurfaceKHR surface = VK_NULL_HANDLE;
 /// @brief GPU física seleccionada por pickPhysicalDevice().
 VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 
-/// @brief Dispositivo lógico, canal de comunicación con la GPU seleccionada.
-VkDevice device = VK_NULL_HANDLE;
-
-/// @brief Cola de comandos de graphics, donde se envían los command buffers de dibujo.
-VkQueue graphicsQueue = VK_NULL_HANDLE;
-
-/// @brief Cola de presentación, usada para mostrar imágenes en la superficie.
-VkQueue presentQueue = VK_NULL_HANDLE;
-
-/// @brief Índice de la queue family que soporta operaciones de graphics.
-uint32_t graphicsQueueFamilyIndex = 0xFFFFFFFF;
-
-/// @brief Índice de la queue family que soporta presentación en la superficie.
-uint32_t presentQueueFamilyIndex = 0xFFFFFFFF;
-
 
 // ==================== Pipeline gráfico ====================
 
@@ -164,12 +103,12 @@ uint32_t presentQueueFamilyIndex = 0xFFFFFFFF;
  */
 VkRenderPass renderPass = VK_NULL_HANDLE;
 
+VulkanDevice* vulkanDevice = NULL;
+
 SwapChain* swapChain = NULL;
 Pipeline* pipeline = NULL; /**< @brief Pipeline gráfico: shaders + estado de rasterización/blending/etc. empaquetados como un solo objeto inmutable. */
 // ==================== Comandos ====================
 
-/// @brief Pool desde el cual se asignan los command buffers.
-VkCommandPool commandPool = VK_NULL_HANDLE;
 
 /// @brief Command buffers de dibujo, uno por cada frame en vuelo (ver MAX_FRAMES_IN_FLIGHT).
 std::vector<VkCommandBuffer> commandBuffers;

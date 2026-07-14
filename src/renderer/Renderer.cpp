@@ -7,7 +7,7 @@
 #include <iostream>
 #include <imGUI\imgui.h>
 #include <imGUI\imgui_impl_sdl3.h>
-#include <imGUI\imgui_impl_vulkan.h>
+
 #include <SDL3/SDL_vulkan.h>
 
 
@@ -27,32 +27,12 @@ void Renderer::initGUI(Window* window)
     ImGui::StyleColorsDark();
    ImGui_ImplSDL3_InitForVulkan(window->window);
  
-     // Descriptor pool dedicado para ImGui
-    VkDescriptorPoolSize poolSizes[] = { { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100 } };
-    VkDescriptorPoolCreateInfo poolInfo{};
-    poolInfo.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    poolInfo.flags         = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-    poolInfo.maxSets       = 100;
-    poolInfo.poolSizeCount = 1;
-    poolInfo.pPoolSizes    = poolSizes;
-    vkCreateDescriptorPool(device, &poolInfo, nullptr, &imguiDescriptorPool);
 
-    ImGui_ImplVulkan_InitInfo info = {};
-    info.Instance            = instance;
-    info.PhysicalDevice      = physicalDevice;
-    info.Device              = device;
-    info.QueueFamily         = graphicsQueueFamilyIndex;
-    info.Queue               = graphicsQueue;
-    info.DescriptorPool      = imguiDescriptorPool;
-    info.MinImageCount       = 2;
-    info.ImageCount          = swapChain->getImageCount();
-    info.Allocator           = nullptr;
-    info.CheckVkResultFn     = nullptr;
-
-
+    ImGui_ImplVulkan_InitInfo info = vulkanDevice->getImGuiInfo(imguiDescriptorPool, instance,swapChain->getImageCount());
     info.PipelineInfoMain.RenderPass   = renderPass;
     info.PipelineInfoMain.Subpass      = 0;
     info.PipelineInfoMain.MSAASamples  = VK_SAMPLE_COUNT_1_BIT;
+
 
     bool ok2 = ImGui_ImplVulkan_Init(&info);
 
@@ -91,29 +71,39 @@ void Renderer::initVulkan(Window* window)  {
         #endif
     }
     window->surface = surface;
-    if (!pickPhysicalDevice() ||
-     !createLogicalDevice() ) {
-            error = true;
-            return;
+    vulkanDevice = new VulkanDevice(instance,surface);
+        if (vulkanDevice->error) {
+        error = true;
+        return;
         }
-        swapChain = new SwapChain(physicalDevice,device,window);
+   
+        swapChain = new SwapChain(vulkanDevice,window);
         if (swapChain->error){
             error = true;
             return;
         }
+
         if (!createRenderPass() || !swapChain->createFramebuffers(renderPass)){
             error = true;
             return;
         }
     
-        pipeline =new Pipeline(device, renderPass,"default");
+        pipeline =new Pipeline(vulkanDevice, renderPass,"default");
         if (pipeline->error) {
             error = true;
             return;
         }
+        if (!vulkanDevice->createCommandPool()) {
+            error = true;
+            return;
+        }
+        if (!vulkanDevice->createCommandBuffers(commandBuffers)) {
+            error = true;
+            return;
+        }
         if (
-           !createCommandPool() ||
-            !createCommandBuffers() ||
+           
+         
              !createSyncObjects()
         ) {
         error = true;
@@ -139,6 +129,7 @@ Renderer::Renderer(Window *window)
 
 Renderer::~Renderer()
 {
+    VkDevice device = vulkanDevice->getDevice();
     vkDeviceWaitIdle(device);
     //ImGui
     ImGui_ImplVulkan_Shutdown();
@@ -166,10 +157,7 @@ Renderer::~Renderer()
       
       }
     }
-    // 4. Command pool (destruye automáticamente los command buffers alocados de él)
-    if (commandPool != VK_NULL_HANDLE) {
-        vkDestroyCommandPool(device, commandPool, nullptr);
-    }
+
 
     // 5. Framebuffers (uno por imagen del swapchain)
     if (swapChain) {
@@ -187,9 +175,8 @@ Renderer::~Renderer()
         delete swapChain;
     }
   
-    // 12. Device (después de TODO lo que dependía de él)
-    if (device != VK_NULL_HANDLE) {
-        vkDeviceWaitIdle(device);
+    if (vulkanDevice) {
+         delete vulkanDevice;
     }
     // 13. Surface (depende de la instancia, no del device)
     if (surface != VK_NULL_HANDLE){
@@ -256,6 +243,7 @@ void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
 
 void Renderer::update(Menu* renderMenu)
 {
+    VkDevice device = vulkanDevice->getDevice();
     // 1. Preparar frame de ImGui (antes de tocar el command buffer)
     ImGui_ImplSDL3_NewFrame();
     ImGui_ImplVulkan_NewFrame();
@@ -300,13 +288,12 @@ void Renderer::update(Menu* renderMenu)
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores    = signalSemaphores;
 
-    if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
-        SDL_Log("(VULKAN) Error: fallo al enviar el command buffer a la cola.");
+    if (!vulkanDevice->queueSubmit(&submitInfo, inFlightFences[currentFrame])){
         return;
     }
 
     // 6. Presentar la imagen ya renderizada
-    swapChain->presentImage(presentQueue, imageIndex, signalSemaphores);
+    swapChain->presentImage(imageIndex, signalSemaphores);
 
     // 7. Avanzar al siguiente frame en vuelo (round-robin entre los N slots)
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;

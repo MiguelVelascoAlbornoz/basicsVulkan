@@ -8,3 +8,4 @@ html/*
 *.o
 *.d
 *.spv
+*.exe

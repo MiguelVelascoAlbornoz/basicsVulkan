@@ -4,7 +4,7 @@
 #include <vector>
 #include <Vulkan/vulkan.h>
 #include "Window.h"
-
+#include "VulkanDevice.h"
 /**
  * @brief The SwapChain class encapsulates the creation and management of a Vulkan swapchain, which is a series of images that are presented to the screen in a loop.
  * @details El swapChain necesita su Device, es un vector de VKImages, VKImagesViews, VkFramebuffers.
@@ -28,9 +28,9 @@ public:
      * 7. Obtener las imágenes del swapchain
      * 8. Crear un ImageView para cada imagen
      **/
-    SwapChain(VkPhysicalDevice physicalDevice,VkDevice devices, Window* window);
+    SwapChain(VulkanDevice *vulkanDevice, Window *window);
     ~SwapChain();
-        /**
+    /**
      * @brief Creates the image views for each image in the swapchain, so they can be used as attachments in the framebuffers.
      * @details A VkImage by itself cannot be accessed directly by the pipeline; it needs a VkImageView that describes how to interpret it (format, type, mip levels, array layers). Creates one VkImageView per VkImage in swapchainImages, storing them in swapchainImageViews.
      */
@@ -49,17 +49,16 @@ public:
      * @brief Acquires the next available image from the swapchain for rendering.
      * @returns true if the image was successfully acquired, false if the swapchain is out of date or suboptimal (requiring recreation).
      */
-    
-    bool acquireNextImage(VkSemaphore imageAvailableSemaphore, uint32_t* pImageIndex);
+    bool presentImage(uint32_t imageIndex, VkSemaphore *renderFinishedSemaphore);
     /**
      * @brief Presents the rendered image to the screen using the specified present queue.
      * @returns true if the image was successfully presented, false if the swapchain is out of date or suboptimal (requiring recreation).
      */
-    bool presentImage(VkQueue presentQueue, uint32_t imageIndex, VkSemaphore *renderFinishedSemaphore);
+    bool acquireNextImage(VkSemaphore imageAvailableSemaphore, uint32_t* pImageIndex);
 
     int getImageCount() const { return static_cast<int>(swapchainImages.size()); } /**< @brief Get the number of images in the swapchain. */
 private:
-    VkDevice device = VK_NULL_HANDLE;
+    VulkanDevice* vulkanDevice = NULL;
 
     VkSwapchainKHR swapchain = VK_NULL_HANDLE;
     std::vector<VkImage> swapchainImages;
