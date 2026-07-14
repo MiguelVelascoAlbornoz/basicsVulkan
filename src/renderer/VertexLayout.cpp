@@ -1,19 +1,20 @@
 #include "VertexLayout.h"
 
 int VertexLayout::attribsTable[INPUT_TYPE_COUNT][DATA_COUNT_FROM_INPUT_TYPE] = {
-    { sizeof(float), VK_FORMAT_R32_SFLOAT },          // FLOAT
-    { sizeof(int), VK_FORMAT_R32_SINT },              // INT
-    { sizeof(char), VK_FORMAT_R8_SINT },              // CHAR
-    { sizeof(unsigned int), VK_FORMAT_R32_UINT },     // UINT
-    { sizeof(int16_t), VK_FORMAT_R16_SINT },          // INT16
-    { sizeof(uint16_t), VK_FORMAT_R16_UINT },         // UINT16
-    { sizeof(unsigned char), VK_FORMAT_R8_UINT },     // UCHAR
-    { 3 * sizeof(float), VK_FORMAT_R32G32B32_SFLOAT },// VEC3
-    { 4 * sizeof(float), VK_FORMAT_R32G32B32A32_SFLOAT } // VEC4
+    { sizeof(float), VK_FORMAT_R32_SFLOAT, 4 },          // FLOAT
+    { sizeof(int), VK_FORMAT_R32_SINT, 4 },              // INT
+    { sizeof(char), VK_FORMAT_R8_SINT, 4 },              // CHAR
+    { sizeof(unsigned int), VK_FORMAT_R32_UINT, 4 },     // UINT
+    { sizeof(int16_t), VK_FORMAT_R16_SINT, 4 },          // INT16
+    { sizeof(uint16_t), VK_FORMAT_R16_UINT, 4 },         // UINT16
+    { sizeof(unsigned char), VK_FORMAT_R8_UINT, 4 },     // UCHAR
+    { 3 * sizeof(float), VK_FORMAT_R32G32B32_SFLOAT, 16 },// VEC3
+    { 4 * sizeof(float), VK_FORMAT_R32G32B32A32_SFLOAT, 16}, // VEC4
+    { 16 * sizeof(float), VK_FORMAT_R32G32B32A32_SFLOAT, 16 } // MAT4
 };
 
 
-VertexLayout::VertexLayout(std::vector<INPUT_TYPES> inputs)
+VertexLayout::VertexLayout(std::vector<VertexLayout::INPUT_TYPES> inputs)
 {
     int offset = 0;
    
