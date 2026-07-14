@@ -7,7 +7,7 @@
 #include <iostream>
 #include <imGUI\imgui.h>
 #include <imGUI\imgui_impl_sdl3.h>
-
+#include "Mesh.h"
 #include <SDL3/SDL_vulkan.h>
 
 
@@ -111,6 +111,7 @@ void Renderer::initVulkan(Window* window)  {
 
 }
 
+Mesh* test;
 Renderer::Renderer(Window *window)
 {
     initVulkan(window);
@@ -125,6 +126,14 @@ Renderer::Renderer(Window *window)
         std::cout << " - " << info << std::endl;
     }
     #endif
+    std::vector<float> vertices = {
+        // Posición (x, y, z)   // Color (r, g, b)
+        -0.5f, -0.5f, 0.0f,    1.0f, 0.0f, 0.0f, // Vértice 1: rojo
+         0.5f, -0.5f, 0.0f,    0.0f, 1.0f, 0.0f, // Vértice 2: verde
+         0.0f,  0.5f, 0.0f,    0.0f, 0.0f, 1.0f  // Vértice 3: azul
+    };
+    std::vector<uint32_t> indices = { 0, 1, 2 }; // Un solo triángulo
+    test = new Mesh(vulkanDevice, vertices.data(), sizeof(float) * 6, 3, indices);
 }
 
 Renderer::~Renderer()
@@ -230,8 +239,8 @@ void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
     scissor.extent = swapchainExtent;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    vkCmdDraw(commandBuffer, 3, 1, 0, 0); // triángulo fullscreen, sin vertex buffer
-
+    test->bind(commandBuffer);
+    test->draw(commandBuffer);
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 
     vkCmdEndRenderPass(commandBuffer);

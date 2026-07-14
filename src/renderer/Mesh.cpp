@@ -2,10 +2,10 @@
 
 #include <cstring>
 
-Mesh::Mesh(VulkanDevice* device, const std::vector<char>& vertices, const std::vector<uint32_t>& indices)
+Mesh::Mesh(VulkanDevice* device, void* data, size_t dataSize, int vertexCount, const std::vector<uint32_t>& indices)
     : device(device)
 {
-    createVertexBuffer(vertices);
+    createVertexBuffer(data,dataSize,vertexCount);
     createIndexBuffer(indices);
 }
 
@@ -16,8 +16,8 @@ Mesh::~Mesh() {
     vkFreeMemory(device->device, vertexBufferMemory, nullptr);
 }
 
-void Mesh::createVertexBuffer(const std::vector<char>& data) {
-    VkDeviceSize bufferSize = sizeof(char) * data.size();
+void Mesh::createVertexBuffer(void* data, size_t dataSize, int vertexCount) {
+    VkDeviceSize bufferSize = dataSize*vertexCount;
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingMemory;
@@ -28,7 +28,7 @@ void Mesh::createVertexBuffer(const std::vector<char>& data) {
 
     void* mappedMemory;
     vkMapMemory(device->device, stagingMemory, 0, bufferSize, 0, &mappedMemory);
-    memcpy(mappedMemory, data.data(), (size_t)bufferSize); // "vertices" es tu std::vector<Vertex>
+    memcpy(mappedMemory, data, (size_t)bufferSize); // "vertices" es tu std::vector<Vertex>
     vkUnmapMemory(device->device, stagingMemory);
 
     device->createBuffer(bufferSize,

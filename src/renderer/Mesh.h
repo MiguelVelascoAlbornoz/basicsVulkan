@@ -5,10 +5,10 @@
 
 class Mesh {
 public:
-    Mesh();
-    Mesh(VulkanDevice *device, const std::vector<char> &vertices, const std::vector<uint32_t> &indices);
+
+    Mesh(VulkanDevice *device, void *data, size_t dataSize, int vertexCount, const std::vector<uint32_t> &indices);
     ~Mesh();
-    void createVertexBuffer(const std::vector<char> &data);
+    void createVertexBuffer(void *data, size_t dataSize, int vertexCount);
 
     void createIndexBuffer(const std::vector<uint32_t> &indices);
 
