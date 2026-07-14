@@ -91,7 +91,7 @@ bool Renderer::createRenderPass()
     renderPassInfo.dependencyCount = 1;
     renderPassInfo.pDependencies   = &dependency;
 
-    VkDevice device = vulkanDevice->getDevice();
+    VkDevice device = vulkanDevice->device;
     if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
         SDL_Log("(VULKAN) Error in createRenderPass(): No se pudo crear el render pass.");
         return false;
@@ -109,7 +109,7 @@ bool Renderer::createRenderPass()
 
 bool Renderer::createSyncObjects()
 {
-    VkDevice device = vulkanDevice->getDevice();
+    VkDevice device = vulkanDevice->device;
     imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);

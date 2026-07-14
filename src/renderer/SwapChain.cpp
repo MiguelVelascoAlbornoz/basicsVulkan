@@ -8,7 +8,7 @@ SwapChain::SwapChain(VulkanDevice* vulkanDevice,Window* window)
 
     this->vulkanDevice = vulkanDevice;
     VkPhysicalDevice physicalDevice = vulkanDevice->getPhysicalDevice();
-    VkDevice device = vulkanDevice->getDevice();
+    VkDevice device = vulkanDevice->device;
 
     VkSurfaceKHR surface = window->surface;
     // Capacidades de la surface
@@ -121,7 +121,7 @@ SwapChain::SwapChain(VulkanDevice* vulkanDevice,Window* window)
 }
 SwapChain::~SwapChain()
 {
-    VkDevice device = vulkanDevice->getDevice();
+    VkDevice device = vulkanDevice->device;
 
     // 8. Image views del swapchain
     for (auto imageView : swapchainImageViews) {
@@ -133,7 +133,7 @@ SwapChain::~SwapChain()
 }
 bool SwapChain::createImageViews()
 {
-    VkDevice device = vulkanDevice->getDevice();
+    VkDevice device = vulkanDevice->device;
 
     swapchainImageViews.resize(swapchainImages.size());
 
@@ -172,7 +172,7 @@ bool SwapChain::createImageViews()
 }
 bool SwapChain::createFramebuffers(VkRenderPass renderPass)
 {
-    VkDevice device = vulkanDevice->getDevice();
+    VkDevice device = vulkanDevice->device;
     // Un framebuffer por cada image view de la swapchain
     swapchainFramebuffers.resize(swapchainImageViews.size());
 
@@ -214,7 +214,7 @@ void SwapChain::destroyFrameBuffers(VkDevice device) {
 
 bool SwapChain::acquireNextImage(VkSemaphore imageAvailableSemaphore, uint32_t *pImageIndex)
 {
-    VkDevice device = vulkanDevice->getDevice();
+    VkDevice device = vulkanDevice->device;
 
     VkResult result = vkAcquireNextImageKHR(device, swapchain, UINT64_MAX,
         imageAvailableSemaphore, VK_NULL_HANDLE, pImageIndex);

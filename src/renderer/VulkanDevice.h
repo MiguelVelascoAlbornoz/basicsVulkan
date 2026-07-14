@@ -27,7 +27,6 @@ public:
 
 
     VkPhysicalDevice getPhysicalDevice() const { return physicalDevice; } /**< @brief Get the handle to the selected physical device. */
-    VkDevice getDevice() const { return device; } /**< @brief Get the handle to the logical*/
     bool queueSubmit( const VkSubmitInfo* submitInfo, VkFence fence); /**< @brief Submits a command buffer to the specified queue for execution. */
     bool presentKHR(VkPresentInfoKHR *presentInfo);
         /**
@@ -40,13 +39,22 @@ public:
      * @details Allocated from commandPool with VK_COMMAND_BUFFER_LEVEL_PRIMARY (submittable directly to a queue). The number allocated is MAX_FRAMES_IN_FLIGHT.
      */
     bool createCommandBuffers(std::vector<VkCommandBuffer> &commandBuffers);
+    void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
+                       VkMemoryPropertyFlags properties,
+                       VkBuffer& buffer, VkDeviceMemory& bufferMemory);
 
+    void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+
+    VkCommandBuffer beginSingleTimeCommands();
+    void endSingleTimeCommands(VkCommandBuffer commandBuffer);
+    uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+    VkDevice device = VK_NULL_HANDLE; /**< @brief Handle to the logical device. */
 private:
     /// @brief Pool desde el cual se asignan los command buffers.
     VkCommandPool commandPool = VK_NULL_HANDLE;
 
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE; /**< @brief Handle to the selected physical device. */
-    VkDevice device = VK_NULL_HANDLE; /**< @brief Handle to the logical device. */
+
     /// @brief Cola de comandos de graphics, donde se envían los command buffers de dibujo.
     VkQueue graphicsQueue = VK_NULL_HANDLE;
 

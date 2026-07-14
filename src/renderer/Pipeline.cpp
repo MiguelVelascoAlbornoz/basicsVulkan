@@ -4,7 +4,7 @@
 #include <iostream>
 
 VkShaderModule Pipeline::createShaderModule(const std::vector<char>& code) {
-    VkDevice device = vulkanDevice->getDevice();
+    VkDevice device = vulkanDevice->device;
 
     VkShaderModuleCreateInfo createInfo{};
     createInfo.sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -86,7 +86,7 @@ bool Pipeline::loadShader(std::string shaderName, VkShaderModule &shaderModule, 
 Pipeline::Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, std::string shaderName)
 {
     this->vulkanDevice = vulkanDevice;
-    VkDevice device = vulkanDevice->getDevice();
+    VkDevice device = vulkanDevice->device;
     
     VkShaderModule vertShaderModule;
     VkShaderModule fragShaderModule;
@@ -210,7 +210,7 @@ Pipeline::Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, std::str
 
 Pipeline::~Pipeline()
 {   
-    VkDevice device = vulkanDevice->getDevice();
+    VkDevice device = vulkanDevice->device;
 
     if (device != VK_NULL_HANDLE) {
         if (graphicsPipeline != VK_NULL_HANDLE) {

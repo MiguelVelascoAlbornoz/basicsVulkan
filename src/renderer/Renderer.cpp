@@ -129,7 +129,7 @@ Renderer::Renderer(Window *window)
 
 Renderer::~Renderer()
 {
-    VkDevice device = vulkanDevice->getDevice();
+    VkDevice device = vulkanDevice->device;
     vkDeviceWaitIdle(device);
     //ImGui
     ImGui_ImplVulkan_Shutdown();
@@ -243,7 +243,7 @@ void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
 
 void Renderer::update(Menu* renderMenu)
 {
-    VkDevice device = vulkanDevice->getDevice();
+    VkDevice device = vulkanDevice->device;
     // 1. Preparar frame de ImGui (antes de tocar el command buffer)
     ImGui_ImplSDL3_NewFrame();
     ImGui_ImplVulkan_NewFrame();

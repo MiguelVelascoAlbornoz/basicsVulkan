@@ -257,3 +257,95 @@ bool VulkanDevice::createCommandBuffers(std::vector<VkCommandBuffer> &commandBuf
 
     return true;
 }
+// VulkanDevice.cpp
+
+void VulkanDevice::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
+                                  VkMemoryPropertyFlags properties,
+                                  VkBuffer& buffer, VkDeviceMemory& bufferMemory)
+{
+    // 1. Crear el VkBuffer (esto solo describe el buffer, no reserva memoria todavía)
+    VkBufferCreateInfo bufferInfo{};
+    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferInfo.size = size;
+    bufferInfo.usage = usage;
+    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    if (vkCreateBuffer(device, &bufferInfo, nullptr, &buffer) != VK_SUCCESS) {
+        throw std::runtime_error("No se pudo crear el buffer");
+    }
+
+    // 2. Preguntar qué memoria necesita ese buffer (tamaño real, alineación, tipos compatibles)
+    VkMemoryRequirements memRequirements;
+    vkGetBufferMemoryRequirements(device, buffer, &memRequirements);
+
+    // 3. Alocar la memoria del tipo correcto (host visible, device local, etc)
+    VkMemoryAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize = memRequirements.size;
+    allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
+
+    if (vkAllocateMemory(device, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
+        throw std::runtime_error("No se pudo alocar memoria del buffer");
+    }
+
+    // 4. Asociar la memoria alocada con el buffer creado
+    vkBindBufferMemory(device, buffer, bufferMemory, 0);
+}
+uint32_t VulkanDevice::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
+    VkPhysicalDeviceMemoryProperties memProperties;
+    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+
+    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+        bool isSupported = typeFilter & (1 << i);
+        bool hasProperties = (memProperties.memoryTypes[i].propertyFlags & properties) == properties;
+
+        if (isSupported && hasProperties) {
+            return i;
+        }
+    }
+
+    throw std::runtime_error("No se encontró un tipo de memoria adecuado");
+}
+void VulkanDevice::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
+    VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+
+    VkBufferCopy copyRegion{};
+    copyRegion.size = size;
+    vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+
+    endSingleTimeCommands(commandBuffer);
+}
+VkCommandBuffer VulkanDevice::beginSingleTimeCommands() {
+    // 1. Alocar un command buffer temporal del pool existente
+    VkCommandBufferAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandPool = commandPool;
+    allocInfo.commandBufferCount = 1;
+
+    VkCommandBuffer commandBuffer;
+    vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer);
+
+    // 2. Empezar a grabar, indicando que se va a usar UNA sola vez
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+    return commandBuffer;
+}
+
+void VulkanDevice::endSingleTimeCommands(VkCommandBuffer commandBuffer) {
+    vkEndCommandBuffer(commandBuffer);
+
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
+
+    vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(graphicsQueue); // espera a que la GPU termine antes de continuar
+
+    vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
+}
