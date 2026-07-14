@@ -111,7 +111,7 @@ void Renderer::initVulkan(Window* window)  {
 
 }
 
-Mesh* test;
+
 Renderer::Renderer(Window *window)
 {
     initVulkan(window);
@@ -126,14 +126,7 @@ Renderer::Renderer(Window *window)
         std::cout << " - " << info << std::endl;
     }
     #endif
-    std::vector<float> vertices = {
-        // Posición (x, y, z)   // Color (r, g, b)
-        -0.5f, -0.5f, 0.0f,    1.0f, 0.0f, 0.0f, // Vértice 1: rojo
-         0.5f, -0.5f, 0.0f,    0.0f, 1.0f, 0.0f, // Vértice 2: verde
-         0.0f,  0.5f, 0.0f,    0.0f, 0.0f, 1.0f  // Vértice 3: azul
-    };
-    std::vector<uint32_t> indices = { 0, 1, 2 }; // Un solo triángulo
-    test = new Mesh(vulkanDevice, vertices.data(), sizeof(float) * 6, 3, indices);
+
 }
 
 Renderer::~Renderer()
@@ -198,7 +191,7 @@ Renderer::~Renderer()
     }
 }
 
-void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+void Renderer::recordCommandBuffer(Scene* scene, VkCommandBuffer commandBuffer, uint32_t imageIndex)
 {
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -239,8 +232,8 @@ void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
     scissor.extent = swapchainExtent;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    test->bind(commandBuffer);
-    test->draw(commandBuffer);
+    scene->render(commandBuffer); // Renderizar la escena (dibujar los meshes)
+
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 
     vkCmdEndRenderPass(commandBuffer);
@@ -250,7 +243,7 @@ void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
     }
 }
 
-void Renderer::update(Menu* renderMenu)
+void Renderer::update(Scene* scene, Menu* renderMenu)
 {
     VkDevice device = vulkanDevice->device;
     // 1. Preparar frame de ImGui (antes de tocar el command buffer)
@@ -280,7 +273,7 @@ void Renderer::update(Menu* renderMenu)
 
     // 4. Grabar el command buffer de este frame
     vkResetCommandBuffer(commandBuffers[currentFrame], 0);
-    recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
+    recordCommandBuffer(scene, commandBuffers[currentFrame], imageIndex);
 
     // 5. Enviar el command buffer a la cola de graphics
     VkSemaphore waitSemaphores[]      = { imageAvailableSemaphores[currentFrame] };

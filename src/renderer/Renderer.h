@@ -11,6 +11,7 @@
 #include "../Menu/Menu.h"
 #include "Pipeline.h"
 #include "SwapChain.h"
+#include "../Scene/Scene.h"
 /**
  * @brief The Renderer class encapsulates the creation and management of an SDL renderer, including error management and GUI initialization.
  * It provides methods to initialize the renderer, manage errors, and set up the GUI.
@@ -29,12 +30,13 @@ class Renderer {
         ~Renderer();
         bool error = false; /**< @brief Flag to indicate if there was an error during initialization. */
         SDL_Renderer* renderer;
-        void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+        VulkanDevice* getVulkanDevice() const { return vulkanDevice; } /**< @brief Get the Vulkan device used by the renderer. */
+        void recordCommandBuffer(Scene* scene,VkCommandBuffer commandBuffer, uint32_t imageIndex);
         /**
          * @brief Updates the renderer, including clearing the screen, rendering the GUI, and presenting the rendered content. This method should be called in the main execution loop to continuously update the display.
          * @details Clears the renderer, calls the updateGUI() method to render the GUI elements, and then presents the rendered content on the screen.
          */
-        void update(Menu* renderMenu);
+        void update(Scene* scene, Menu* renderMenu);
         /**
          * @brief Updates the GUI by starting a new ImGui frame, calling the provided renderMenu function to render the current menu, and finalizing the ImGui frame for rendering. This method should be called within the update() method to ensure that the GUI is rendered correctly.
          * @details Starts a new ImGui frame for both SDL3 and SDL_Renderer3 backends, calls the provided renderMenu function to render the current menu, and then finalizes the ImGui frame and renders the draw data using the SDL_Renderer3 backend.

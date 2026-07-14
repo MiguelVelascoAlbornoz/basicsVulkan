@@ -24,6 +24,7 @@ public:
     Window* window = NULL; /**< window pointer, must be deleted must be deleted and end*/
     Renderer* renderer = NULL; /**< renderer pointer, must be deleted at end */
     MenuManager* menuManager= NULL; /**< menu manager pointer, must be deleted at end */
+    Scene* scene = NULL; /**< scene pointer, must be deleted at end */
     ~App() {
         delete window;
         if (renderer) {
@@ -32,6 +33,9 @@ public:
        
         if (menuManager) {
             delete menuManager;
+        }
+        if (scene) {
+            delete scene;
         }
     }
 private:

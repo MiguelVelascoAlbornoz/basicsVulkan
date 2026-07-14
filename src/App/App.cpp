@@ -8,6 +8,7 @@
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
 #include <iostream>
+#include <memory>
 
 
 
@@ -29,6 +30,16 @@ App::App() {
     
     menuManager = new MenuManager(window);
 
+    scene = new Scene();
+        std::vector<float> vertices = {
+        // Posición (x, y, z)   // Color (r, g, b)
+        -0.5f, -0.5f, 0.0f,    1.0f, 0.0f, 0.0f, // Vértice 1: rojo
+         0.5f, -0.5f, 0.0f,    0.0f, 1.0f, 0.0f, // Vértice 2: verde
+         0.0f,  0.5f, 0.0f,    0.0f, 0.0f, 1.0f  // Vértice 3: azul
+    };
+    std::vector<uint32_t> indices = { 0, 1, 2 }; // Un solo triángulo
+    std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>( renderer->getVulkanDevice(), vertices.data(), sizeof(float) * 6, 3, indices);
+    scene->addMesh(mesh);
     executionLoop();
 }
 
@@ -43,7 +54,7 @@ void App::executionLoop() {
     
     while (runnig) {
         manageEvents();
-        renderer->update(menuManager->currentMenu);
+        renderer->update(scene, menuManager->currentMenu);
     }
 }
 /*
