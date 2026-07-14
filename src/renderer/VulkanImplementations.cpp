@@ -13,6 +13,22 @@ bool Renderer::createVulkanInstance(){
      * Create Vulkan instance
      */
         // Extensions necesarias para SDL3
+uint32_t layerCount;
+vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+
+std::vector<VkLayerProperties> layers(layerCount);
+vkEnumerateInstanceLayerProperties(&layerCount, layers.data());
+    std::string layerName = "";
+    std::vector<const char*> validationLayers;
+#ifdef _DEBUG
+for (const auto& layer : layers) {
+    std::cout << "(VULKAN) Available layer: " << layer.layerName << std::endl;
+    if (layer.layerName == std::string("VK_LAYER_KHRONOS_validation")) {
+        validationLayers.push_back(layer.layerName);
+    }
+}
+#endif
+
     Uint32 extensionCount = 0;
     const char* const* extensions = SDL_Vulkan_GetInstanceExtensions(&extensionCount);
     #ifdef _DEBUG
@@ -35,6 +51,12 @@ bool Renderer::createVulkanInstance(){
     createInfo.pApplicationInfo        = &appInfo;
     createInfo.enabledExtensionCount   = extensionCount;
     createInfo.ppEnabledExtensionNames = extensions;
+createInfo.enabledLayerCount =
+    static_cast<uint32_t>(validationLayers.size());
+
+createInfo.ppEnabledLayerNames =
+    validationLayers.data();
+
 
     VkResult result = vkCreateInstance(&createInfo, nullptr, &instance);
     if (result == VK_SUCCESS) {
@@ -111,7 +133,7 @@ bool Renderer::createSyncObjects()
 {
     VkDevice device = vulkanDevice->device;
     imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+    renderFinishedSemaphores.resize(swapChain->getImageCount());
     inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
 
     VkSemaphoreCreateInfo semaphoreInfo{};
@@ -121,16 +143,26 @@ bool Renderer::createSyncObjects()
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT; // arranca "señalado" para no bloquear el primer frame
 
-    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        bool ok = vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) == VK_SUCCESS
-               && vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) == VK_SUCCESS
-               && vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[i]) == VK_SUCCESS;
-
-        if (!ok) {
-            SDL_Log("(VULKAN) Error: No se pudieron crear los objetos de sincronizacion del frame %d.", i);
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        bool result = vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]);
+        if (result != VK_SUCCESS) {
+            SDL_Log("(VULKAN) Error in createSyncObjects(): No se pudo crear el semaphore imageAvailable del frame %d.", int(i));
+            return false;
+        }
+        result = vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[i]);
+        if (result != VK_SUCCESS) {
+            SDL_Log("(VULKAN) Error in createSyncObjects(): No se pudo crear el fence inFlight del frame %d.", int(i));
             return false;
         }
     }
+    for (size_t i = 0; i < renderFinishedSemaphores.size(); i++) {
+        bool result = vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]);
+        if (result != VK_SUCCESS) {
+            SDL_Log("(VULKAN) Error in createSyncObjects(): No se pudo crear el semaphore renderFinished del frame %d.", int(i));
+            return false;
+        }
+    }
+    
 
     #ifdef _DEBUG
     SDL_Log("(VULKAN) Objetos de sincronizacion creados correctamente.");

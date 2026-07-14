@@ -40,6 +40,13 @@ App::App() {
     std::vector<uint32_t> indices = { 0, 1, 2 }; // Un solo triángulo
     std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>( renderer->getVulkanDevice(), vertices.data(), sizeof(float) * 6, 3, indices);
     scene->addMesh(mesh);
+
+    std::vector<VertexLayout::INPUT_TYPES> inputs = {
+        VertexLayout::INPUT_TYPES::VEC3, // Posición
+    };
+    uniformBuffer = new UniformBuffer(renderer->getVulkanDevice(),inputs);
+    uniformBuffer->setVec3(0, glm::vec3(1.0f, 0.0f, 0.0f)); // Establece el color rojo
+    uniformBuffer->updateDescriptorSet(renderer->getVulkanDevice(), renderer->descriptorSet);
     executionLoop();
 }
 
@@ -50,8 +57,29 @@ void App::manageEvents() {
     }
 }
 
-void App::executionLoop() {
-    
+App::~App()
+{
+    vkDeviceWaitIdle(renderer->getVulkanDevice()->device);
+        if (uniformBuffer) {
+            delete uniformBuffer;
+        }
+        if (scene) {
+            delete scene;
+        }
+        delete window;
+        if (renderer) {
+            delete renderer;
+        }
+       
+        if (menuManager) {
+            delete menuManager;
+        }
+   
+    }
+
+void App::executionLoop()
+{
+
     while (runnig) {
         manageEvents();
         renderer->update(scene, menuManager->currentMenu);

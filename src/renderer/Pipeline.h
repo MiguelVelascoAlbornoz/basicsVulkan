@@ -44,7 +44,10 @@ class Pipeline {
         void bind(VkCommandBuffer commandBuffer) {
             vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
         }
+        VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
+        VkPipelineLayout getPipelineLayout() const { return pipelineLayout; } /**< @brief Get the pipeline layout handle. */
     private:
+
         VulkanDevice* vulkanDevice = NULL;
         VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
         VkPipeline graphicsPipeline = VK_NULL_HANDLE;

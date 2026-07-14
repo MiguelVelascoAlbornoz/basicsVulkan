@@ -42,7 +42,8 @@ class Renderer {
          * @details Starts a new ImGui frame for both SDL3 and SDL_Renderer3 backends, calls the provided renderMenu function to render the current menu, and then finalizes the ImGui frame and renders the draw data using the SDL_Renderer3 backend.
          */
         void updateGUI(Menu* menu);
-
+        VkDescriptorSet descriptorSet; /**< @brief Descriptor set used for rendering. */
+    
 private:
     void initGUI(Window *window);
     /**< @brief Initializes Vulkan for rendering.
@@ -133,6 +134,8 @@ uint32_t currentFrame = 0;
 
 /// @brief Descriptor pool usado por ImGui para asignar sus descriptor sets.
 VkDescriptorPool imguiDescriptorPool = VK_NULL_HANDLE; /**< @brief Descriptor pool usado por ImGui para asignar sus descriptor sets. */
+VkDescriptorPool descriptorPool = VK_NULL_HANDLE; /**< @brief Descriptor pool usado por la aplicación para asignar sus descriptor sets. */
+
 };
 
 #endif

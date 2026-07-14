@@ -82,7 +82,7 @@ void Renderer::initVulkan(Window* window)  {
             error = true;
             return;
         }
-
+        
         if (!createRenderPass() || !swapChain->createFramebuffers(renderPass)){
             error = true;
             return;
@@ -106,8 +106,40 @@ void Renderer::initVulkan(Window* window)  {
          
              !createSyncObjects()
         ) {
-        error = true;
-    }
+            error = true;
+            return;
+        }
+        VkDescriptorPoolSize poolSize{};
+        poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        poolSize.descriptorCount = 1;
+        VkDescriptorPoolCreateInfo poolInfo{};
+        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        poolInfo.poolSizeCount = 1;
+        poolInfo.pPoolSizes = &poolSize;
+        poolInfo.maxSets = 1;
+
+
+        vkCreateDescriptorPool(
+           vulkanDevice->device,
+         &poolInfo,
+         nullptr,
+         &descriptorPool
+        );
+
+        VkDescriptorSetAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfo.descriptorPool = descriptorPool;
+        allocInfo.descriptorSetCount = 1;
+        allocInfo.pSetLayouts = &pipeline->descriptorSetLayout;
+
+
+
+        vkAllocateDescriptorSets(
+          vulkanDevice->device,
+          &allocInfo,
+          &descriptorSet
+        );
+    
 
 }
 
@@ -138,6 +170,9 @@ Renderer::~Renderer()
     ImGui_ImplSDL3_Shutdown();
     ImGui::DestroyContext();
    
+    vkDestroyDescriptorPool(device, descriptorPool, nullptr);
+    vkDestroyDescriptorPool(device, imguiDescriptorPool, nullptr);
+
     // 3. Sincronización (semáforos y fences, uno por frame in-flight normalmente)
     if (!imageAvailableSemaphores.empty() || !renderFinishedSemaphores.empty() || !inFlightFences.empty()) {
 
@@ -145,18 +180,19 @@ Renderer::~Renderer()
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         if (imageAvailableSemaphores[i] != VK_NULL_HANDLE) {
             vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
-            break;
+        
 
         }
-        if (renderFinishedSemaphores.empty() || renderFinishedSemaphores[i] != VK_NULL_HANDLE) {
-            vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
-            break;
-        }
-        if (inFlightFences.empty()  || inFlightFences[i] != VK_NULL_HANDLE) {
+        if (inFlightFences[i] != VK_NULL_HANDLE) {
             vkDestroyFence(device, inFlightFences[i], nullptr);
-            break;
+       
         }
       
+      }
+      for (size_t i = 0; i < renderFinishedSemaphores.size(); i++) {
+        if (renderFinishedSemaphores[i] != VK_NULL_HANDLE) {
+            vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
+        }
       }
     }
 
@@ -231,7 +267,17 @@ void Renderer::recordCommandBuffer(Scene* scene, VkCommandBuffer commandBuffer, 
     scissor.offset = {0, 0};
     scissor.extent = swapchainExtent;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-
+    vkCmdBindDescriptorSets(
+    commandBuffer,
+    VK_PIPELINE_BIND_POINT_GRAPHICS,
+    pipeline->getPipelineLayout(),
+    0,
+    1,
+    &descriptorSet,
+    0,
+    nullptr
+);
+    
     scene->render(commandBuffer); // Renderizar la escena (dibujar los meshes)
 
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
@@ -278,7 +324,7 @@ void Renderer::update(Scene* scene, Menu* renderMenu)
     // 5. Enviar el command buffer a la cola de graphics
     VkSemaphore waitSemaphores[]      = { imageAvailableSemaphores[currentFrame] };
     VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-    VkSemaphore signalSemaphores[]    = { renderFinishedSemaphores[currentFrame] };
+    VkSemaphore signalSemaphores[]    = { renderFinishedSemaphores[imageIndex] };
 
     VkSubmitInfo submitInfo{};
     submitInfo.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;

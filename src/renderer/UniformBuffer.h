@@ -15,8 +15,11 @@ public:
         size_t offset;
         size_t size;
     };
-    UniformBuffer(VulkanDevice* device, size_t bytesCount);
-
+    ~UniformBuffer() {
+        vkUnmapMemory(device->device, memory);
+        vkDestroyBuffer(device->device, buffer, nullptr);
+        vkFreeMemory(device->device, memory, nullptr);
+    }
     UniformBuffer(VulkanDevice *device, std::vector<VertexLayout::INPUT_TYPES> inputs);
 
     void setRaw(size_t index, const void *data, size_t expectedSize);
@@ -27,7 +30,11 @@ public:
 
     void setMat4(size_t index, const glm::mat4 &value);
 
-    void sendData(void* data);
+    void updateDescriptorSet(VulkanDevice *device, VkDescriptorSet descriptorSet);
+
+
+
+
 
 private:
     std::vector<UniformField> fields;
