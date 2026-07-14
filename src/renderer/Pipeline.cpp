@@ -2,40 +2,9 @@
 #include <cstdlib>
 #include <memory>
 #include <iostream>
+#include "VertexLayout.h"
 
-int Pipeline::attribsTable[INPUT_TYPE_COUNT][DATA_COUNT_FROM_INPUT_TYPE] = {
-    { sizeof(float), VK_FORMAT_R32_SFLOAT },          // FLOAT
-    { sizeof(int), VK_FORMAT_R32_SINT },              // INT
-    { sizeof(char), VK_FORMAT_R8_SINT },              // CHAR
-    { sizeof(unsigned int), VK_FORMAT_R32_UINT },     // UINT
-    { sizeof(int16_t), VK_FORMAT_R16_SINT },          // INT16
-    { sizeof(uint16_t), VK_FORMAT_R16_UINT },         // UINT16
-    { sizeof(unsigned char), VK_FORMAT_R8_UINT },     // UCHAR
-    { 3 * sizeof(float), VK_FORMAT_R32G32B32_SFLOAT },// VEC3
-    { 4 * sizeof(float), VK_FORMAT_R32G32B32A32_SFLOAT } // VEC4
-};
 
-Pipeline::VertexLayout Pipeline::getVertexLayoutFromInputs(std::vector<INPUT_TYPES> inputs)
-{
-    VertexLayout layout;
-    int offset = 0;
-   
-    for (INPUT_TYPES input : inputs) {
-        VkVertexInputAttributeDescription attributeDescription{};
-
-        attributeDescription.binding  = 0; // Asumiendo un solo binding
-        attributeDescription.location = static_cast<uint32_t>(layout.attributes.size());
-        attributeDescription.format   = getFormatFromInputType(input);
-        attributeDescription.offset   = offset;
-        offset += getSizeFromInputType(input); // Incrementar el offset según el tamaño del tipo de entrada
-        layout.attributes.push_back(attributeDescription);
-    }
-    layout.binding.binding = 0;
-    layout.binding.stride = offset; // al terminar el loop, offset == stride total
-    layout.binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-    return layout;
-}
 
 VkShaderModule Pipeline::createShaderModule(const std::vector<char> &code)
 {
@@ -146,8 +115,8 @@ Pipeline::Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, std::str
 
     // 2. Vertex input (vacío por ahora, si el shader genera vértices internamente)
         // 2. ---- Aquí usas tu VertexLayout dinámico en vez del struct fijo ----
-    std::vector<INPUT_TYPES> vertexInputs = {VEC3, VEC3};
-    Pipeline::VertexLayout layout = getVertexLayoutFromInputs(vertexInputs);
+    std::vector<VertexLayout::INPUT_TYPES> vertexInputs = {VertexLayout::VEC3, VertexLayout::VEC3};
+    VertexLayout layout(vertexInputs);
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
