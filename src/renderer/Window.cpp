@@ -8,9 +8,31 @@
 #include <iostream>
 #include <SDL3/SDL_vulkan.h>
 
-
-Window::Window(int width= 640, int height = 480) : width(width), height(height){
+void Window::toggleFullscreen()
+{
+    if (fullscreen) {
+        width /= DEFAULT_REDUCTION_FACTOR;
+        height /= DEFAULT_REDUCTION_FACTOR;
+        SDL_SetWindowFullscreen(window, false);
+        SDL_SetWindowSize(window, width, height);
+        SDL_SetWindowPosition(window,
+                      SDL_WINDOWPOS_CENTERED,
+                      SDL_WINDOWPOS_CENTERED);
+    } else {
+        SDL_DisplayID display = SDL_GetPrimaryDisplay();
+        const SDL_DisplayMode* mode = SDL_GetCurrentDisplayMode(display);
+        width = mode->w;
+        height = mode->h;
+   
+        SDL_SetWindowFullscreen(window, true);
+        SDL_SyncWindow(window);
+    }
     
+    fullscreen = (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN) != 0;
+}
+
+void Window::inicializeSDL()
+{
     SDL_SetAppMetadata(PROJECT_NAME, PROJECT_VERSION, "com.example.renderer-clear");
   
     /**< Initialize SDL. */
@@ -19,8 +41,37 @@ Window::Window(int width= 640, int height = 480) : width(width), height(height){
         error = true;
         return;
     }
+}
+
+Window::Window(){
+    inicializeSDL();
+
+    SDL_DisplayID display = SDL_GetPrimaryDisplay();
+
+    const SDL_DisplayMode* mode = SDL_GetCurrentDisplayMode(display);
+
+    int width = mode->w;
+    int height = mode->h;
+    fullscreen = true;
+    if (!fullscreen) {
+        width /= DEFAULT_REDUCTION_FACTOR;
+        height /= DEFAULT_REDUCTION_FACTOR;
+    }
+    createWindow(width, height);
+}
+Window::Window(int width, int height) {
+    inicializeSDL();
+    createWindow(width, height);
+}
+void Window::createWindow(int width, int height) {
+
+
     /**< Create window and renderer. */
-    window = SDL_CreateWindow(PROJECT_NAME, width, height, SDL_WINDOW_RESIZABLE | SDL_WINDOW_VULKAN);
+    SDL_WindowFlags flags = SDL_WINDOW_VULKAN;
+    if (fullscreen) {
+        flags = static_cast<SDL_WindowFlags>(flags | SDL_WINDOW_FULLSCREEN);
+    }
+    window = SDL_CreateWindow(PROJECT_NAME, width, height,  flags);
     
     if (!window) {
         SDL_Log("Couldn't create window/renderer: %s", SDL_GetError());
@@ -34,7 +85,6 @@ Window::Window(int width= 640, int height = 480) : width(width), height(height){
     #endif
 
 }
-
 Window::~Window()
 {
     SDL_DestroyWindow(window);
@@ -47,9 +97,22 @@ void Window::manageEvents() {
         ImGui_ImplSDL3_ProcessEvent(&event);
         if (event.type == SDL_EVENT_QUIT) {
           setState(EventType::QUIT, true);
+          continue;
         } else {
           setState(EventType::QUIT, false);
         }
-
+        if (event.type == SDL_EVENT_KEY_DOWN) {
+            SDL_Keycode key = event.key.key;
+            switch (key) {
+                case SDLK_ESCAPE:
+                    setState(EventType::QUIT, true);
+                    break;
+                case SDLK_F11:
+                    toggleFullscreen();
+                    break;
+                default:
+                    break;
+            }
+        }
     }
 }

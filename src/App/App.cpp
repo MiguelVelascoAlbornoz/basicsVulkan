@@ -13,7 +13,7 @@
 
 
 App::App() {
-    window = new Window(WINDOW_WIDTH, WINDOW_HEIGHT);
+    window = new Window();
     if (window->isError()) {
         std::cerr << "Failed to initialize window." << std::endl;
         return;
@@ -43,9 +43,10 @@ App::App() {
 
     std::vector<VertexLayout::INPUT_TYPES> inputs = {
         VertexLayout::INPUT_TYPES::VEC3, // Posición
+        VertexLayout::INPUT_TYPES::FLOAT  // time
     };
     uniformBuffer = new UniformBuffer(renderer->getVulkanDevice(),inputs);
-    uniformBuffer->setVec3(0, glm::vec3(1.0f, 0.0f, 0.0f)); // Establece el color rojo
+    uniformBuffer->setVec3(0, glm::vec3(1.0f, 0.0f, 1.0f)); // Establece el color rojo
     uniformBuffer->updateDescriptorSet(renderer->getVulkanDevice(), renderer->descriptorSet);
     executionLoop();
 }
@@ -79,10 +80,17 @@ App::~App()
 
 void App::executionLoop()
 {
-
+    float lastFrameTime = SDL_GetTicks() / 1000.0f; // Tiempo del último frame en segundos
     while (runnig) {
+        currentTime = SDL_GetTicks() / 1000.0f; // Convertir a segundos
+        deltaTime = currentTime - lastFrameTime;
+        lastFrameTime = currentTime;
+        uniformBuffer->setFloat(1, currentTime); // Actualiza el tiempo en el uniform buffer
+
         manageEvents();
         renderer->update(scene, menuManager->currentMenu);
+
+        deltaTime = SDL_GetTicks() / 1000.0f - currentTime; // Diferencia de tiempo desde el último frame
     }
 }
 /*

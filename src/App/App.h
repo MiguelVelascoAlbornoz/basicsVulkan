@@ -28,6 +28,10 @@ public:
     Scene* scene = NULL; /**< scene pointer, must be deleted at end */
     UniformBuffer* uniformBuffer = NULL; /**< uniform buffer pointer, must be deleted at end */
     ~App();
+
+    float currentTime = 0.0f; /**< Current time in seconds, used for animations and time-based updates. */
+    float lastTickTime = 0.0f; /**< Time of the last frame in seconds.*/
+    float deltaTime = 0.0f; /**< Time difference between the current frame and the last frame in seconds, used for time-based updates. */
 private:
     /**
      * @brief Main execution loop of the application.
