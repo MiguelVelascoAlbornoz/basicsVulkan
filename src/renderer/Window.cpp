@@ -50,8 +50,8 @@ Window::Window(){
 
     const SDL_DisplayMode* mode = SDL_GetCurrentDisplayMode(display);
 
-    int width = mode->w;
-    int height = mode->h;
+    width = mode->w;
+    height = mode->h;
     fullscreen = true;
     if (!fullscreen) {
         width /= DEFAULT_REDUCTION_FACTOR;
@@ -89,30 +89,4 @@ Window::~Window()
 {
     SDL_DestroyWindow(window);
     SDL_Quit(); 
-}
-
-void Window::manageEvents() {
-    SDL_Event event;
-    while (SDL_PollEvent(&event)) {
-        ImGui_ImplSDL3_ProcessEvent(&event);
-        if (event.type == SDL_EVENT_QUIT) {
-          setState(EventType::QUIT, true);
-          continue;
-        } else {
-          setState(EventType::QUIT, false);
-        }
-        if (event.type == SDL_EVENT_KEY_DOWN) {
-            SDL_Keycode key = event.key.key;
-            switch (key) {
-                case SDLK_ESCAPE:
-                    setState(EventType::QUIT, true);
-                    break;
-                case SDLK_F11:
-                    toggleFullscreen();
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
 }

@@ -43,7 +43,7 @@ class Renderer {
          */
         void updateGUI(Menu* menu);
         VkDescriptorSet descriptorSet; /**< @brief Descriptor set used for rendering. */
-    
+        bool onWindowResized(Window* window);
 private:
     void initGUI(Window *window);
     /**< @brief Initializes Vulkan for rendering.
@@ -67,7 +67,7 @@ private:
      * 3. A subpass dependency to synchronize the implicit layout transition with the swapchain image acquisition.
      * The resulting VkRenderPass is required by createFramebuffers() and createPipeline().
      */
-    bool createRenderPass();
+    bool createRenderPass(VkSurfaceFormatKHR* chosenFormat);
 
 
 

@@ -70,11 +70,40 @@ createInfo.ppEnabledLayerNames =
     return true;
 }
 
-bool Renderer::createRenderPass()
+bool Renderer::createRenderPass(VkSurfaceFormatKHR* chosenFormat)
 {
+    //Ver los formatos soportados
+    uint32_t formatCount;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, nullptr);
+    std::vector<VkSurfaceFormatKHR> formats(formatCount);
+    vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, formats.data());
+
+     #ifdef _DEBUG
+    std::cout << "(VULKAN) Supported surface formats:" << std::endl;
+    for (const auto& format : formats) {
+        std::cout << " - Format: " << format.format << ", Color Space: " << format.colorSpace << std::endl;
+    }
+    
+    #endif
+
+    // Elegir formato (preferir BGRA8 con SRGB)
+    if (formats.empty()) {
+        std::cout << "(VULKAN) Error in createRenderPass(): No se encontraron formatos de superficie compatibles." << std::endl;
+ 
+        return false;
+    }
+    *chosenFormat = formats[0]; // fallback
+    for (const auto& f : formats) {
+        if (f.format == VK_FORMAT_B8G8R8A8_SRGB &&
+            f.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+            *chosenFormat = f;
+            break;
+        }
+    }
+
     // Descripción del color attachment (la imagen de la swapchain)
     VkAttachmentDescription colorAttachment{};
-    colorAttachment.format         = swapChain->getSwapchainImageFormat();
+    colorAttachment.format         = chosenFormat->format;
     colorAttachment.samples        = VK_SAMPLE_COUNT_1_BIT;
     colorAttachment.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
     colorAttachment.storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
@@ -126,8 +155,11 @@ bool Renderer::createRenderPass()
     return true;
 }
 
-
-
+bool Renderer::onWindowResized(Window *window)
+{
+    vkDeviceWaitIdle(vulkanDevice->device); // Esperar a que el dispositivo esté inactivo antes de recrear el swapchain
+    return swapChain->recreateSwapChain(renderPass,window);
+}
 
 bool Renderer::createSyncObjects()
 {

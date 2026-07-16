@@ -25,14 +25,12 @@ void Renderer::initGUI(Window* window)
     }   
 
     ImGui::StyleColorsDark();
-   ImGui_ImplSDL3_InitForVulkan(window->window);
+    ImGui_ImplSDL3_InitForVulkan(window->window);
  
-
     ImGui_ImplVulkan_InitInfo info = vulkanDevice->getImGuiInfo(imguiDescriptorPool, instance,swapChain->getImageCount());
     info.PipelineInfoMain.RenderPass   = renderPass;
     info.PipelineInfoMain.Subpass      = 0;
     info.PipelineInfoMain.MSAASamples  = VK_SAMPLE_COUNT_1_BIT;
-
 
     bool ok2 = ImGui_ImplVulkan_Init(&info);
 
@@ -76,14 +74,15 @@ void Renderer::initVulkan(Window* window)  {
         error = true;
         return;
         }
-   
-        swapChain = new SwapChain(vulkanDevice,window);
-        if (swapChain->error){
+        this->physicalDevice = vulkanDevice->getPhysicalDevice();
+        VkSurfaceFormatKHR* chosenFormat = (VkSurfaceFormatKHR*)malloc(sizeof(VkSurfaceFormatKHR));
+        if (!createRenderPass(chosenFormat)) {
             error = true;
             return;
         }
-        
-        if (!createRenderPass() || !swapChain->createFramebuffers(renderPass)){
+        swapChain = new SwapChain(vulkanDevice,window, renderPass, *chosenFormat);
+        free(chosenFormat);
+        if (swapChain->error){
             error = true;
             return;
         }
@@ -144,6 +143,7 @@ void Renderer::initVulkan(Window* window)  {
 }
 
 
+
 Renderer::Renderer(Window *window)
 {
     initVulkan(window);
@@ -197,10 +197,7 @@ Renderer::~Renderer()
     }
 
 
-    // 5. Framebuffers (uno por imagen del swapchain)
-    if (swapChain) {
-        swapChain->destroyFrameBuffers(device);
-    }
+    
     if (pipeline) {
         delete pipeline;
     }

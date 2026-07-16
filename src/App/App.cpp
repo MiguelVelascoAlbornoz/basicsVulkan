@@ -51,12 +51,7 @@ App::App() {
     executionLoop();
 }
 
-void App::manageEvents() {
-    window->manageEvents();
-    if (window->getEventState(Window::EventType::QUIT)) {
-        runnig = false;
-    }
-}
+
 
 App::~App()
 {

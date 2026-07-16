@@ -28,20 +28,16 @@ public:
      * 7. Obtener las imágenes del swapchain
      * 8. Crear un ImageView para cada imagen
      **/
-    SwapChain(VulkanDevice *vulkanDevice, Window *window);
+    SwapChain(VulkanDevice *vulkanDevice, Window *window, VkRenderPass renderPass, VkSurfaceFormatKHR chosenFormat);
+
     ~SwapChain();
     /**
      * @brief Creates the image views for each image in the swapchain, so they can be used as attachments in the framebuffers.
      * @details A VkImage by itself cannot be accessed directly by the pipeline; it needs a VkImageView that describes how to interpret it (format, type, mip levels, array layers). Creates one VkImageView per VkImage in swapchainImages, storing them in swapchainImageViews.
      */
     bool createImageViews();
-    VkFormat getSwapchainImageFormat() const { return swapchainFormat; } /**< @brief Get the format of the swapchain images. */
-        /**
-     * @brief Creates one VkFramebuffer per swapchain image view, binding them to renderPass.
-     * @details A framebuffer is the concrete binding between a render pass and the actual memory (image views) it will render into. Requires createImageViews() and createRenderPass() to have run first. Stored in swapchainFramebuffers, indexed the same way as swapchainImageViews.
-     */
-    bool createFramebuffers(VkRenderPass renderPass);
-    void destroyFrameBuffers(VkDevice device);
+    bool recreateSwapChain(VkRenderPass renderPass, Window *window);
+    VkFormat getSwapchainImageFormat() const { return swapchainFormat.format; } /**< @brief Get the format of the swapchain images. */
     bool error = false; /**< @brief Flag to indicate if there was an error during initialization. */
     VkFramebuffer getFramebuffer(size_t index) const { return swapchainFramebuffers[index]; } /**< @brief Get the framebuffer for a specific swapchain image index. */
     VkExtent2D getSwapchainExtent() const { return swapchainExtent; } /**< @brief Get the extent (width and height) of the swapchain images. */
@@ -57,9 +53,22 @@ public:
     bool acquireNextImage(VkSemaphore imageAvailableSemaphore, uint32_t* pImageIndex);
 
     int getImageCount() const { return static_cast<int>(swapchainImages.size()); } /**< @brief Get the number of images in the swapchain. */
-private:
-    VulkanDevice* vulkanDevice = NULL;
 
+
+private:
+    /**
+     * @brief Creates one VkFramebuffer per swapchain image view, binding them to renderPass.
+     * @details A framebuffer is the concrete binding between a render pass and the actual memory (image views) it will render into. Requires createImageViews() and createRenderPass() to have run first. Stored in swapchainFramebuffers, indexed the same way as swapchainImageViews.
+     */
+    bool createFramebuffers(VkRenderPass renderPass);
+    void destroySwapChain();
+    bool createSwapChain(Window* window,VkRenderPass renderPass);
+
+    void destroyFrameBuffers();
+
+    VkSurfaceKHR surface = VK_NULL_HANDLE; /**< @brief Handle to the Vulkan surface associated with the window. */
+    VulkanDevice* vulkanDevice = NULL;
+    VkPresentModeKHR presentMode; /**< @brief Chosen present mode (FIFO, MAILBOX, etc.) for the swapchain. */
     VkSwapchainKHR swapchain = VK_NULL_HANDLE;
     std::vector<VkImage> swapchainImages;
 
@@ -67,7 +76,7 @@ private:
     std::vector<VkImageView> swapchainImageViews;
 
     /// @brief Formato de color elegido para la swapchain (ej. VK_FORMAT_B8G8R8A8_SRGB).
-    VkFormat swapchainFormat;
+    VkSurfaceFormatKHR swapchainFormat;
 
     /// @brief Resolución (ancho x alto) de las imágenes de la swapchain.
     VkExtent2D swapchainExtent;
@@ -75,6 +84,7 @@ private:
     /// @brief Framebuffers, uno por cada image view de la swapchain, usados en vkCmdBeginRenderPass.
     std::vector<VkFramebuffer> swapchainFramebuffers;
 
+    VkRenderPass renderPass = VK_NULL_HANDLE; /**< @brief Handle to the render pass used for rendering into the swapchain framebuffers. */
 
 };
 #endif // SWAPCHAIN_H
