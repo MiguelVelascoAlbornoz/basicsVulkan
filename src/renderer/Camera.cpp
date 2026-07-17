@@ -50,7 +50,7 @@ static void normalizeAngle(float& angle) {
      right = vec3(vec4(DEFAULT_WORLD_RIGHT,1.0f) * rotationMatrix);
      up = vec3(vec4(DEFAULT_WORLD_UP,1.0f) * rotationMatrix);
      updateViewMatrix();
-	fields[VIEW_PROJECTION_MATRIX].dirty = true;
+	 updateViewProjectionMatrix();
 	
  }
  /**
@@ -71,15 +71,15 @@ void Camera::setPerspective(float fov, float aspectRatio, float nearPlane, float
     this->farPlane = farPlane;
     projectionMatrix = glm::perspective(glm::radians(fov), aspectRatio, nearPlane, farPlane);
     updateViewProjectionMatrix();
-    fields[VIEW_PROJECTION_MATRIX].dirty = true;
+
 }
 /**
  * @brief Sets the orthogonal projection parameters and updates the projection matrix and the view-projection matrix.
  * @details The projection matrix is calculated using the glm::ortho function, which creates an orthographic projection matrix based on the specified left, right, bottom, top, near, and far clipping planes.
  */
-void Camera::ortogonalProjection(float left, float right, float up, float down, float mfar, float mnear) {
+void Camera::setOrtho(float left, float right, float up, float down, float mfar, float mnear) {
 	projectionMatrix = glm::ortho(left,right,down,up,mnear,mfar);
 
 	updateViewProjectionMatrix();
-	fields[VIEW_PROJECTION_MATRIX].dirty = true;
+
 }

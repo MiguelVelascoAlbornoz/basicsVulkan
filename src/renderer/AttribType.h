@@ -25,7 +25,13 @@ public:
         size_t align;
         static AttribType possibleAttribs[INPUT_TYPE_COUNT];
 
-        static AttribType getFormatFromInputType(INPUT_TYPES input);
+        static const AttribType* getAttribFromInputType(INPUT_TYPES input);
+
+        struct SendableField {
+          void* const data;
+          const AttribType::INPUT_TYPES inputType;
+          const int index;
+    };
 };
 
 #endif // ATTRIB_TYPE_H

@@ -1,23 +1,33 @@
 
 #include "UniformBuffer.h"
 #include <iostream>
+#include <memory>
 
-
-UniformBuffer::UniformBuffer( VulkanDevice* device,std::vector<AttribType::INPUT_TYPES> &inputs){
+/**
+ * @brief El constructor itera por cada input, obtiene el tamaño y el align de dado dato y calcula el offset al que se deve meter, despues inicailiza un UniformField que deve ser destruido con delete en el destructor
+ * y lo mete en el vector de fields de este objeto. Tambien por defecto cada field empieza en el field queue, osea seran mandados al shader encuando se llame clearQueue().
+ * Despues de haber generado el vector de rawData que se enviara al shader se crea el buffer y el mapMemory.
+ * @param inputs vector de pares void*, INPUT_TYPE, osea, el puntero a la data que se desea mandar al shader y el tipo de data.
+ * **/
+UniformBuffer::UniformBuffer( VulkanDevice* device,std::vector<std::pair<void*,AttribType::INPUT_TYPES>> &inputs){
     this->device = device;
     size_t offset = 0;
     size_t maxAlign = 0;
-    for (AttribType::INPUT_TYPES input : inputs) {
-        AttribType attribType = AttribType::getFormatFromInputType(input);
-        size_t size = attribType.size;
-        size_t align = attribType.align;
+    for (auto& input : inputs) {
+        const AttribType* attribType = AttribType::getAttribFromInputType(input.second);
+
+        size_t size = attribType->size;
+        size_t align = attribType->align;
         if (align > maxAlign) {
             maxAlign = align;
         }
         offset = (offset + align - 1) & ~(align - 1);; // Alinear el offset según el alineamiento requerido
-        UniformField field{ .type = input, .offset = offset, .size = size };
+
+        UniformField* field = new UniformField { .type = attribType->type, .offsetInUniform = offset, .size = size, .dataPointer = input.first };
         offset += size;
         fields.push_back(field);
+
+        fieldToUpdateQueue.push_back(field);
     }
     bytesCount = static_cast<int>((offset + maxAlign - 1) & ~(maxAlign - 1)); // Alinear el tamaño total según el alineamiento máximo
     device->createBuffer(
@@ -30,32 +40,44 @@ UniformBuffer::UniformBuffer( VulkanDevice* device,std::vector<AttribType::INPUT
     );
     vkMapMemory(device->device, memory, 0, bytesCount, 0, &mappedMemory);
 }
+void UniformBuffer::clearQueue() {
+    while (const UniformField* field = getAndPopOfQueue()) {
+        setRaw(field);
+    }
+}
+const UniformBuffer::UniformField* UniformBuffer::getAndPopOfQueue(){
+    if (!fieldToUpdateQueue.empty()) {
+        const UniformField* retValue = fieldToUpdateQueue.back();
+        fieldToUpdateQueue.pop_back();
+        return retValue;
+    } else {
+        return nullptr;
+    }
+}
 
-void UniformBuffer::setRaw(size_t index, const void* data, size_t expectedSize) {
+void UniformBuffer::setRaw(const UniformField* uniformField) {
+
+    if (!uniformField->dataPointer) {
+        void* tempMemory = calloc(1,uniformField->size);
+        memcpy(static_cast<char*>(mappedMemory) + uniformField->offsetInUniform,tempMemory, uniformField->size);
+        std::cout << "Error in setRaw(): Null pointer in uniform field. " << std::endl;
+        std:: cout << "Data offset: " << uniformField->offsetInUniform << std::endl;
+        std::cout << "Data type: " << uniformField->type << std::endl;
+        free(tempMemory);
+    } else {
+        memcpy(static_cast<char*>(mappedMemory) + uniformField->offsetInUniform, uniformField->dataPointer, uniformField->size);
+    }
+
+}
+void UniformBuffer::setRaw(size_t index) {
     if (index >= fields.size()) {
         std::cerr << "Índice de uniform fuera de rango: " << index << std::endl;
         return;
     }
-    const UniformField& field = fields[index];
-    if (field.size != expectedSize) {
-        std::cerr << "Tipo incorrecto para este campo de uniform. Se esperaba tamaño: " << field.size << ", pero se proporcionó tamaño: " << expectedSize << std::endl;
-        return;
-    }
-
-    memcpy(static_cast<char*>(mappedMemory) + field.offset, data, expectedSize);
+    const UniformField* field = fields[index];
+    setRaw(field);
 }
 
-void UniformBuffer::setFloat(size_t index, float value) {
-    setRaw(index, &value, sizeof(float));
-}
-
-void UniformBuffer::setVec3(size_t index, const glm::vec3& value) {
-    setRaw(index, &value, sizeof(glm::vec3)); // sizeof(vec3) en glm = 12 bytes, coincide con std140 size
-}
-
-void UniformBuffer::setMat4(size_t index, const glm::mat4& value) {
-    setRaw(index, &value, sizeof(glm::mat4)); // 64 bytes, coincide
-}
 
 void UniformBuffer::updateDescriptorSet(VulkanDevice* device, VkDescriptorSet descriptorSet)
 {

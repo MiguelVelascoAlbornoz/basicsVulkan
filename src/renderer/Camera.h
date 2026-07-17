@@ -17,30 +17,25 @@ using namespace glm;
 
 class Camera {
 public:
-    enum Fields {
-        VIEW_PROJECTION_MATRIX
-    };
-    
-    struct SendableField {
-        void* const data;
-        const AttribType::INPUT_TYPES inputType;
-        bool dirty;
-    };
+
+    // (void*) const es un puntero constante
+    // (void const)* es un puntero a datos constantes
 
     void setRotation(float yaw, float pitch, float roll,float yawToRoll);
-    SendableField* getField(Camera::Fields field) {
-        return &fields[field];
-    }
+
     void setPosition(const glm::vec3& position) {
         this->position = position;
         updateViewMatrix();
         updateViewProjectionMatrix();
-        fields[VIEW_PROJECTION_MATRIX].dirty = true;
+
     }
 
     void setPerspective(float fov, float aspectRatio, float nearPlane, float farPlane);
 
-    void ortogonalProjection(float left, float right, float up, float down, float mfar, float mnear);
+    void setOrtho(float left, float right, float up, float down, float mfar, float mnear);
+
+
+
 private:
 
     void updateViewMatrix();
@@ -61,16 +56,14 @@ private:
     float yawToRoll = 0; /**< @brief Additional yaw to roll angle (in degrees) */
     float movementSpeed = 0; /**< @brief Speed at which the camera moves through the scene. */
     float mouseSensitivity = 0; /**< @brief Sensitivity of mouse movement for camera rotation. */
-    glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), 0.0f, glm::vec3(1.0f, 0.0f, 0.0f))* glm::rotate(glm::mat4(1.0f), 0.0f, glm::vec3(0.0f, 1.0f, 0.0f)) * glm::rotate(glm::mat4(1.0f), (0.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::rotate(glm::mat4(1.0f), 0.0f, glm::vec3(0.0f, 0.0f, 1.0f)) * glm::rotate(glm::mat4(1.0f), -0.0f, glm::vec3(0.0f, 1.0f, 0.0f)) ; /**< @brief Rotation matrix representing the camera's orientation. */
+    glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), 0.0f, glm::vec3(1.0f, 0.0f, 0.0f))*
+                               glm::rotate(glm::mat4(1.0f), 0.0f, glm::vec3(0.0f, 1.0f, 0.0f))*
+                               glm::rotate(glm::mat4(1.0f), 0.0f, glm::vec3(0.0f, 1.0f, 0.0f))*
+                               glm::rotate(glm::mat4(1.0f), 0.0f, glm::vec3(0.0f, 0.0f, 1.0f))*
+                               glm::rotate(glm::mat4(1.0f), -0.0f, glm::vec3(0.0f, 1.0f, 0.0f)); /**< @brief Rotation matrix representing the camera's orientation. */
     glm::mat4 viewMatrix = glm::lookAt(position,position+front,up); /**< @brief View matrix used for rendering, calculated from the camera's position and orientation. */
     glm::mat4 projectionMatrix = glm::perspective(glm::radians(fov), aspectRatio, nearPlane, farPlane); /**< @brief Projection matrix used for rendering, defining how 3D points are projected onto the 2D screen. */
     glm::mat4 viewProjectionMatrix = projectionMatrix*viewMatrix; /**< @brief Combined view-projection matrix used for rendering, product of view and projection matrices. */
-
-    SendableField fields[CAMERA_FIELDS_COUNT] = {
-        {
-            .data = &viewProjectionMatrix, .inputType = AttribType::MAT4, .dirty = true
-        }
-    }; /**< @brief Number of dirty flags used to track changes in the camera's state. */
 
 };
 #endif // CAMERA_H

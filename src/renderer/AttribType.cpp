@@ -12,9 +12,9 @@ AttribType AttribType::possibleAttribs[INPUT_TYPE_COUNT] = {
     { .type = AttribType::MAT4, .size = 16 * sizeof(float), .format = VK_FORMAT_R32G32B32A32_SFLOAT, .align = 16 }
 };
 
-AttribType AttribType::getFormatFromInputType(INPUT_TYPES input)
+const AttribType* AttribType::getAttribFromInputType(INPUT_TYPES input)
 {
      
-        return AttribType::possibleAttribs[input];
+        return &AttribType::possibleAttribs[input];
          
 }

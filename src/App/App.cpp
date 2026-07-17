@@ -12,6 +12,7 @@
 
 
 Camera mainCamera;
+vec3 triangueCol(1.0f,0.0f,1.0f);
 App::App() {
     window = new Window();
     if (window->isError()) {
@@ -41,21 +42,13 @@ App::App() {
     std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>( renderer->getVulkanDevice(), vertices.data(), sizeof(float) * 6, 3, indices);
     scene->addMesh(mesh);
 
-    std::vector<AttribType::INPUT_TYPES> inputs = {
-        AttribType::INPUT_TYPES::VEC3, // Posición
-        AttribType::INPUT_TYPES::FLOAT,  // time
-    };
-    for (int i = 0; i < CAMERA_FIELDS_COUNT; ++i) {
-        inputs.push_back(mainCamera.getField(static_cast<Camera::Fields>(i))->inputType);
-    }
 
-    uniformBuffer = new UniformBuffer(renderer->getVulkanDevice(),inputs);
-    uniformBuffer->setVec3(0, glm::vec3(1.0f, 0.0f, 1.0f)); // Establece el color rojo
-    int cameraOffset = 2;
-    for (int i = 0; i < CAMERA_FIELDS_COUNT; ++i) {
-        Camera::SendableField field = *mainCamera.getField(static_cast<Camera::Fields>(i));
-        uniformBuffer->setRaw(cameraOffset+i,field.data,AttribType::getFormatFromInputType(field.inputType).size);
-    }
+    std::vector<std::pair<void*,AttribType::INPUT_TYPES>> inputsMap = {
+        {&triangueCol,AttribType::VEC3}, {&currentTime,AttribType::FLOAT}
+    };
+    uniformBuffer = new UniformBuffer(renderer->getVulkanDevice(),inputsMap);
+
+
     uniformBuffer->updateDescriptorSet(renderer->getVulkanDevice(), renderer->descriptorSet);
   //  int flag = 1;
   //  for (int i = 0; i < cameraToShader.size(); ++i) {
@@ -87,9 +80,12 @@ void App::executionLoop()
         currentTime = SDL_GetTicks(); // Convertir a segundos
         deltaTime = currentTime - lastFrameTime;
         lastFrameTime = currentTime;
-        uniformBuffer->setFloat(1, static_cast<float>(currentTime)/1000.0f); // Actualiza el tiempo en el uniform buffer
 
         manageEvents();
+        //Try update camera fields
+        uniformBuffer->addIndexToQueue(1);
+        uniformBuffer->clearQueue();
+
         renderer->update(scene, menuManager->currentMenu);
 
         deltaTime = SDL_GetTicks()  - currentTime; // Diferencia de tiempo desde el último frame

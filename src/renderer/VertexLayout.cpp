@@ -8,12 +8,12 @@ VertexLayout::VertexLayout(std::vector<AttribType::INPUT_TYPES> inputs)
    
     for (AttribType::INPUT_TYPES input : inputs) {
         VkVertexInputAttributeDescription attributeDescription{};
-        AttribType attribType = AttribType::getFormatFromInputType(input);
+        const AttribType* attribType = AttribType::getAttribFromInputType(input);
         attributeDescription.binding  = 0; // Asumiendo un solo binding
         attributeDescription.location = static_cast<uint32_t>(attributes.size());
-        attributeDescription.format   = attribType.format;
+        attributeDescription.format   = attribType->format;
         attributeDescription.offset   = offset;
-        offset += attribType.size; // Incrementar el offset según el tamaño del tipo de entrada
+        offset += static_cast<int>(attribType->size); // Incrementar el offset según el tamaño del tipo de entrada
         attributes.push_back(attributeDescription);
     }
     binding.binding = 0;
