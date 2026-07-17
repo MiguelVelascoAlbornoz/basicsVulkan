@@ -1,5 +1,4 @@
 #include "Pipeline.h"
-#include <cstdlib>
 #include <memory>
 #include <iostream>
 #include "VertexLayout.h"
@@ -18,16 +17,17 @@ VkShaderModule Pipeline::createShaderModule(const std::vector<char> &code)
     VkShaderModule shaderModule;
     if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
         std::cout << ("createShaderModule(): No se pudo crear el shader module.") << std::endl;
-        return NULL;
+        return nullptr;
     }
     return shaderModule;
 }
 /**
  * @brief Reads a binary file and stores its contents in a buffer.
  * @param filename The path to the binary file to read.
+ * @param buffer
  */
-static bool readFile(std::string filename, std::vector<char> &buffer) {
-    FILE* file = NULL;
+static bool readFile(const std::string& filename, std::vector<char> &buffer) {
+    FILE* file = nullptr;
     file = fopen(filename.c_str(), "rb");
     if (!file) {
         return false;
@@ -41,7 +41,8 @@ static bool readFile(std::string filename, std::vector<char> &buffer) {
     return true;
 
 }
-std::string execCommand(const std::string& cmd) {
+
+static std::string execCommand(const std::string& cmd) {
     std::vector<char> buffer;
     std::string result;
 
@@ -77,8 +78,7 @@ bool Pipeline::loadShader(std::string shaderName, VkShaderModule &shaderModule, 
    // }
 
     std::vector<char> shaderCode;
-    bool result = readFile(shaderPathSPV, shaderCode);
-    if (!result) {
+    if (const bool result = readFile(shaderPathSPV, shaderCode); !result) {
         std::cout << ("(VULKAN) Error in loadShaders(): Shader \""+ std::string(shaderName) +"\" no compilado.") << std::endl;
         return false;
     }
@@ -115,7 +115,7 @@ Pipeline::Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, std::str
 
     // 2. Vertex input (vacío por ahora, si el shader genera vértices internamente)
         // 2. ---- Aquí usas tu VertexLayout dinámico en vez del struct fijo ----
-    std::vector<VertexLayout::INPUT_TYPES> vertexInputs = {VertexLayout::VEC3, VertexLayout::VEC3};
+    std::vector vertexInputs = {AttribType::VEC3, AttribType::VEC3};
     VertexLayout layout(vertexInputs);
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
@@ -177,11 +177,11 @@ Pipeline::Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, std::str
 
     // 8. Pipeline layout (vacío por ahora: sin descriptor sets ni push constants)
     VkDescriptorSetLayoutBinding uboBinding{};
-uboBinding.binding = 0;
-uboBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-uboBinding.descriptorCount = 1;
-uboBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT; // o VERTEX_BIT según dónde esté el uniform
-uboBinding.pImmutableSamplers = nullptr;
+    uboBinding.binding = 0;
+    uboBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    uboBinding.descriptorCount = 1;
+    uboBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT; // o VERTEX_BIT según dónde esté el uniform
+    uboBinding.pImmutableSamplers = nullptr;
 
 VkDescriptorSetLayoutCreateInfo layoutInfo{};
 layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -234,7 +234,7 @@ pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
 }
 
 Pipeline::~Pipeline()
-{   
+{
     VkDevice device = vulkanDevice->device;
 
     if (device != VK_NULL_HANDLE) {

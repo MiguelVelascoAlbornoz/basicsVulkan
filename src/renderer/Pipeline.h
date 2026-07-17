@@ -23,6 +23,7 @@ class Pipeline {
          * @brief Loads a shader from a file, compiles it to SPIR-V, and creates a Vulkan shader module.
          * ShaderType should be "vert" for vertex shaders or "frag" for fragment shaders. The shaderName should not include the file extension.
             * @param shaderName The base name of the shader file (without extension).
+            * @param shaderModule Vulkan shader module handler
             * @param shaderType The type of shader ("vert" for vertex, "frag" for fragment).
          */
         bool loadShader(std::string shaderName, VkShaderModule &shaderModule, std::string shaderType);
@@ -48,7 +49,7 @@ class Pipeline {
         VkPipelineLayout getPipelineLayout() const { return pipelineLayout; } /**< @brief Get the pipeline layout handle. */
     private:
 
-        VulkanDevice* vulkanDevice = NULL;
+        VulkanDevice* vulkanDevice = nullptr;
         VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
         VkPipeline graphicsPipeline = VK_NULL_HANDLE;
 };

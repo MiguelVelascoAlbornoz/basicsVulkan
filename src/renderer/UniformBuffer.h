@@ -6,12 +6,11 @@
 #include "VertexLayout.h"
 #include "VulkanDevice.h"
 #include <glm/glm.hpp>
-
 class UniformBuffer
 {
 public:
     struct UniformField {
-        VertexLayout::INPUT_TYPES type;
+        AttribType::INPUT_TYPES type;
         size_t offset;
         size_t size;
     };
@@ -20,7 +19,7 @@ public:
         vkDestroyBuffer(device->device, buffer, nullptr);
         vkFreeMemory(device->device, memory, nullptr);
     }
-    UniformBuffer(VulkanDevice *device, std::vector<VertexLayout::INPUT_TYPES> inputs);
+    UniformBuffer(VulkanDevice *device, std::vector<AttribType::INPUT_TYPES> &inputs);
 
     void setRaw(size_t index, const void *data, size_t expectedSize);
 

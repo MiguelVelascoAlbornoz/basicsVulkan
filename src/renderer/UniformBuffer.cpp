@@ -3,22 +3,23 @@
 #include <iostream>
 
 
-UniformBuffer::UniformBuffer( VulkanDevice* device,std::vector<VertexLayout::INPUT_TYPES> inputs){
+UniformBuffer::UniformBuffer( VulkanDevice* device,std::vector<AttribType::INPUT_TYPES> &inputs){
     this->device = device;
     size_t offset = 0;
     size_t maxAlign = 0;
-    for (VertexLayout::INPUT_TYPES input : inputs) {
-        size_t size = VertexLayout::getSizeFromInputType(input);
-        size_t align = VertexLayout::getAlignFromInputType(input);
+    for (AttribType::INPUT_TYPES input : inputs) {
+        AttribType attribType = AttribType::getFormatFromInputType(input);
+        size_t size = attribType.size;
+        size_t align = attribType.align;
         if (align > maxAlign) {
             maxAlign = align;
         }
         offset = (offset + align - 1) & ~(align - 1);; // Alinear el offset según el alineamiento requerido
-        UniformField field{ input, offset, size };
+        UniformField field{ .type = input, .offset = offset, .size = size };
         offset += size;
         fields.push_back(field);
     }
-    bytesCount = (offset + maxAlign - 1) & ~(maxAlign - 1); // Alinear el tamaño total según el alineamiento máximo
+    bytesCount = static_cast<int>((offset + maxAlign - 1) & ~(maxAlign - 1)); // Alinear el tamaño total según el alineamiento máximo
     device->createBuffer(
         bytesCount,
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,

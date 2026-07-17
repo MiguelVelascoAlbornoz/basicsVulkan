@@ -39,7 +39,6 @@ void Window::inicializeSDL()
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         SDL_Log("Couldn't initialize SDL: %s", SDL_GetError());
         error = true;
-        return;
     }
 }
 
@@ -52,7 +51,7 @@ Window::Window(){
 
     width = mode->w;
     height = mode->h;
-    fullscreen = true;
+    fullscreen = false;
     if (!fullscreen) {
         width /= DEFAULT_REDUCTION_FACTOR;
         height /= DEFAULT_REDUCTION_FACTOR;
@@ -69,7 +68,7 @@ void Window::createWindow(int width, int height) {
     /**< Create window and renderer. */
     SDL_WindowFlags flags = SDL_WINDOW_VULKAN;
     if (fullscreen) {
-        flags = static_cast<SDL_WindowFlags>(flags | SDL_WINDOW_FULLSCREEN);
+        flags = flags | SDL_WINDOW_FULLSCREEN;
     }
     window = SDL_CreateWindow(PROJECT_NAME, width, height,  flags);
     

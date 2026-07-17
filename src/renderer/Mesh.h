@@ -8,7 +8,7 @@ public:
 
     Mesh(VulkanDevice *device, void *data, size_t dataSize, int vertexCount, const std::vector<uint32_t> &indices);
     ~Mesh();
-    void createVertexBuffer(void *data, size_t dataSize, int vertexCount);
+    void createVertexBuffer(const void *data, size_t dataSize, int vertexCount);
 
     void createIndexBuffer(const std::vector<uint32_t> &indices);
 

@@ -30,8 +30,8 @@ SwapChain::SwapChain(VulkanDevice* vulkanDevice,Window* window,VkRenderPass rend
         }
     }
 
-    bool swapChainCreated = createSwapChain(window, renderPass);
-    if (!swapChainCreated) {
+
+    if (!createSwapChain(window, renderPass)) {
         error = true;
         return;
     }
@@ -146,8 +146,8 @@ bool SwapChain::createSwapChain(Window *window, VkRenderPass renderPass)
         extent = capabilities.currentExtent;
     } else {
         extent = {
-            (uint32_t)window->getWidth(),
-            (uint32_t)window->getHeight()
+            .width = static_cast<uint32_t>(window->getWidth()),
+            .height = static_cast<uint32_t>(window->getHeight())
         };
         extent.width  = std::clamp(extent.width,  capabilities.minImageExtent.width,  capabilities.maxImageExtent.width);
         extent.height = std::clamp(extent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
@@ -191,19 +191,19 @@ bool SwapChain::createSwapChain(Window *window, VkRenderPass renderPass)
     std::cout << "(VULKAN) Swapchain creado: " << extent.width << "x" << extent.height << ", " << imageCount << " imagenes" << std::endl;
     #endif
 
-    bool imageViewsResult = createImageViews();
-    if (!imageViewsResult){
+
+    if (!createImageViews()){
         return false;
     }
-    bool frameBuffersResult = createFramebuffers(renderPass);
-    if (!frameBuffersResult){
+
+    if (!createFramebuffers(renderPass)){
         return false;
     }
     return true;
 }
 void SwapChain::destroyFrameBuffers()
 {
-    for (auto framebuffer : swapchainFramebuffers) {
+    for (const auto framebuffer : swapchainFramebuffers) {
         vkDestroyFramebuffer(vulkanDevice->device, framebuffer, nullptr);
     }
     swapchainFramebuffers.clear();

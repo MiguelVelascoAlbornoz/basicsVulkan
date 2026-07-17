@@ -11,5 +11,5 @@ layout(std140, binding = 0) uniform UniformBufferObject {
 
 void main() {
     
-    outColor = vec4(ubo.color.xy,sin(ubo.time)*0.5+0.5, 1.0);
+    outColor = vec4(fragColor, 1.0);
 }

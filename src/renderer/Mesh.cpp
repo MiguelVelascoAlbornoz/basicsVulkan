@@ -16,8 +16,8 @@ Mesh::~Mesh() {
     vkFreeMemory(device->device, vertexBufferMemory, nullptr);
 }
 
-void Mesh::createVertexBuffer(void* data, size_t dataSize, int vertexCount) {
-    VkDeviceSize bufferSize = dataSize*vertexCount;
+void Mesh::createVertexBuffer(const void* data, const size_t dataSize, const int vertexCount) {
+    const VkDeviceSize bufferSize = dataSize*vertexCount;
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingMemory;
@@ -28,7 +28,7 @@ void Mesh::createVertexBuffer(void* data, size_t dataSize, int vertexCount) {
 
     void* mappedMemory;
     vkMapMemory(device->device, stagingMemory, 0, bufferSize, 0, &mappedMemory);
-    memcpy(mappedMemory, data, (size_t)bufferSize); // "vertices" es tu std::vector<Vertex>
+    memcpy(mappedMemory, data,  bufferSize); // "vertices" es tu std::vector<Vertex>
     vkUnmapMemory(device->device, stagingMemory);
 
     device->createBuffer(bufferSize,
@@ -44,7 +44,7 @@ void Mesh::createVertexBuffer(void* data, size_t dataSize, int vertexCount) {
 
 void Mesh::createIndexBuffer(const std::vector<uint32_t>& indices) {
     indexCount = static_cast<uint32_t>(indices.size());
-    VkDeviceSize bufferSize = sizeof(uint32_t) * indices.size();
+    const VkDeviceSize bufferSize = sizeof(uint32_t) * indices.size();
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingMemory;
@@ -55,7 +55,7 @@ void Mesh::createIndexBuffer(const std::vector<uint32_t>& indices) {
 
     void* data;
     vkMapMemory(device->device, stagingMemory, 0, bufferSize, 0, &data);
-    memcpy(data, indices.data(), (size_t)bufferSize);
+    memcpy(data, indices.data(), bufferSize);
     vkUnmapMemory(device->device, stagingMemory);
 
     device->createBuffer(bufferSize,
@@ -69,8 +69,8 @@ void Mesh::createIndexBuffer(const std::vector<uint32_t>& indices) {
     vkFreeMemory(device->device, stagingMemory, nullptr);
 }
 
-void Mesh::bind(VkCommandBuffer cmd) const {
-    VkBuffer buffers[] = { vertexBuffer };
+void Mesh::bind(const VkCommandBuffer cmd) const {
+    const VkBuffer buffers[] = { vertexBuffer };
     VkDeviceSize offsets[] = { 0 };
     vkCmdBindVertexBuffers(cmd, 0, 1, buffers, offsets);
     vkCmdBindIndexBuffer(cmd, indexBuffer, 0, VK_INDEX_TYPE_UINT32);

@@ -62,11 +62,7 @@ private:
      * @details Destroys the SDL window and quits SDL to clean up resources when the Window object is destroyed.
      */
     ~Window();
-    /**
-     * @brief Manages SDL events for the window.
-     * @details Polls for SDL events and updates the event state flags accordingly.
-     */
-    void manageEvents();
+
     bool isError() const { return error; } /**< @brief Check if there was an error during initialization. */  
 
 };

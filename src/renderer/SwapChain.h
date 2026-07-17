@@ -52,7 +52,7 @@ public:
      */
     bool acquireNextImage(VkSemaphore imageAvailableSemaphore, uint32_t* pImageIndex);
 
-    int getImageCount() const { return static_cast<int>(swapchainImages.size()); } /**< @brief Get the number of images in the swapchain. */
+    [[nodiscard]] int getImageCount() const { return static_cast<int>(swapchainImages.size()); } /**< @brief Get the number of images in the swapchain. */
 
 
 private:
@@ -67,7 +67,7 @@ private:
     void destroyFrameBuffers();
 
     VkSurfaceKHR surface = VK_NULL_HANDLE; /**< @brief Handle to the Vulkan surface associated with the window. */
-    VulkanDevice* vulkanDevice = NULL;
+    VulkanDevice* vulkanDevice = nullptr;
     VkPresentModeKHR presentMode; /**< @brief Chosen present mode (FIFO, MAILBOX, etc.) for the swapchain. */
     VkSwapchainKHR swapchain = VK_NULL_HANDLE;
     std::vector<VkImage> swapchainImages;

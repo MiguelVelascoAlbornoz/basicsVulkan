@@ -1,9 +1,9 @@
 #include "Scene.h"
-void Scene::render(VkCommandBuffer cmd) const
+void Scene::render(const VkCommandBuffer cmd) const
 {
-    for (const auto& instance : objects) {
-        instance.mesh->bind(cmd);
-        instance.mesh->draw(cmd);
+    for (const auto&[mesh] : objects) {
+        mesh->bind(cmd);
+        mesh->draw(cmd);
     }
 }
 void Scene::removeMesh(size_t index)

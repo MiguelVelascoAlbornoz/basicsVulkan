@@ -16,22 +16,22 @@
 class App {
 public:
     /** 
-     * @brief Constructor of the App classs
+     * @brief Constructor of the App class
      * @details Initializes the window and starts the execution loop. If the window fails to initialize, it prints an error message and exits the program with a failure code.
     */
     void startMenu();
     void initMenus();
     App();
-    Window* window = NULL; /**< window pointer, must be deleted must be deleted and end*/
-    Renderer* renderer = NULL; /**< renderer pointer, must be deleted at end */
-    MenuManager* menuManager= NULL; /**< menu manager pointer, must be deleted at end */
-    Scene* scene = NULL; /**< scene pointer, must be deleted at end */
-    UniformBuffer* uniformBuffer = NULL; /**< uniform buffer pointer, must be deleted at end */
+    Window* window = nullptr; /**< window pointer, must be deleted must be deleted and end*/
+    Renderer* renderer = nullptr; /**< renderer pointer, must be deleted at end */
+    MenuManager* menuManager= nullptr; /**< menu manager pointer, must be deleted at end */
+    Scene* scene = nullptr; /**< scene pointer, must be deleted at end */
+    UniformBuffer* uniformBuffer = nullptr; /**< uniform buffer pointer, must be deleted at end */
     ~App();
 
-    float currentTime = 0.0f; /**< Current time in seconds, used for animations and time-based updates. */
-    float lastTickTime = 0.0f; /**< Time of the last frame in seconds.*/
-    float deltaTime = 0.0f; /**< Time difference between the current frame and the last frame in seconds, used for time-based updates. */
+    Uint64 currentTime = 0; /**< Current time in seconds, used for animations and time-based updates. */
+    Uint64 lastTickTime = 0; /**< Time of the last frame in seconds.*/
+    Uint64 deltaTime = 0; /**< Time difference between the current frame and the last frame in seconds, used for time-based updates. */
 private:
     /**
      * @brief Main execution loop of the application.

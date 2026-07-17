@@ -1,7 +1,7 @@
 #ifndef SCENE_H
 #define SCENE_H
 
-#include <vector>
+
 #include "../renderer/Mesh.h"
 #include <memory>
 #include <list>

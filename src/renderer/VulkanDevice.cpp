@@ -24,9 +24,9 @@ VulkanDevice::~VulkanDevice()
      vkDestroyDevice(device, nullptr);
     }
 }
-ImGui_ImplVulkan_InitInfo VulkanDevice::getImGuiInfo(VkDescriptorPool& imguiDescriptorPool, VkInstance instance, int imageCount){
+ImGui_ImplVulkan_InitInfo VulkanDevice::getImGuiInfo(VkDescriptorPool& imguiDescriptorPool, VkInstance instance, int imageCount) const {
     // Descriptor pool dedicado para ImGui
-    VkDescriptorPoolSize poolSizes[] = { { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100 } };
+    VkDescriptorPoolSize poolSizes[] = { { .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = 100 } };
     VkDescriptorPoolCreateInfo poolInfo{};
     poolInfo.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     poolInfo.flags         = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
@@ -180,11 +180,11 @@ bool VulkanDevice::createLogicalDevice(VkSurfaceKHR surface)
     if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {
         std::cerr << "(VULKAN) Error in createLogicalDevice(): No se pudo crear el dispositivo lógico." << std::endl;
        return false;
-    } else {
+    }
         #ifdef _DEBUG
         std::cout << "(VULKAN) Dispositivo lógico creado correctamente." << std::endl;
         #endif
-    }
+
     vkGetDeviceQueue(device, graphicsFamily, 0, &graphicsQueue);
     vkGetDeviceQueue(device, presentFamily,  0, &presentQueue);
 
@@ -206,12 +206,13 @@ bool VulkanDevice::queueSubmit(const VkSubmitInfo *submitInfo, VkFence fence)
 
 bool VulkanDevice::presentKHR(VkPresentInfoKHR *presentInfo)
 {
-    VkResult result = vkQueuePresentKHR(presentQueue, presentInfo);
+    const VkResult result = vkQueuePresentKHR(presentQueue, presentInfo);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
         // recreateSwapchain(); // implementar más adelante
         return false;
-    } else if (result != VK_SUCCESS) {
+    }
+    if (result != VK_SUCCESS) {
         std::cerr << "(VULKAN) Error in presentKHR(): fallo al presentar la imagen." << std::endl;
         return false;
     }
@@ -244,7 +245,7 @@ bool VulkanDevice::createCommandBuffers(std::vector<VkCommandBuffer> &commandBuf
     allocInfo.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.commandPool        = commandPool;
     allocInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandBufferCount = (uint32_t)commandBuffers.size();
+    allocInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
 
     if (vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data()) != VK_SUCCESS) {
         std::cerr << "(VULKAN) Error in createCommandBuffers(): No se pudo asignar los command buffers." << std::endl;
@@ -296,7 +297,7 @@ uint32_t VulkanDevice::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
 
     for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
-        bool isSupported = typeFilter & (1 << i);
+        const bool isSupported = typeFilter & (1 << i);
         bool hasProperties = (memProperties.memoryTypes[i].propertyFlags & properties) == properties;
 
         if (isSupported && hasProperties) {

@@ -10,8 +10,8 @@
 
 class StartMenu : public Menu {
     public:
-        StartMenu(Window* window) : Menu("start_menu"),window(window) {} /**< @brief Constructor for the StartMenu class, initializes the menu with a unique identifier. */;
-        ~StartMenu() {} /**< @brief Destructor for the StartMenu class. */
+    explicit StartMenu(Window* window) : Menu("start_menu"),window(window) {} /**< @brief Constructor for the StartMenu class, initializes the menu with a unique identifier. */;
+        ~StartMenu() override = default; /**< @brief Destructor for the StartMenu class. */
         void render() override; /**< @brief Function to render the start menu. */
     private:
         Window* window; /**< @brief Pointer to the window, used for file dialog operations. */

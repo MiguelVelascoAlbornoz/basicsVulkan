@@ -13,10 +13,11 @@
                 "_UNICODE",
                 "PROJECT_NAME=\"${workspaceFolderBasename}\""
             ],
-            "windowsSdkVersion": "10.0.26100.0",
+
             "cStandard": "c17",
             "cppStandard": "c++17",
-            "intelliSenseMode": "windows-msvc-x64"
+            "compilerPath": "C:\\MinGW\\mingw64\\bin\\gcc.exe",
+            "intelliSenseMode": "gcc-x64"
         }
     ],
     "version": 4

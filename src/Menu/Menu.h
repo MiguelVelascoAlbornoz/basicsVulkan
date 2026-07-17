@@ -11,10 +11,10 @@
  */
 class Menu {
     public:
-        Menu(const char* id) : id(id) {} /**< @brief Constructor for the Menu class, initializes the menu with a unique identifier. */;
+    explicit Menu(const char* id) : id(id) {} /**< @brief Constructor for the Menu class, initializes the menu with a unique identifier. */;
         virtual void render() = 0; /**< @brief Function to render the menu. */
-        std::string getId() const { return id; } /**< @brief Retrieves the unique identifier of the menu. */
-        virtual ~Menu() {} /**< @brief Virtual destructor for the Menu class. */
+        [[nodiscard]] std::string getId() const { return id; } /**< @brief Retrieves the unique identifier of the menu. */
+        virtual ~Menu() = default; /**< @brief Virtual destructor for the Menu class. */
     protected:
         std::string id; /**< @brief Unique identifier for the menu. */
 

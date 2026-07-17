@@ -10,3 +10,4 @@ html/*
 *.spv
 *.exe
 *.ini
+.idea

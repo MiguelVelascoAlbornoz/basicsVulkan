@@ -17,15 +17,15 @@ class MenuManager {
 public:
     StartMenu* startMenu; /**< @brief Start menu instance. */
 
-    MenuManager(Window *window);
+    explicit MenuManager(Window *window);
     
     void registerMenu(Menu *menu); /**< @brief Registers a menu rendering function for a specific menu type. */
 
     
     Menu* currentMenu; /**< @brief Retrieves the rendering function for the current menu type. */
         ~MenuManager() {
-        for (auto& pair : menus) {
-            delete pair.second;
+        for (auto&[fst, snd] : menus) {
+            delete snd;
         }
     }
     

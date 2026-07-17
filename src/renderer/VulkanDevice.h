@@ -9,7 +9,7 @@ public:
     VulkanDevice(VkInstance instance, VkSurfaceKHR surface);
     ~VulkanDevice();
 
-    ImGui_ImplVulkan_InitInfo getImGuiInfo(VkDescriptorPool& imguiDescriptorPool, VkInstance instance, int imageCount);
+    ImGui_ImplVulkan_InitInfo getImGuiInfo(VkDescriptorPool& imguiDescriptorPool, VkInstance instance, int imageCount) const;
     bool error = false;
     // Métodos de inicialización
     /**

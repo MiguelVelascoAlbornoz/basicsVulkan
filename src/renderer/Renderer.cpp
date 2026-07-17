@@ -5,8 +5,8 @@
  */
 #include "Renderer.h"
 #include <iostream>
-#include <imGUI\imgui.h>
-#include <imGUI\imgui_impl_sdl3.h>
+#include <imGUI/imgui.h>
+#include <imGUI/imgui_impl_sdl3.h>
 #include "Mesh.h"
 #include <SDL3/SDL_vulkan.h>
 
@@ -15,10 +15,9 @@
  * @brief Initializes the GUI using ImGui with SDL3 and SDL_Renderer3 backends.
  * @details This function sets up the ImGui context, configures the IO settings, If any of the initialization steps fail, it sets the error flag in the Renderer class to true and prints an error message to the standard error stream.
  */
-void Renderer::initGUI(Window* window)
+void Renderer::initGUI(const Window* window)
 {
-    ImGuiContext* ctx = ImGui::CreateContext();
-    if (!ctx) {
+    if (!ImGui::CreateContext()) {
         std::cerr << "Error: No se pudo crear el contexto de ImGui in initGUI()." << std::endl;
         error = true;
         return;
@@ -32,15 +31,13 @@ void Renderer::initGUI(Window* window)
     info.PipelineInfoMain.Subpass      = 0;
     info.PipelineInfoMain.MSAASamples  = VK_SAMPLE_COUNT_1_BIT;
 
-    bool ok2 = ImGui_ImplVulkan_Init(&info);
-
-    if ( !ok2) {
+    if ( !ImGui_ImplVulkan_Init(&info)) {
         std::cerr << "Error in initGUI(): ImGui no se inicializó correctamente in initGUI." << std::endl;
         error = true;
     } 
     #ifdef _DEBUG 
     ImGuiIO& io = ImGui::GetIO();
-    io.IniFilename = NULL;
+    io.IniFilename = nullptr;
     std::cout << "ImGui version: " << ImGui::GetVersion() << std::endl;
     std::cout << "Backend Renderer: " << (io.BackendRendererName ? io.BackendRendererName : "null") << std::endl;
     std::cout << "Backend Platform: " << (io.BackendPlatformName ? io.BackendPlatformName : "null") << std::endl;
@@ -51,8 +48,7 @@ void Renderer::initGUI(Window* window)
 
 void Renderer::initVulkan(Window* window)  {
 
-    bool vulkanInstanceResult = createVulkanInstance();
-    if (!vulkanInstanceResult) {
+    if (! createVulkanInstance()) {
         error = true;
         return;
     }
@@ -63,11 +59,12 @@ void Renderer::initVulkan(Window* window)  {
         std::cout << "(VULKAN) Failed to create surface in initVulkan(): " << SDL_GetError() << "\n";
         error = true;
         return;
-    } else {
-        #ifndef _DEBUG
-        std::cout << "(VULKAN) Vulkan surface created successfully.\n";
-        #endif
     }
+
+    #ifndef _DEBUG
+    std::cout << "(VULKAN) Vulkan surface created successfully.\n";
+    #endif
+
     window->surface = surface;
     vulkanDevice = new VulkanDevice(instance,surface);
         if (vulkanDevice->error) {
@@ -75,7 +72,7 @@ void Renderer::initVulkan(Window* window)  {
         return;
         }
         this->physicalDevice = vulkanDevice->getPhysicalDevice();
-        VkSurfaceFormatKHR* chosenFormat = (VkSurfaceFormatKHR*)malloc(sizeof(VkSurfaceFormatKHR));
+        VkSurfaceFormatKHR* chosenFormat = static_cast<VkSurfaceFormatKHR *>(malloc(sizeof(VkSurfaceFormatKHR)));
         if (!createRenderPass(chosenFormat)) {
             error = true;
             return;
@@ -241,7 +238,7 @@ void Renderer::recordCommandBuffer(Scene* scene, VkCommandBuffer commandBuffer, 
     renderPassInfo.sType             = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassInfo.renderPass        = renderPass;
     renderPassInfo.framebuffer       = swapChain->getFramebuffer(imageIndex);
-    renderPassInfo.renderArea.offset = {0, 0};
+    renderPassInfo.renderArea.offset = {.x = 0, .y = 0};
     renderPassInfo.renderArea.extent = swapchainExtent;
     renderPassInfo.clearValueCount   = 1;
     renderPassInfo.pClearValues      = &clearColor;
@@ -254,14 +251,14 @@ void Renderer::recordCommandBuffer(Scene* scene, VkCommandBuffer commandBuffer, 
     VkViewport viewport{};
     viewport.x        = 0.0f;
     viewport.y        = 0.0f;
-    viewport.width    = (float)swapchainExtent.width;
-    viewport.height   = (float)swapchainExtent.height;
+    viewport.width    = static_cast<float>(swapchainExtent.width);
+    viewport.height   = static_cast<float>(swapchainExtent.height);
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
     VkRect2D scissor{};
-    scissor.offset = {0, 0};
+    scissor.offset = {.x = 0, .y = 0};
     scissor.extent = swapchainExtent;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
     vkCmdBindDescriptorSets(

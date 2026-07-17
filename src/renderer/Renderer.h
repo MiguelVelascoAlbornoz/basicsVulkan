@@ -22,7 +22,7 @@ class Renderer {
          * @brief Constructor of the Renderer class.
          * @details Initializes the SDL renderer for the given window and ImGUI. If the renderer fails to initialize, it sets the error flag to true and prints an error message to the standard error stream.
          */
-        Renderer(Window* window);
+        explicit Renderer(Window* window);
         /**
          * @brief Destructor of the Renderer class.
          * @details Destroys the SDL renderer to clean up resources when the Renderer object is destroyed.
@@ -30,7 +30,7 @@ class Renderer {
         ~Renderer();
         bool error = false; /**< @brief Flag to indicate if there was an error during initialization. */
         SDL_Renderer* renderer;
-        VulkanDevice* getVulkanDevice() const { return vulkanDevice; } /**< @brief Get the Vulkan device used by the renderer. */
+        [[nodiscard]] VulkanDevice* getVulkanDevice() const { return vulkanDevice; } /**< @brief Get the Vulkan device used by the renderer. */
         void recordCommandBuffer(Scene* scene,VkCommandBuffer commandBuffer, uint32_t imageIndex);
         /**
          * @brief Updates the renderer, including clearing the screen, rendering the GUI, and presenting the rendered content. This method should be called in the main execution loop to continuously update the display.
@@ -45,7 +45,7 @@ class Renderer {
         VkDescriptorSet descriptorSet; /**< @brief Descriptor set used for rendering. */
         bool onWindowResized(Window* window);
 private:
-    void initGUI(Window *window);
+    void initGUI(const Window *window);
     /**< @brief Initializes Vulkan for rendering.
      * @details This method sets up the Vulkan instance, surface, physical device, logical device, swapchain, render pass, and pipeline. If any of the initialization steps fail, it sets the error flag to true and prints an error message to the standard error stream.
      */
@@ -106,10 +106,10 @@ VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
  */
 VkRenderPass renderPass = VK_NULL_HANDLE;
 
-VulkanDevice* vulkanDevice = NULL;
+VulkanDevice* vulkanDevice = nullptr;
 
-SwapChain* swapChain = NULL;
-Pipeline* pipeline = NULL; /**< @brief Pipeline gráfico: shaders + estado de rasterización/blending/etc. empaquetados como un solo objeto inmutable. */
+SwapChain* swapChain = nullptr;
+Pipeline* pipeline = nullptr; /**< @brief Pipeline gráfico: shaders + estado de rasterización/blending/etc. empaquetados como un solo objeto inmutable. */
 // ==================== Comandos ====================
 
 
@@ -119,7 +119,7 @@ std::vector<VkCommandBuffer> commandBuffers;
 // ==================== Sincronización ====================
 
 /// @brief Número máximo de frames procesándose en paralelo (CPU grabando mientras GPU dibuja otro).
-static const int MAX_FRAMES_IN_FLIGHT = 2;
+static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
 /// @brief Semáforos señalados cuando la imagen de la swapchain está lista para dibujar en ella. Uno por frame en vuelo.
 std::vector<VkSemaphore> imageAvailableSemaphores = {};

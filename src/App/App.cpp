@@ -5,13 +5,13 @@
  * @author Miguel Velasco
  */
 #include "App.h"
-#define WINDOW_WIDTH 800
-#define WINDOW_HEIGHT 600
 #include <iostream>
 #include <memory>
+#include "../renderer/Camera.h"
 
 
 
+Camera mainCamera;
 App::App() {
     window = new Window();
     if (window->isError()) {
@@ -22,32 +22,49 @@ App::App() {
     if (renderer->error) {
         std::cerr << "Failed to initialize renderer." << std::endl;
         return;
-    } else {
-        #ifdef _DEBUG
-        std::cout << "Renderer initialized successfully." << std::endl;
-        #endif
     }
+    #ifdef _DEBUG
+    std::cout << "Renderer initialized successfully." << std::endl;
+    #endif
+
     
     menuManager = new MenuManager(window);
 
     scene = new Scene();
         std::vector<float> vertices = {
-        // Posición (x, y, z)   // Color (r, g, b)
+        // Position (x, y, z)   // Color (r, g, b)
         -0.5f, -0.5f, 0.0f,    1.0f, 0.0f, 0.0f, // Vértice 1: rojo
          0.5f, -0.5f, 0.0f,    0.0f, 1.0f, 0.0f, // Vértice 2: verde
          0.0f,  0.5f, 0.0f,    0.0f, 0.0f, 1.0f  // Vértice 3: azul
     };
-    std::vector<uint32_t> indices = { 0, 1, 2 }; // Un solo triángulo
+    std::vector<uint32_t> indices = { 0, 1, 2 }; // Un solo triangular
     std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>( renderer->getVulkanDevice(), vertices.data(), sizeof(float) * 6, 3, indices);
     scene->addMesh(mesh);
 
-    std::vector<VertexLayout::INPUT_TYPES> inputs = {
-        VertexLayout::INPUT_TYPES::VEC3, // Posición
-        VertexLayout::INPUT_TYPES::FLOAT  // time
+    std::vector<AttribType::INPUT_TYPES> inputs = {
+        AttribType::INPUT_TYPES::VEC3, // Posición
+        AttribType::INPUT_TYPES::FLOAT,  // time
     };
+    for (int i = 0; i < CAMERA_FIELDS_COUNT; ++i) {
+        inputs.push_back(mainCamera.getField(static_cast<Camera::Fields>(i))->inputType);
+    }
+
     uniformBuffer = new UniformBuffer(renderer->getVulkanDevice(),inputs);
     uniformBuffer->setVec3(0, glm::vec3(1.0f, 0.0f, 1.0f)); // Establece el color rojo
+    int cameraOffset = 2;
+    for (int i = 0; i < CAMERA_FIELDS_COUNT; ++i) {
+        Camera::SendableField field = *mainCamera.getField(static_cast<Camera::Fields>(i));
+        uniformBuffer->setRaw(cameraOffset+i,field.data,AttribType::getFormatFromInputType(field.inputType).size);
+    }
     uniformBuffer->updateDescriptorSet(renderer->getVulkanDevice(), renderer->descriptorSet);
+  //  int flag = 1;
+  //  for (int i = 0; i < cameraToShader.size(); ++i) {
+      //  if (mainCamera.isDirty(static_cast<Camera::DirtyFlags>(flag))) {
+            //mat4 viewProjectionMatrix = mainCamera.getViewProjectionMatrix();
+            //uniformBuffer->setRaw(2 + i, &viewProjectionMatrix, sizeof(glm::mat4));
+     //   }
+      //  flag = flag << 1;
+   // }
     executionLoop();
 }
 
@@ -56,36 +73,26 @@ App::App() {
 App::~App()
 {
     vkDeviceWaitIdle(renderer->getVulkanDevice()->device);
-        if (uniformBuffer) {
-            delete uniformBuffer;
-        }
-        if (scene) {
-            delete scene;
-        }
-        delete window;
-        if (renderer) {
-            delete renderer;
-        }
-       
-        if (menuManager) {
-            delete menuManager;
-        }
-   
+    delete uniformBuffer;
+    delete scene;
+    delete window;
+    delete renderer;
+    delete menuManager;
     }
 
 void App::executionLoop()
 {
-    float lastFrameTime = SDL_GetTicks() / 1000.0f; // Tiempo del último frame en segundos
+    Uint64 lastFrameTime = SDL_GetTicks(); // Tiempo del último frame en segundos
     while (runnig) {
-        currentTime = SDL_GetTicks() / 1000.0f; // Convertir a segundos
+        currentTime = SDL_GetTicks(); // Convertir a segundos
         deltaTime = currentTime - lastFrameTime;
         lastFrameTime = currentTime;
-        uniformBuffer->setFloat(1, currentTime); // Actualiza el tiempo en el uniform buffer
+        uniformBuffer->setFloat(1, static_cast<float>(currentTime)/1000.0f); // Actualiza el tiempo en el uniform buffer
 
         manageEvents();
         renderer->update(scene, menuManager->currentMenu);
 
-        deltaTime = SDL_GetTicks() / 1000.0f - currentTime; // Diferencia de tiempo desde el último frame
+        deltaTime = SDL_GetTicks()  - currentTime; // Diferencia de tiempo desde el último frame
     }
 }
 /*

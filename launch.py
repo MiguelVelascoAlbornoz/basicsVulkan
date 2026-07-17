@@ -41,7 +41,7 @@ flags = {
         "-MP", #Gera um ficheiro .d mesmo que o ficheiro .cpp não tenha dependências, evitando erros de "file not found" quando um ficheiro .h é eliminado
         f"-DPROJECT_VERSION=\"{projectVersion}\"",
         f"-DENGINE_VERSION=\"{engineVersion}\"",
-        "-fdiagnostics-color=always",
+        "-fdiagnostics-color=never",
         "-Wall",
         "-Wextra",
         "-Werror",
@@ -77,6 +77,9 @@ compileCommand = [
     *includeDirs,
     "-c"
     ]
+
+print("Compile command: ")
+print(" ".join(compileCommand))
 
 # Procuramos os ficheiros e tempos de modificação do projeto
 # Diccionario: Path -> tiempo de modificación

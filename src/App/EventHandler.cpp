@@ -14,9 +14,9 @@ void App::manageEvents() {
           continue;
         } 
         if (event.type == SDL_EVENT_KEY_DOWN) {
-            SDL_Keycode key = event.key.key;
-            switch (key) {
+            switch (SDL_Keycode key = event.key.key) {
                 case SDLK_ESCAPE:
+                    acosh(key);
                     runnig = false;
                     break;
                 case SDLK_F11:

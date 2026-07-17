@@ -11,7 +11,7 @@
 /**
  * @brief Callback function for file selection in the SDL file dialog. This function is called when a file is selected in the dialog, and it receives the selected file list, the filter index, and user data. The function prints the selected file, filter index, and user data to the standard output.
  */
-void fileSelectedCallback(void* userdata, const char* const* filelist, int filter) {
+static void fileSelectedCallback(void* userdata, const char* const* filelist, int filter) {
     if (filelist && filelist[0]) {
         std::cout << "Selected file: " << filelist[0] << std::endl;
         std::cout << "Filter index: " << filter << std::endl;
@@ -23,10 +23,10 @@ void fileSelectedCallback(void* userdata, const char* const* filelist, int filte
 
 void StartMenu::render()
 {
-     ImGui::Begin("Start Menu",NULL, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize);
+     ImGui::Begin("Start Menu",nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize);
         if (ImGui::Button("Select Sound File") ){
             SDL_DialogFileFilter filters[] = {
-                { "Sound Files", "wav;mp3;ogg" }
+                { .name = "Sound Files", .pattern = "wav;mp3;ogg" }
             };
             SDL_ShowOpenFileDialog(fileSelectedCallback, this, window->window, filters,1,"C:\\",false);
             
