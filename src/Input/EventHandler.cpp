@@ -33,6 +33,8 @@ void App::manageEvents() {
                 std::cerr << "Failed to handle window resize event." << std::endl;
                 runnig = false;
             }
+        } else if (event.type == SDL_EVENT_MOUSE_MOTION) {
+            manageCameraRotation(event.motion);
         }
     }
     const bool* keys = SDL_GetKeyboardState(nullptr);
@@ -44,26 +46,39 @@ void App::manageEvents() {
     vec3 newPosition = *cameraPosition;
     if (keys[SDL_SCANCODE_SPACE])
     {
-        newPosition = newPosition + cameraWorldMatrix[0]*speed*static_cast<float>( deltaTime);
+        newPosition = newPosition - cameraWorldMatrix[0]*speed*static_cast<float>( deltaTime);
         updatePosition = true;
-    } else if (keys[SDL_SCANCODE_W]) {
+    }
+    if (keys[SDL_SCANCODE_W]) {
         newPosition = newPosition + cameraWorldMatrix[1]*speed*static_cast<float>( deltaTime);
         updatePosition = true;
-    } else if (keys[SDL_SCANCODE_S]) {
+    }
+    if (keys[SDL_SCANCODE_S]) {
         newPosition = newPosition - cameraWorldMatrix[1]*speed*static_cast<float>( deltaTime);
         updatePosition = true;
-    } else if (keys[SDL_SCANCODE_A]) {
-        newPosition = newPosition - cameraWorldMatrix[2]*speed*static_cast<float>( deltaTime);
-        updatePosition = true;
-    } else if (keys[SDL_SCANCODE_D]) {
+    }
+    if (keys[SDL_SCANCODE_A]) {
         newPosition = newPosition + cameraWorldMatrix[2]*speed*static_cast<float>( deltaTime);
         updatePosition = true;
-    } else if (keys[SDL_SCANCODE_RSHIFT]) {
-        newPosition = newPosition - cameraWorldMatrix[0]*speed*static_cast<float>( deltaTime);
+    }
+    if (keys[SDL_SCANCODE_D]) {
+        newPosition = newPosition - cameraWorldMatrix[2]*speed*static_cast<float>( deltaTime);
+        updatePosition = true;
+    }
+    if (keys[SDL_SCANCODE_LSHIFT]) {
+        newPosition = newPosition + cameraWorldMatrix[0]*speed*static_cast<float>( deltaTime);
         updatePosition = true;
     }
     if (updatePosition) {
         mainCamera.setPosition(newPosition);
         uniformBuffer->addIndexToQueue(VIEW_PROJECTION_MATRIX);
     }
+}
+
+void App::manageCameraRotation(SDL_MouseMotionEvent event) {
+        vec4 cameraRotation = mainCamera.getCameraRotation();
+        float realSensibility = static_cast<float>(deltaTime) * 0.001f;
+        vec3 newFacing(cameraRotation.x + event.xrel* realSensibility, cameraRotation.y + event.yrel * realSensibility, cameraRotation.z);
+        mainCamera.setRotation(newFacing.x,newFacing.y,newFacing.z,cameraRotation.w);
+        uniformBuffer->addIndexToQueue(VIEW_PROJECTION_MATRIX);
 }

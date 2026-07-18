@@ -14,6 +14,6 @@ layout(std140, binding = 0) uniform UniformBufferObject {
 
 void main() {
     fragColor = color;
-    vec3 worldPos = vec3(vertexLocalPos.xy,-6.0f);
+    vec3 worldPos = vec3(vertexLocalPos.xy,6.0f);
     gl_Position = ubo.viewProjectionMatrix*vec4(worldPos, 1.0);
 }

@@ -8,7 +8,7 @@
 #include "glm/gtx/projection.hpp"
 
 #define DEFAULT_WORLD_UP glm::vec3(0.0f, 1.0f, 0.0f) /**< @brief Default up vector for the camera. */
-#define DEFAULT_WORLD_FRONT glm::vec3(0.0f, 0.0f, -1.0f) /**< @brief Default front vector for the camera. */
+#define DEFAULT_WORLD_FRONT glm::vec3(0.0f, 0.0f, 1.0f) /**< @brief Default front vector for the camera. */
 #define DEFAULT_WORLD_RIGHT glm::vec3(1.0f, 0.0f, 0.0f) /**< @brief Default right vector for the camera. */
 #define CAMERA_FIELDS_COUNT 1 /**< @brief Number of dirty flags used to track changes in the camera's state. */
 
@@ -50,6 +50,12 @@ public:
      */
     mat3 getWorldMatrix() {
         return {up,front,right};
+    }
+    /** *
+     * @return Retorna un vec4 con toda la informacion de la rotation de la camara del tipo: (yaw,pitch,roll,yawToRoll)
+     */
+    [[nodiscard]] vec4 getCameraRotation() {
+        return {yaw,pitch,roll,yawToRoll};
     }
     const float*  getFov() {
         return &fov;

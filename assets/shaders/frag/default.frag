@@ -14,6 +14,6 @@ layout(std140, binding = 0) uniform UniformBufferObject {
 
 void main() {
     float timeInSec = float(ubo.time)/1000.0f;
-    vec3 randomColor = vec3(randomFloat(worldPos.x+timeInSec),randomFloat(worldPos.y),randomFloat(worldPos.z));
+    vec3 randomColor = vec3(randomFloat(round(worldPos.x*100+10+worldPos.y*100)),randomFloat(round(worldPos.x*100+5678+worldPos.y*100)),randomFloat(round(worldPos.x*100+678+worldPos.y*100)));
     outColor = vec4(randomColor, 1.0);
 }
