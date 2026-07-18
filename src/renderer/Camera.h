@@ -37,6 +37,20 @@ public:
     const mat4* getViewProjectionMatrix()  {
         return &viewProjectionMatrix;
     };
+    const vec3* getPosition() {
+        return &position;
+    }
+
+    /**
+     *
+     * @return Retorna una matriz 3x3 en que los vectores son las columnas.
+     * Columna 0: cameraUp.
+     * Columna 1: cameraFront.
+     * Columna 2: cameraRight.
+     */
+    mat3 getWorldMatrix() {
+        return {up,front,right};
+    }
     const float*  getFov() {
         return &fov;
     }

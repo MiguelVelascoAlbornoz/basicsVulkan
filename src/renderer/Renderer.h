@@ -18,6 +18,7 @@
  */
 class Renderer {
     public:
+
         /**
          * @brief Constructor of the Renderer class.
          * @details Initializes the SDL renderer for the given window and ImGUI. If the renderer fails to initialize, it sets the error flag to true and prints an error message to the standard error stream.

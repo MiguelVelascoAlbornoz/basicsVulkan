@@ -9,6 +9,8 @@
 #include "../renderer/Renderer.h"
 #include "../Menu/MenuManager.h"
 #include "../renderer/UniformBuffer.h"
+#include "../renderer/Camera.h"
+
 /**
  * @brief The App class serves as the main application class that manages the window, renderer, and the main execution loop. It initializes the window and renderer, handles events, and updates the display in a continuous loop until the application is closed.
  * The App class is responsible for creating the main window and renderer, managing events such as user
@@ -44,6 +46,11 @@ private:
     /** */
     void manageEvents();
     bool runnig = true; /**< Estado do loop */
+    Camera mainCamera;
 };
 
+
+
+
 #endif
+

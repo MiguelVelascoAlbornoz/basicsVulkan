@@ -11,8 +11,7 @@
 
 
 
-Camera mainCamera;
-vec3 triangueCol(1.0f,0.0f,1.0f);
+
 App::App() {
     window = new Window();
     if (window->isError()) {

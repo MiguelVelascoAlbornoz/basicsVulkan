@@ -36,7 +36,7 @@ public:
      * @brief Enumeration of possible event types that the Window class can handle.
      */
     enum class EventType {
-        QUIT,
+        KEY,
     };
     int getWidth() const { return width; }   /**< @brief Get the width of the window. */
     int getHeight() const { return height; } /**< @brief Get the height of the window. */
