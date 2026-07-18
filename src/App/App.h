@@ -15,6 +15,10 @@
  */
 class App {
 public:
+    enum ShaderField {
+        TIME,
+        VIEW_PROJECTION_MATRIX
+    };
     /** 
      * @brief Constructor of the App class
      * @details Initializes the window and starts the execution loop. If the window fails to initialize, it prints an error message and exits the program with a failure code.

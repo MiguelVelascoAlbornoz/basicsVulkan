@@ -19,7 +19,7 @@ public:
             delete field;
         }
     }
-    UniformBuffer(VulkanDevice *device, std::vector< std::pair<void*,AttribType::INPUT_TYPES>> &inputs);
+    UniformBuffer(VulkanDevice *device, std::vector< std::pair<const void*,AttribType::INPUT_TYPES>> &inputs);
 
     /** @brief Mete el dado indice de field en el field queue para que sea actualizada en el shader**/
     void addIndexToQueue(int index)  {
@@ -36,7 +36,7 @@ private:
         AttribType::INPUT_TYPES type = AttribType::CHAR;
         size_t offsetInUniform = 0;
         size_t size = 0;
-        void* dataPointer = nullptr;
+        const void* dataPointer = nullptr;
     };
     /** Cada vez que se modifique una variable y se quiera actualizar su valor en el shader tienen que meterse en este vector su devido UniformField, este UniformField deve estar en fields**/
     std::vector<UniformField*> fieldToUpdateQueue;

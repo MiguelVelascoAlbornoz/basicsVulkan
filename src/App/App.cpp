@@ -43,8 +43,9 @@ App::App() {
     scene->addMesh(mesh);
 
 
-    std::vector<std::pair<void*,AttribType::INPUT_TYPES>> inputsMap = {
-        {&triangueCol,AttribType::VEC3}, {&currentTime,AttribType::FLOAT}
+    std::vector<std::pair<const void*,AttribType::INPUT_TYPES>> inputsMap = {
+         {&currentTime,AttribType::UINT64},
+         {mainCamera.getViewProjectionMatrix(),AttribType::MAT4}
     };
     uniformBuffer = new UniformBuffer(renderer->getVulkanDevice(),inputsMap);
 
@@ -83,7 +84,7 @@ void App::executionLoop()
 
         manageEvents();
         //Try update camera fields
-        uniformBuffer->addIndexToQueue(1);
+        uniformBuffer->addIndexToQueue(0);
         uniformBuffer->clearQueue();
 
         renderer->update(scene, menuManager->currentMenu);

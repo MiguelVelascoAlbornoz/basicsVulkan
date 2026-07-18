@@ -7,9 +7,11 @@
  * @brief El constructor itera por cada input, obtiene el tamaño y el align de dado dato y calcula el offset al que se deve meter, despues inicailiza un UniformField que deve ser destruido con delete en el destructor
  * y lo mete en el vector de fields de este objeto. Tambien por defecto cada field empieza en el field queue, osea seran mandados al shader encuando se llame clearQueue().
  * Despues de haber generado el vector de rawData que se enviara al shader se crea el buffer y el mapMemory.
+ * @details El uniform buffer deve estar alineado con el standart std140, osea, cada field deve comenzar en un multiplo de su propio align, si no lo es entonces el buffer se rellena con bytes redundantes hasta llegar al proximo multiplo del align del field.
+ * Tambien el numero de bytes deve ser multiplo del maximo align usado en el uniform  buffer.
  * @param inputs vector de pares void*, INPUT_TYPE, osea, el puntero a la data que se desea mandar al shader y el tipo de data.
  * **/
-UniformBuffer::UniformBuffer( VulkanDevice* device,std::vector<std::pair<void*,AttribType::INPUT_TYPES>> &inputs){
+UniformBuffer::UniformBuffer( VulkanDevice* device,std::vector<std::pair<const void*,AttribType::INPUT_TYPES>> &inputs){
     this->device = device;
     size_t offset = 0;
     size_t maxAlign = 0;

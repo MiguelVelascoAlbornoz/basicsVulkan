@@ -34,7 +34,12 @@ public:
 
     void setOrtho(float left, float right, float up, float down, float mfar, float mnear);
 
-
+    const mat4* getViewProjectionMatrix()  {
+        return &viewProjectionMatrix;
+    };
+    const float*  getFov() {
+        return &fov;
+    }
 
 private:
 
