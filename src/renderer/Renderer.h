@@ -8,7 +8,7 @@
 #define RENDERER_H
 
 #include <functional>
-#include "../Menu/Menu.h"
+
 #include "Pipeline.h"
 #include "SwapChain.h"
 #include "../Scene/Scene.h"
@@ -37,12 +37,8 @@ class Renderer {
          * @brief Updates the renderer, including clearing the screen, rendering the GUI, and presenting the rendered content. This method should be called in the main execution loop to continuously update the display.
          * @details Clears the renderer, calls the updateGUI() method to render the GUI elements, and then presents the rendered content on the screen.
          */
-        void update(Scene* scene, Menu* renderMenu);
-        /**
-         * @brief Updates the GUI by starting a new ImGui frame, calling the provided renderMenu function to render the current menu, and finalizing the ImGui frame for rendering. This method should be called within the update() method to ensure that the GUI is rendered correctly.
-         * @details Starts a new ImGui frame for both SDL3 and SDL_Renderer3 backends, calls the provided renderMenu function to render the current menu, and then finalizes the ImGui frame and renders the draw data using the SDL_Renderer3 backend.
-         */
-        void updateGUI(Menu* menu);
+        void update(Scene* scene);
+
         VkDescriptorSet descriptorSet; /**< @brief Descriptor set used for rendering. */
         bool onWindowResized(Window* window);
 private:

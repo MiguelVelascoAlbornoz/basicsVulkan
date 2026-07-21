@@ -1,9 +1,9 @@
-#include "StartMenu.h"
+#include "EditorMenu.h"
 #include <SDL3/SDL_dialog.h>
 #include <imGUI/imgui.h>
 #include <iostream>
 /**
- * @file StartMenu.h
+ * @file EditorMenu.h
  * @brief StartMenu class declaration and all his features.
  * @author Miguel Velasco
  */
@@ -21,7 +21,7 @@ static void fileSelectedCallback(void* userdata, const char* const* filelist, in
     }
 }
 
-void StartMenu::render()
+void EditorMenu::render()
 {
      ImGui::Begin("Start Menu",nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize);
         if (ImGui::Button("Select Sound File") ){

@@ -22,6 +22,20 @@ void App::manageEvents() {
                 case SDLK_F11:
                     this->window->toggleFullscreen();
                     break;
+                case SDLK_F3:
+
+                    this->F3Mode = !this->F3Mode;
+                    break;
+                case SDLK_T:
+                    if (editorMode) {
+                        SDL_SetWindowRelativeMouseMode(window->window, editorMode);
+                        Menus::closeMenu(EDITOR_MENU);
+                    } else {
+                        SDL_SetWindowRelativeMouseMode(window->window, editorMode);
+                        Menus::openMenu(EDITOR_MENU);
+                    }
+                    this->editorMode = !this->editorMode;
+                    break;
                 default:
                     break;
             }
@@ -37,11 +51,14 @@ void App::manageEvents() {
             manageCameraRotation(event.motion);
         }
     }
+    managePlayerMovement();
+}
+void App::managePlayerMovement() {
     const bool* keys = SDL_GetKeyboardState(nullptr);
 
     float speed = .001f;
-    const vec3* cameraPosition = mainCamera.getPosition();
-    mat3 cameraWorldMatrix = mainCamera.getWorldMatrix();
+    const vec3* cameraPosition = player->camera->getPosition();
+    mat3 cameraWorldMatrix = player->camera->getWorldMatrix();
     bool updatePosition = false;
     vec3 newPosition = *cameraPosition;
     if (keys[SDL_SCANCODE_SPACE])
@@ -70,15 +87,14 @@ void App::manageEvents() {
         updatePosition = true;
     }
     if (updatePosition) {
-        mainCamera.setPosition(newPosition);
+        player->camera->setPosition(newPosition);
         uniformBuffer->addIndexToQueue(VIEW_PROJECTION_MATRIX);
     }
 }
-
 void App::manageCameraRotation(SDL_MouseMotionEvent event) {
-        vec4 cameraRotation = mainCamera.getCameraRotation();
+        vec4 cameraRotation =  player->camera->getCameraRotation();
         float realSensibility = static_cast<float>(deltaTime) * 0.001f;
         vec3 newFacing(cameraRotation.x + event.xrel* realSensibility, cameraRotation.y + event.yrel * realSensibility, cameraRotation.z);
-        mainCamera.setRotation(newFacing.x,newFacing.y,newFacing.z,cameraRotation.w);
+         player->camera->setRotation(newFacing.x,newFacing.y,newFacing.z,cameraRotation.w);
         uniformBuffer->addIndexToQueue(VIEW_PROJECTION_MATRIX);
 }

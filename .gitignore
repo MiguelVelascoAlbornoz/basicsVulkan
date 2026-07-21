@@ -11,3 +11,4 @@ html/*
 *.exe
 *.ini
 .idea
+settings/*

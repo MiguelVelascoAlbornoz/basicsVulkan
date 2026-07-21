@@ -2,7 +2,6 @@
 
 #include <fstream>
 #include <iostream>
-#include <utility>
 #include <filesystem>
 
 
@@ -13,10 +12,8 @@
  * en la direccion de memoria dada, caso no este en el .json cargara un valor por defecto (normalmente 0).
  * @param variables Vector que contiene la siguiente informacion: <nombre en el archivo .json de el field cargar>:<pointer de variable en el programa en el que se deve escribir tal field del json>
  * **/
-void Settings::loadSettings(std::string name,std::vector<std::pair<void*,std::string>>* variables)
+Settings::Settings(const std::string name,std::vector<std::pair<void*,std::string>> variables)  : variablesName(variables), fileName(name)
 {
-	this->variables = *variables;
-	this->fileName = std::move(name);
 	json data;
 	std::ifstream inputFile(SETTINGS_DIRECTORY +"/"+name+".json");
 	if (!inputFile.is_open()) {
@@ -25,7 +22,7 @@ void Settings::loadSettings(std::string name,std::vector<std::pair<void*,std::st
 	}
 	inputFile >> data;
 	inputFile.close();
-	for (const auto& variable : *variables) {
+	for (const auto& variable : variables) {
 		std::string variableName = variable.second;
 		char firstLetter = variableName.at(0);
 		json variableData = data[variableName];
@@ -68,7 +65,7 @@ void Settings::saveSettings()
 {
 	json data;
 	
-	for (const auto&[variableP, variableName] : variables) {
+	for (const auto&[variableP, variableName] : variablesName) {
 
 		char firstLetter = variableName.at(0);
 		if (firstLetter == 'i') {

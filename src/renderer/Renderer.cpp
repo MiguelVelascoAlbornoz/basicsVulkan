@@ -7,10 +7,10 @@
 #include <iostream>
 #include <imGUI/imgui.h>
 #include <imGUI/imgui_impl_sdl3.h>
-#include "Mesh.h"
 #include <SDL3/SDL_vulkan.h>
 
 
+class Menu;
 /**
  * @brief Initializes the GUI using ImGui with SDL3 and SDL_Renderer3 backends.
  * @details This function sets up the ImGui context, configures the IO settings, If any of the initialization steps fail, it sets the error flag in the Renderer class to true and prints an error message to the standard error stream.
@@ -283,17 +283,9 @@ void Renderer::recordCommandBuffer(Scene* scene, VkCommandBuffer commandBuffer, 
     }
 }
 
-void Renderer::update(Scene* scene, Menu* renderMenu)
+void Renderer::update(Scene* scene)
 {
     VkDevice device = vulkanDevice->device;
-    // 1. Preparar frame de ImGui (antes de tocar el command buffer)
-    ImGui_ImplSDL3_NewFrame();
-    ImGui_ImplVulkan_NewFrame();
-    ImGui::NewFrame();
-  
-
-    renderMenu->render();
-    ImGui::Render();
 
     // Limpiar la pantalla
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // negro
@@ -341,21 +333,4 @@ void Renderer::update(Scene* scene, Menu* renderMenu)
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
-void Renderer::updateGUI(Menu* menu)
-{
-    /**
-     * @brief Starts a new ImGui frame for both SDL3 and SDL_Renderer3 backends. This function should be called at the beginning of each frame before submitting any ImGui UI commands. It prepares the ImGui context for a new frame, allowing you to create and submit your ImGui UI elements for rendering.
-     */
-    ImGui_ImplSDL3_NewFrame();
-    ImGui_ImplVulkan_NewFrame();
-    ImGui::NewFrame();
 
-    menu->render();
-
-    /**
-     * @brief Finalizes the ImGui frame and renders the draw data. This function should be called after submitting all your ImGui UI commands for the current frame. It ends the ImGui frame, finalizes the draw data, and then calls the rendering function of the SDL_Renderer3 backend to render the ImGui elements on the screen.
-     */
-    ImGui::Render();
-
-    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffers[currentFrame], VK_NULL_HANDLE );
-}

@@ -5,11 +5,10 @@ using json = nlohmann::json;
 class Settings
 {
 public:
-	std::unordered_map<std::string, void*> settingsMap;
-	void loadSettings(std::string name, std::vector<std::pair<void *, std::string>> *variables);
-	std::vector<std::pair<void*,std::string>> variables;
-	std::vector<std::string> variablesName;
-	std::string fileName;
+
+	Settings(std::string name, std::vector<std::pair<void *, std::string>> variables);
+	const std::vector<std::pair<void *, std::string>> variablesName;
+	const std::string fileName;
 	void saveSettings();
 
 

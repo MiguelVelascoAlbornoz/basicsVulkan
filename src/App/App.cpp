@@ -7,17 +7,23 @@
 #include "App.h"
 #include <iostream>
 #include <memory>
+#include <imGUI/imgui.h>
+#include <imGUI/imgui_impl_sdl3.h>
+
+#include "../Menu/EditorMenu.h"
 #include "../renderer/Camera.h"
 
 
 
 
 App::App() {
+    //Initizialise window
     window = new Window();
     if (window->isError()) {
         std::cerr << "Failed to initialize window." << std::endl;
         return;
     }
+    //Initialize renderer
     renderer = new Renderer(window);
     if (renderer->error) {
         std::cerr << "Failed to initialize renderer." << std::endl;
@@ -27,9 +33,11 @@ App::App() {
     std::cout << "Renderer initialized successfully." << std::endl;
     #endif
 
-    
-    menuManager = new MenuManager(window);
+    //Register Menus
+    Menus::registerMenu(EDITOR_MENU,new EditorMenu(window));
 
+
+    //Test things
     scene = new Scene();
         std::vector<float> vertices = {
         // Position (x, y, z)   // Color (r, g, b)
@@ -40,24 +48,18 @@ App::App() {
     std::vector<uint32_t> indices = { 0, 1, 2 }; // Un solo triangular
     std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>( renderer->getVulkanDevice(), vertices.data(), sizeof(float) * 6, 3, indices);
     scene->addMesh(mesh);
-
+    player = new Player(0);
 
     std::vector<std::pair<const void*,AttribType::INPUT_TYPES>> inputsMap = {
          {&currentTime,AttribType::UINT64},
-         {mainCamera.getViewProjectionMatrix(),AttribType::MAT4}
+         {player->camera->getViewProjectionMatrix(),AttribType::MAT4}
     };
     uniformBuffer = new UniformBuffer(renderer->getVulkanDevice(),inputsMap);
 
 
     uniformBuffer->updateDescriptorSet(renderer->getVulkanDevice(), renderer->descriptorSet);
-  //  int flag = 1;
-  //  for (int i = 0; i < cameraToShader.size(); ++i) {
-      //  if (mainCamera.isDirty(static_cast<Camera::DirtyFlags>(flag))) {
-            //mat4 viewProjectionMatrix = mainCamera.getViewProjectionMatrix();
-            //uniformBuffer->setRaw(2 + i, &viewProjectionMatrix, sizeof(glm::mat4));
-     //   }
-      //  flag = flag << 1;
-   // }
+
+    //Finally execution loop
     executionLoop();
 }
 
@@ -66,11 +68,12 @@ App::App() {
 App::~App()
 {
     vkDeviceWaitIdle(renderer->getVulkanDevice()->device);
+    delete player;
     delete uniformBuffer;
     delete scene;
     delete window;
     delete renderer;
-    delete menuManager;
+    Menus::freeMenus();
     }
 
 void App::executionLoop()
@@ -82,17 +85,29 @@ void App::executionLoop()
         lastFrameTime = currentTime;
 
         manageEvents();
-        //Try update camera fields
+
+        //Render GUI
+        renderGUI();
+
+       // + + + + +  VULKAN RENDER + + + + +
         uniformBuffer->addIndexToQueue(0);
         uniformBuffer->clearQueue();
 
-        renderer->update(scene, menuManager->currentMenu);
+        renderer->update(scene);
+        // - - - - - VULKAN RENDER END - - - -
 
         deltaTime = SDL_GetTicks()  - currentTime; // Diferencia de tiempo desde el último frame
     }
 }
-/*
-    MenuManager -> contem todos os menus e sabe qual menu renderizar
-    Um menu é apenas uma função que se da ao renderer no momento em que ele vaja renderizar o GUI
-    renderer -> ao renderizar da se um pointer a um menu manager, o menu manager tem uma variavel que indica qual menu deve ser renderizado, o renderer chama a função do menu manager para renderizar o menu atual
-*/
+
+void App::renderGUI() {
+    // 1. Preparar frame de ImGui (antes de tocar el command buffer)
+    ImGui_ImplSDL3_NewFrame();
+    ImGui_ImplVulkan_NewFrame();
+    ImGui::NewFrame();
+
+
+    Menus::drawMenus();
+
+    ImGui::Render();
+}

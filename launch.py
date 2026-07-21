@@ -5,6 +5,20 @@ import os
 import argparse
 import ctypes
 
+import ctypes
+import sys
+
+kernel32 = ctypes.windll.kernel32
+
+handle = kernel32.GetStdHandle(-11)  # STD_OUTPUT_HANDLE
+mode = ctypes.c_ulong()
+
+kernel32.GetConsoleMode(handle, ctypes.byref(mode))
+kernel32.SetConsoleMode(
+        handle,
+        mode.value | 0x0004  # ENABLE_VIRTUAL_TERMINAL_PROCESSING
+    )
+
 def verifyArguments(compilationMode: str, especificFlags: dict):
     if compilationMode not in especificFlags:
         print(f"Invalid compilation mode: {compilationMode}. Use or create flags for compilation mode.")
