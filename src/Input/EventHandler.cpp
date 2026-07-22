@@ -48,7 +48,8 @@ void App::manageEvents() {
                 runnig = false;
             }
         } else if (event.type == SDL_EVENT_MOUSE_MOTION) {
-            manageCameraRotation(event.motion);
+
+            if (!editorMode) manageCameraRotation(event.motion);
         }
     }
     managePlayerMovement();
@@ -56,45 +57,50 @@ void App::manageEvents() {
 void App::managePlayerMovement() {
     const bool* keys = SDL_GetKeyboardState(nullptr);
 
-    float speed = .001f;
-    const vec3* cameraPosition = player->camera->getPosition();
+
     mat3 cameraWorldMatrix = player->camera->getWorldMatrix();
-    bool updatePosition = false;
-    vec3 newPosition = *cameraPosition;
+
+
+    vec3 delta = vec3();
     if (keys[SDL_SCANCODE_SPACE])
     {
-        newPosition = newPosition - cameraWorldMatrix[0]*speed*static_cast<float>( deltaTime);
-        updatePosition = true;
+        delta = delta - cameraWorldMatrix[0];
+
     }
     if (keys[SDL_SCANCODE_W]) {
-        newPosition = newPosition + cameraWorldMatrix[1]*speed*static_cast<float>( deltaTime);
-        updatePosition = true;
+        delta = delta +cameraWorldMatrix[1];
+
     }
     if (keys[SDL_SCANCODE_S]) {
-        newPosition = newPosition - cameraWorldMatrix[1]*speed*static_cast<float>( deltaTime);
-        updatePosition = true;
+        delta =delta - cameraWorldMatrix[1];
+
     }
     if (keys[SDL_SCANCODE_A]) {
-        newPosition = newPosition + cameraWorldMatrix[2]*speed*static_cast<float>( deltaTime);
-        updatePosition = true;
+        delta =delta + cameraWorldMatrix[2];
+
     }
     if (keys[SDL_SCANCODE_D]) {
-        newPosition = newPosition - cameraWorldMatrix[2]*speed*static_cast<float>( deltaTime);
-        updatePosition = true;
+        delta =delta - cameraWorldMatrix[2];
+
     }
     if (keys[SDL_SCANCODE_LSHIFT]) {
-        newPosition = newPosition + cameraWorldMatrix[0]*speed*static_cast<float>( deltaTime);
-        updatePosition = true;
+        delta =delta + cameraWorldMatrix[0];
+
     }
-    if (updatePosition) {
-        player->camera->setPosition(newPosition);
+    if (delta.x != 0 || delta.y != 0 || delta.z != 0) {
+        delta = normalize(delta);
+        delta = delta*player->speed*static_cast<float>( deltaTime) / 1000.0f;
+        if (keys[SDL_SCANCODE_LCTRL]) {
+            delta = delta*player->speedMultiplier;
+        }
+        player->move(delta);
         uniformBuffer->addIndexToQueue(VIEW_PROJECTION_MATRIX);
     }
 }
 void App::manageCameraRotation(SDL_MouseMotionEvent event) {
         vec4 cameraRotation =  player->camera->getCameraRotation();
-        float realSensibility = static_cast<float>(deltaTime) * 0.001f;
+        float realSensibility = static_cast<float>(deltaTime) * player->rotationSensitivity /1000.0f;
         vec3 newFacing(cameraRotation.x + event.xrel* realSensibility, cameraRotation.y + event.yrel * realSensibility, cameraRotation.z);
-         player->camera->setRotation(newFacing.x,newFacing.y,newFacing.z,cameraRotation.w);
+         player->setRotation(newFacing.x,newFacing.y,newFacing.z,cameraRotation.w);
         uniformBuffer->addIndexToQueue(VIEW_PROJECTION_MATRIX);
 }

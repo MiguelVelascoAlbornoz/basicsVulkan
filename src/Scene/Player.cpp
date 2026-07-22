@@ -33,6 +33,20 @@ Player::Player(int id) : playerID(id) {
     camera->setPerspective(cameraSettings.fov,cameraSettings.aspectRatio,cameraSettings.nearPlane,cameraSettings.farPlane);
 
 }
+void Player::move(vec3 delta) {
+    position = position + delta;
+    camera->setPosition(position);
+}
+
+void Player::setPosition(vec3 &newPos) {
+    camera->setPosition(newPos);
+}
+
+void Player::setPlayerCameraSettings(PlayerCameraSettings& newCameraSettings) {
+    cameraSettings = newCameraSettings;
+    camera->setPerspective(cameraSettings.fov,cameraSettings.aspectRatio,cameraSettings.nearPlane,cameraSettings.farPlane);
+}
+
 Player::~Player() {
     settings->saveSettings();
     delete camera;

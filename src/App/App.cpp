@@ -33,8 +33,6 @@ App::App() {
     std::cout << "Renderer initialized successfully." << std::endl;
     #endif
 
-    //Register Menus
-    Menus::registerMenu(EDITOR_MENU,new EditorMenu(window));
 
 
     //Test things
@@ -58,6 +56,10 @@ App::App() {
 
 
     uniformBuffer->updateDescriptorSet(renderer->getVulkanDevice(), renderer->descriptorSet);
+
+
+    //Register Menus
+    Menus::registerMenu(EDITOR_MENU,new EditorMenu(player));
 
     //Finally execution loop
     executionLoop();
