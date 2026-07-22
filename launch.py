@@ -18,6 +18,7 @@ kernel32.SetConsoleMode(
         handle,
         mode.value | 0x0004  # ENABLE_VIRTUAL_TERMINAL_PROCESSING
     )
+os.system("color");
 
 def verifyArguments(compilationMode: str, especificFlags: dict):
     if compilationMode not in especificFlags:

@@ -19,30 +19,36 @@ void EditorMenu::render()
 {
 
 	ImGui::Begin("Camera Control");
+
 	if (CollapsingHeader("World: ")) {
 		vec3 playerPosition = *player->getPosition();
 		Indent();
 		ImGui::Text("Pos:"); ImGui::SameLine();
 		if (InputFloat3("##Pos", &playerPosition.x, "%.5f")) {
 			player->setPosition(playerPosition);
+			onPlayerRenderUpdateCallback();
 		}
 		vec4 playerRotation = player->getRotation();
 		ImGui::Text("Yaw:"); ImGui::SameLine();
 		if (SliderFloat("##Yaw", &playerRotation.x, -180, 180)) {
 			player->setRotation(playerRotation);
+			onPlayerRenderUpdateCallback();
 		}
 		ImGui::Text("Pitch:"); ImGui::SameLine();
 		if (SliderFloat("##Pitch", &playerRotation.y, -89, 89)) {
 
 			player->setRotation(playerRotation);
+			onPlayerRenderUpdateCallback();
 		}
 		ImGui::Text("Roll:"); ImGui::SameLine();
 		if (ImGui::SliderFloat("##Roll", &playerRotation.z, -180, 180)) {
 			player->setRotation(playerRotation);
+			onPlayerRenderUpdateCallback();
 		}
 		ImGui::Text("Yaw To Roll:"); ImGui::SameLine();
 		if (ImGui::SliderFloat("##YawToRoll", &playerRotation.w, -180, 180)) {
 			player->setRotation(playerRotation);
+			onPlayerRenderUpdateCallback();
 		}
 
 	}
@@ -52,13 +58,16 @@ void EditorMenu::render()
 		ImGui::Text("Fov:"); ImGui::SameLine();
 		if (SliderFloat("##Fov", &cameraSettings.fov, 0, 180)) {
 			player->setPlayerCameraSettings(cameraSettings);
+			onPlayerRenderUpdateCallback();
 		}
 		ImGui::Text("Far:"); ImGui::SameLine();
 		if (DragFloat("##Far", &cameraSettings.farPlane, 1)) {
 			player->setPlayerCameraSettings(cameraSettings);		}
+		onPlayerRenderUpdateCallback();
 		ImGui::Text("Near:"); ImGui::SameLine();
 		if (DragFloat("##Near", &cameraSettings.nearPlane, .1)) {
 			player->setPlayerCameraSettings(cameraSettings);
+			onPlayerRenderUpdateCallback();
 		}
 
 		Unindent();
@@ -87,5 +96,6 @@ void EditorMenu::render()
 		Unindent();
 
 	}
-        ImGui::End();
+
+	ImGui::End();
 }

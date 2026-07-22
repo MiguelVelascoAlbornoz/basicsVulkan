@@ -40,6 +40,7 @@ void Player::move(vec3 delta) {
 
 void Player::setPosition(vec3 &newPos) {
     camera->setPosition(newPos);
+    position = newPos;
 }
 
 void Player::setPlayerCameraSettings(PlayerCameraSettings& newCameraSettings) {

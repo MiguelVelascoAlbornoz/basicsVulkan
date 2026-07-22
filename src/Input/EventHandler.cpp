@@ -94,7 +94,7 @@ void App::managePlayerMovement() {
             delta = delta*player->speedMultiplier;
         }
         player->move(delta);
-        uniformBuffer->addIndexToQueue(VIEW_PROJECTION_MATRIX);
+        onPlayerRenderUpdate();
     }
 }
 void App::manageCameraRotation(SDL_MouseMotionEvent event) {

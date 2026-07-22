@@ -59,7 +59,7 @@ App::App() {
 
 
     //Register Menus
-    Menus::registerMenu(EDITOR_MENU,new EditorMenu(player));
+    Menus::registerMenu(EDITOR_MENU,new EditorMenu(player,[this](){onPlayerRenderUpdate();}));
 
     //Finally execution loop
     executionLoop();
