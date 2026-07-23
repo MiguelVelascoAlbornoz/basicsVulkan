@@ -16,7 +16,7 @@ void Scene::removeMesh(size_t index)
     std::advance(it, index);
     objects.erase(it);
 }
-void Scene::addMesh(std::shared_ptr<Mesh> mesh)
+void Scene::addMesh(Mesh* mesh)
 {
     MeshInstance instance;
     instance.mesh = mesh;

@@ -1,7 +1,7 @@
 #include "Pipeline.h"
 #include <memory>
 #include <iostream>
-#include "VertexLayout.h"
+
 
 
 
@@ -87,14 +87,14 @@ bool Pipeline::loadShader(std::string shaderName, VkShaderModule &shaderModule, 
     return true;
 }
  
-Pipeline::Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, std::string shaderName)
+Pipeline::Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, PipelineConfig& config)
 {
     this->vulkanDevice = vulkanDevice;
     VkDevice device = vulkanDevice->device;
     
     VkShaderModule vertShaderModule;
     VkShaderModule fragShaderModule;
-    if (!loadShader(shaderName, vertShaderModule, "vert") || !loadShader(shaderName, fragShaderModule, "frag")) {
+    if (!loadShader(config.shaderName, vertShaderModule, "vert") || !loadShader(config.shaderName, fragShaderModule, "frag")) {
         error = true;
         return;
     }
@@ -115,8 +115,8 @@ Pipeline::Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, std::str
 
     // 2. Vertex input (vacío por ahora, si el shader genera vértices internamente)
         // 2. ---- Aquí usas tu VertexLayout dinámico en vez del struct fijo ----
-    std::vector vertexInputs = {AttribType::VEC3, AttribType::VEC3};
-    VertexLayout layout(vertexInputs);
+
+    VertexLayout layout(config.vertexAttributes);
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -128,7 +128,7 @@ Pipeline::Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, std::str
     // 3. Input assembly
     VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
     inputAssembly.sType    = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    inputAssembly.topology = config.topology;
     inputAssembly.primitiveRestartEnable = VK_FALSE;
 
     // 4. Viewport y scissor (dinámicos, recomendado)
@@ -151,10 +151,10 @@ Pipeline::Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, std::str
     rasterizer.sType                   = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     rasterizer.depthClampEnable        = VK_FALSE;
     rasterizer.rasterizerDiscardEnable = VK_FALSE;
-    rasterizer.polygonMode             = VK_POLYGON_MODE_FILL;
-    rasterizer.lineWidth               = 1.0f;
-    rasterizer.cullMode                = VK_CULL_MODE_NONE;
-    rasterizer.frontFace               = VK_FRONT_FACE_CLOCKWISE;
+    rasterizer.polygonMode             = config.polygonMode;
+    rasterizer.lineWidth               = config.lineWidth;
+    rasterizer.cullMode                = config.cullMode;
+    rasterizer.frontFace               = config.frontFace;
     rasterizer.depthBiasEnable         = VK_FALSE;
 
     // 6. Multisampling (deshabilitado)

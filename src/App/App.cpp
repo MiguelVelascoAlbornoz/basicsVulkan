@@ -10,6 +10,7 @@
 #include <imGUI/imgui.h>
 #include <imGUI/imgui_impl_sdl3.h>
 
+#include "../renderer/Mesh/Meshes.h"
 #include "../Menu/EditorMenu.h"
 #include "../renderer/Camera.h"
 
@@ -44,7 +45,7 @@ App::App() {
          0.0f,  0.5f, 0.0f,    0.0f, 0.0f, 1.0f  // Vértice 3: azul
     };
     std::vector<uint32_t> indices = { 0, 1, 2 }; // Un solo triangular
-    std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>( renderer->getVulkanDevice(), vertices.data(), sizeof(float) * 6, 3, indices);
+    Mesh* mesh = new Mesh( renderer->getVulkanDevice(), vertices.data(), sizeof(float) * 6, 3, indices);
     scene->addMesh(mesh);
     player = new Player(0);
 
@@ -58,9 +59,9 @@ App::App() {
     uniformBuffer->updateDescriptorSet(renderer->getVulkanDevice(), renderer->descriptorSet);
 
 
-    //Register Menus
+    //Registers
     Menus::registerMenu(EDITOR_MENU,new EditorMenu(player,[this](){onPlayerRenderUpdate();}));
-
+    Meshes::registerMesh("test_mesh",mesh);
     //Finally execution loop
     executionLoop();
 }
@@ -70,6 +71,7 @@ App::App() {
 App::~App()
 {
     vkDeviceWaitIdle(renderer->getVulkanDevice()->device);
+    Meshes::freeMeshes();
     delete player;
     delete uniformBuffer;
     delete scene;

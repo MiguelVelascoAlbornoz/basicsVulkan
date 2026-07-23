@@ -83,8 +83,10 @@ void Renderer::initVulkan(Window* window)  {
             error = true;
             return;
         }
-    
-        pipeline =new Pipeline(vulkanDevice, renderPass,"default");
+        Pipeline::PipelineConfig pipelineConfigDefault;
+        pipelineConfigDefault.vertexAttributes = {AttribType::VEC3,AttribType::VEC3};
+        pipelineConfigDefault.topology = VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+        pipeline =new Pipeline(vulkanDevice, renderPass,pipelineConfigDefault);
         if (pipeline->error) {
             error = true;
             return;

@@ -1,7 +1,7 @@
 #ifndef MESH_H
 #define MESH_H
 
-#include "VulkanDevice.h"
+#include "../VulkanDevice.h"
 
 class Mesh {
 public:

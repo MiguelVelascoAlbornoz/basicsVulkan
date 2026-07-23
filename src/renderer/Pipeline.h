@@ -5,13 +5,31 @@
 #include <vector>
 #include <string>
 #include "VulkanDevice.h"
-
+#include "VertexLayout.h"
 
 class Pipeline {
     
 
     public:
- 
+    struct PipelineConfig {
+        std::string shaderName = "default"; /** @brief file with the main in folder assets/shaders/etc/shaderName.etc  **/
+
+        std::vector<AttribType::INPUT_TYPES> vertexAttributes; /** @brief Vector with the vertex layout and the types (order matters)**/
+
+        VkPrimitiveTopology topology =
+            VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST; /** @brief Triangles join de vertex on triangles for ex **/
+
+        VkPolygonMode polygonMode =
+            VK_POLYGON_MODE_FILL;
+
+        VkCullModeFlags cullMode =
+            VK_CULL_MODE_NONE;
+
+        VkFrontFace frontFace =
+            VK_FRONT_FACE_CLOCKWISE;
+
+        float lineWidth = 1.0f;
+    };
         /**
      * @brief Wraps SPIR-V bytecode into a VkShaderModule so it can be used in a pipeline shader stage.
      * @param code The raw SPIR-V bytecode, read from a compiled .spv file.
@@ -39,7 +57,7 @@ class Pipeline {
          * 7. Destroy the shader modules (no longer needed once the pipeline is built).
          * @note Requires createPipelineLayout() and createRenderPass() to have run first.
          */
-        Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, std::string shaderName);
+        Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, PipelineConfig& config);
         ~Pipeline();
         bool error = false;
         void bind(VkCommandBuffer commandBuffer) {
