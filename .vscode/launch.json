@@ -25,6 +25,12 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "PATH",
+                    "value": "${env:VULKAN_SDK}\\Bin;${env:PATH}"
+                }
+            ],
             "MIMode": "gdb",
             "preLaunchTask": "Build debug with python launch",
         }

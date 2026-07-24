@@ -50,7 +50,7 @@ App::App() {
     player = new Player(0);
 
     std::vector<std::pair<const void*,AttribType::INPUT_TYPES>> inputsMap = {
-         {&currentTime,AttribType::UINT64},
+         {&currentTimeInSeconds,AttribType::FLOAT},
          {player->camera->getViewProjectionMatrix(),AttribType::MAT4}
     };
     uniformBuffer = new UniformBuffer(renderer->getVulkanDevice(),inputsMap);
@@ -85,6 +85,7 @@ void App::executionLoop()
     Uint64 lastFrameTime = SDL_GetTicks(); // Tiempo del último frame en segundos
     while (runnig) {
         currentTime = SDL_GetTicks(); // Convertir a segundos
+        currentTimeInSeconds = static_cast<float>(currentTime)/1000.0f;
         deltaTime = currentTime - lastFrameTime;
         lastFrameTime = currentTime;
 

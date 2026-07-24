@@ -46,6 +46,10 @@ flags = {
         "-g",
         "-O0",
         "-D_DEBUG",
+        # Evita que el ejecutable dependa de las DLL de runtime de MinGW
+        # (libstdc++-6.dll y libgcc_s_*-1.dll) al iniciarse.
+        "-static-libgcc",
+        "-static-libstdc++",
     ],
     "release": [
         "-O3",
