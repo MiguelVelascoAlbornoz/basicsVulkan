@@ -50,7 +50,7 @@ App::App() {
     player = new Player(0);
 
     std::vector<std::pair<const void*,AttribType::INPUT_TYPES>> inputsMap = {
-         {&currentTimeInSeconds,AttribType::FLOAT},
+        // {&currentTimeInSeconds,AttribType::FLOAT},
          {player->camera->getViewProjectionMatrix(),AttribType::MAT4}
     };
     uniformBuffer = new UniformBuffer(renderer->getVulkanDevice(),inputsMap);
@@ -95,7 +95,7 @@ void App::executionLoop()
         renderGUI();
 
        // + + + + +  VULKAN RENDER + + + + +
-        uniformBuffer->addIndexToQueue(0);
+        //uniformBuffer->addIndexToQueue(0);
         uniformBuffer->clearQueue();
 
         renderer->update(scene);

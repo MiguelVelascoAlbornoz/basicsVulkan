@@ -19,8 +19,8 @@
 class App {
 public:
     enum ShaderField {
-        TIME,
-        VIEW_PROJECTION_MATRIX
+        TIME = 1,
+        VIEW_PROJECTION_MATRIX = 0
     };
     /** 
      * @brief Constructor of the App class
