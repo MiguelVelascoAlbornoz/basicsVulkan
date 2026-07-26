@@ -12,6 +12,7 @@
 #include "Pipeline.h"
 #include "SwapChain.h"
 #include "../Scene/Scene.h"
+#include "../App/Utilitys.h"
 /**
  * @brief The Renderer class encapsulates the creation and management of an SDL renderer, including error management and GUI initialization.
  * It provides methods to initialize the renderer, manage errors, and set up the GUI.
@@ -39,9 +40,42 @@ class Renderer {
          */
         void update(Scene* scene);
 
-        VkDescriptorSet descriptorSet; /**< @brief Descriptor set used for rendering. */
+
         bool onWindowResized(Window* window);
+
+        Pipeline* getPipeline(const std::string& pipelineID) {
+            return pipelines[pipelineID];
+        }
+        void registerPipelines(const std::string &pipelineID, Pipeline::PipelineConfig* config) {
+            Pipeline* newPipeline = new Pipeline(vulkanDevice,renderPass,*config);
+            VkDescriptorSetAllocateInfo allocInfo{};
+            allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+            allocInfo.descriptorPool = descriptorPool;
+            allocInfo.descriptorSetCount = 1;
+            allocInfo.pSetLayouts = &newPipeline->descriptorSetLayout;
+
+
+
+            vkAllocateDescriptorSets(
+              vulkanDevice->device,
+              &allocInfo,
+              &newPipeline->descriptorSet
+            );
+            if (newPipeline->error) {
+                this->error = true;
+                return;
+            }
+            registerObject(pipelineID,newPipeline,pipelines);
+        }
+        void freePipelines() {
+            for (const auto& pipeline : pipelines) {
+                delete pipeline.second;
+            }
+        }
+
 private:
+    std::unordered_map<std::string, Pipeline*> pipelines; /**< @brief Map to store menu rendering functions. */
+
     void initGUI(const Window *window);
     /**< @brief Initializes Vulkan for rendering.
      * @details This method sets up the Vulkan instance, surface, physical device, logical device, swapchain, render pass, and pipeline. If any of the initialization steps fail, it sets the error flag to true and prints an error message to the standard error stream.
@@ -106,7 +140,6 @@ VkRenderPass renderPass = VK_NULL_HANDLE;
 VulkanDevice* vulkanDevice = nullptr;
 
 SwapChain* swapChain = nullptr;
-Pipeline* pipeline = nullptr; /**< @brief Pipeline gráfico: shaders + estado de rasterización/blending/etc. empaquetados como un solo objeto inmutable. */
 // ==================== Comandos ====================
 
 

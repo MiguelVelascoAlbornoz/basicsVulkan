@@ -19,8 +19,8 @@
 class App {
 public:
     enum ShaderField {
-        TIME = 1,
-        VIEW_PROJECTION_MATRIX = 0
+        TIME_UNIFORM = 1,
+        VIEW_PROJECTION_MATRIX_UNIFORM = 0
     };
     /** 
      * @brief Constructor of the App class
@@ -30,7 +30,7 @@ public:
     void initMenus();
     App();
     void onPlayerRenderUpdate() {
-        uniformBuffer->addIndexToQueue(VIEW_PROJECTION_MATRIX);
+        uniformBuffer->addIndexToQueue(VIEW_PROJECTION_MATRIX_UNIFORM);
     };
     Window* window = nullptr; /**< window pointer, must be deleted must be deleted and end*/
     Renderer* renderer = nullptr; /**< renderer pointer, must be deleted at end */

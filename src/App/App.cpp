@@ -50,18 +50,26 @@ App::App() {
     player = new Player(0);
 
     std::vector<std::pair<const void*,AttribType::INPUT_TYPES>> inputsMap = {
-        // {&currentTimeInSeconds,AttribType::FLOAT},
-         {player->camera->getViewProjectionMatrix(),AttribType::MAT4}
+
+         {player->camera->getViewProjectionMatrix(),AttribType::MAT4},
+         {&currentTimeInSeconds,AttribType::FLOAT}
     };
     uniformBuffer = new UniformBuffer(renderer->getVulkanDevice(),inputsMap);
 
 
-    uniformBuffer->updateDescriptorSet(renderer->getVulkanDevice(), renderer->descriptorSet);
+
 
 
     //Registers
     Menus::registerMenu(EDITOR_MENU,new EditorMenu(player,[this](){onPlayerRenderUpdate();}));
-    Meshes::registerMesh("test_mesh",mesh);
+
+    Pipeline::PipelineConfig pipelineConfigDefault;
+    pipelineConfigDefault.vertexAttributes = {AttribType::VEC3,AttribType::VEC3};
+    //pipelineConfigDefault.topology = VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+    renderer->registerPipelines("test",&pipelineConfigDefault);
+    uniformBuffer->updateDescriptorSet(renderer->getVulkanDevice(), renderer->getPipeline("test")->descriptorSet);    Meshes::registerMesh("test_mesh",mesh);
+
+
     //Finally execution loop
     executionLoop();
 }
@@ -95,7 +103,7 @@ void App::executionLoop()
         renderGUI();
 
        // + + + + +  VULKAN RENDER + + + + +
-        //uniformBuffer->addIndexToQueue(0);
+        uniformBuffer->addIndexToQueue(TIME_UNIFORM);
         uniformBuffer->clearQueue();
 
         renderer->update(scene);

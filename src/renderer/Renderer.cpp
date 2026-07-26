@@ -83,14 +83,6 @@ void Renderer::initVulkan(Window* window)  {
             error = true;
             return;
         }
-        Pipeline::PipelineConfig pipelineConfigDefault;
-        pipelineConfigDefault.vertexAttributes = {AttribType::VEC3,AttribType::VEC3};
-        //pipelineConfigDefault.topology = VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-        pipeline =new Pipeline(vulkanDevice, renderPass,pipelineConfigDefault);
-        if (pipeline->error) {
-            error = true;
-            return;
-        }
         if (!vulkanDevice->createCommandPool()) {
             error = true;
             return;
@@ -101,7 +93,7 @@ void Renderer::initVulkan(Window* window)  {
         }
         if (
            
-         
+
              !createSyncObjects()
         ) {
             error = true;
@@ -124,19 +116,7 @@ void Renderer::initVulkan(Window* window)  {
          &descriptorPool
         );
 
-        VkDescriptorSetAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = descriptorPool;
-        allocInfo.descriptorSetCount = 1;
-        allocInfo.pSetLayouts = &pipeline->descriptorSetLayout;
 
-
-
-        vkAllocateDescriptorSets(
-          vulkanDevice->device,
-          &allocInfo,
-          &descriptorSet
-        );
     
 
 }
@@ -197,9 +177,7 @@ Renderer::~Renderer()
 
 
     
-    if (pipeline) {
-        delete pipeline;
-    }
+    freePipelines();
 
     // 7. Render pass
     if (renderPass != VK_NULL_HANDLE) {
@@ -223,8 +201,7 @@ Renderer::~Renderer()
     }
 }
 
-void Renderer::recordCommandBuffer(Scene* scene, VkCommandBuffer commandBuffer, uint32_t imageIndex)
-{
+void Renderer::recordCommandBuffer(Scene* scene, VkCommandBuffer commandBuffer, uint32_t imageIndex) {
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
@@ -247,7 +224,7 @@ void Renderer::recordCommandBuffer(Scene* scene, VkCommandBuffer commandBuffer, 
 
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-    pipeline->bind(commandBuffer); // bind the graphics pipeline (shaders + fixed-function state);
+    pipelines["test"]->bind(commandBuffer); // bind the graphics pipeline (shaders + fixed-function state);
 
     // Viewport y scissor son dinámicos en el pipeline, hay que setearlos cada frame
     VkViewport viewport{};
@@ -266,10 +243,10 @@ void Renderer::recordCommandBuffer(Scene* scene, VkCommandBuffer commandBuffer, 
     vkCmdBindDescriptorSets(
     commandBuffer,
     VK_PIPELINE_BIND_POINT_GRAPHICS,
-    pipeline->getPipelineLayout(),
+    pipelines["test"]->getPipelineLayout(),
     0,
     1,
-    &descriptorSet,
+    &pipelines["test"]->descriptorSet,
     0,
     nullptr
 );

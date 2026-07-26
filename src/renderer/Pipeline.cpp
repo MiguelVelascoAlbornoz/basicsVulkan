@@ -226,6 +226,7 @@ pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
 
+
     #ifdef _DEBUG
     std::cout << "(VULKAN) Pipeline gráfico creado correctamente." << std::endl;
     #endif

@@ -1,19 +1,4 @@
-//
-// Created by migue on 23/07/2026.
-//
-#include <functional>
-#include <string>
-#include <iostream>
+
+#include "Utilitys.h"
 
 
-template<typename T>
-static void registerObject(const std::string& id, T* object, std::unordered_map<std::string, T*>& objectsMap) {
-    if (objectsMap.count(id) == 1) {
-        std::cout << "Registering function with id \"" << id << "\" is already registered." << std::endl;
-        return;
-    }
-#ifdef _DEBUG
-    std::cout << "Making register with id: " << id << std::endl;
-#endif
-    objectsMap.emplace(id, object);
-}

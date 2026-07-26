@@ -9,6 +9,7 @@ layout (location=1) out vec3 worldPos;
 layout(std140, binding = 0) uniform UniformBufferObject {
 
     mat4 viewProjectionMatrix;
+    float time;
 } ubo;
 
 
