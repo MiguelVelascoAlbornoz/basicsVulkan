@@ -28,6 +28,7 @@ public:
     */
     void startMenu();
     void initMenus();
+
     App();
     void onPlayerRenderUpdate() {
         uniformBuffer->addIndexToQueue(VIEW_PROJECTION_MATRIX_UNIFORM);

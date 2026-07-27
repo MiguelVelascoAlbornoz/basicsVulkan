@@ -101,12 +101,12 @@ void Renderer::initVulkan(Window* window)  {
         }
         VkDescriptorPoolSize poolSize{};
         poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSize.descriptorCount = 1;
+        poolSize.descriptorCount = 2;
         VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = 1;
         poolInfo.pPoolSizes = &poolSize;
-        poolInfo.maxSets = 1;
+        poolInfo.maxSets = 2;
 
 
         vkCreateDescriptorPool(
@@ -115,6 +115,19 @@ void Renderer::initVulkan(Window* window)  {
          nullptr,
          &descriptorPool
         );
+
+        //Register pipelines
+        Pipeline::PipelineConfig pipelineConfigDefault;
+        pipelineConfigDefault.vertexAttributes = {AttribType::VEC3,AttribType::VEC3};
+
+        Pipeline::PipelineConfig linePipelineConfig;
+        linePipelineConfig.vertexAttributes = {AttribType::VEC3,AttribType::VEC3};
+        linePipelineConfig.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+
+        defaultPipeline = registerPipelines("test",&pipelineConfigDefault);
+        linesPipeline = registerPipelines("lines",&linePipelineConfig);
+
+
 
 
     
@@ -224,7 +237,7 @@ void Renderer::recordCommandBuffer(Scene* scene, VkCommandBuffer commandBuffer, 
 
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-    pipelines["test"]->bind(commandBuffer); // bind the graphics pipeline (shaders + fixed-function state);
+
 
     // Viewport y scissor son dinámicos en el pipeline, hay que setearlos cada frame
     VkViewport viewport{};
@@ -240,18 +253,11 @@ void Renderer::recordCommandBuffer(Scene* scene, VkCommandBuffer commandBuffer, 
     scissor.offset = {.x = 0, .y = 0};
     scissor.extent = swapchainExtent;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-    vkCmdBindDescriptorSets(
-    commandBuffer,
-    VK_PIPELINE_BIND_POINT_GRAPHICS,
-    pipelines["test"]->getPipelineLayout(),
-    0,
-    1,
-    &pipelines["test"]->descriptorSet,
-    0,
-    nullptr
-);
-    
-    scene->render(commandBuffer); // Renderizar la escena (dibujar los meshes)
+
+
+        scene->renderFunc(commandBuffer);
+
+    //scene->render(commandBuffer); // Renderizar la escena (dibujar los meshes)
 
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 

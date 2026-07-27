@@ -16,7 +16,6 @@
 
 
 
-
 App::App() {
     //Initizialise window
     window = new Window();
@@ -63,15 +62,31 @@ App::App() {
     //Registers
     Menus::registerMenu(EDITOR_MENU,new EditorMenu(player,[this](){onPlayerRenderUpdate();}));
 
-    Pipeline::PipelineConfig pipelineConfigDefault;
-    pipelineConfigDefault.vertexAttributes = {AttribType::VEC3,AttribType::VEC3};
-    //pipelineConfigDefault.topology = VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-    renderer->registerPipelines("test",&pipelineConfigDefault);
-    uniformBuffer->updateDescriptorSet(renderer->getVulkanDevice(), renderer->getPipeline("test")->descriptorSet);    Meshes::registerMesh("test_mesh",mesh);
+    uniformBuffer->updateDescriptorSet(renderer->getVulkanDevice(), renderer->getPipeline("test")->descriptorSet);
+    uniformBuffer->updateDescriptorSet(renderer->getVulkanDevice(), renderer->getPipeline("lines")->descriptorSet);
+    Meshes::registerMesh("test_mesh",mesh);
 
-
+    scene->renderFunc = [this](VkCommandBuffer commandBuffer)
+    {
+        Pipeline* defaultPipeline = renderer->getPipeline("lines");
+        defaultPipeline->bind(commandBuffer); // bind the graphics pipeline (shaders + fixed-function state);
+        vkCmdBindDescriptorSets(
+        commandBuffer,
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        defaultPipeline->getPipelineLayout(),
+        0,
+        1,
+        &defaultPipeline->descriptorSet,
+        0,
+        nullptr
+    );
+        Meshes::meshes["test_mesh"]->bind(commandBuffer);
+        Meshes::meshes["test_mesh"]->draw(commandBuffer);
+    };
     //Finally execution loop
     executionLoop();
+
+
 }
 
 

@@ -13,13 +13,15 @@
 #include "SwapChain.h"
 #include "../Scene/Scene.h"
 #include "../App/Utilitys.h"
+#include "vulkan/vulkan.hpp"
 /**
  * @brief The Renderer class encapsulates the creation and management of an SDL renderer, including error management and GUI initialization.
  * It provides methods to initialize the renderer, manage errors, and set up the GUI.
  */
 class Renderer {
     public:
-
+        Pipeline* defaultPipeline;
+        Pipeline* linesPipeline;
         /**
          * @brief Constructor of the Renderer class.
          * @details Initializes the SDL renderer for the given window and ImGUI. If the renderer fails to initialize, it sets the error flag to true and prints an error message to the standard error stream.
@@ -46,8 +48,9 @@ class Renderer {
         Pipeline* getPipeline(const std::string& pipelineID) {
             return pipelines[pipelineID];
         }
-        void registerPipelines(const std::string &pipelineID, Pipeline::PipelineConfig* config) {
+        Pipeline* registerPipelines(const std::string &pipelineID, Pipeline::PipelineConfig* config) {
             Pipeline* newPipeline = new Pipeline(vulkanDevice,renderPass,*config);
+
             VkDescriptorSetAllocateInfo allocInfo{};
             allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
             allocInfo.descriptorPool = descriptorPool;
@@ -63,9 +66,9 @@ class Renderer {
             );
             if (newPipeline->error) {
                 this->error = true;
-                return;
+                return NULL;
             }
-            registerObject(pipelineID,newPipeline,pipelines);
+            return registerObject(pipelineID,newPipeline,pipelines);
         }
         void freePipelines() {
             for (const auto& pipeline : pipelines) {
