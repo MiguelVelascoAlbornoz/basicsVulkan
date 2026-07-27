@@ -121,8 +121,9 @@ void Renderer::initVulkan(Window* window)  {
         pipelineConfigDefault.vertexAttributes = {AttribType::VEC3,AttribType::VEC3};
 
         Pipeline::PipelineConfig linePipelineConfig;
-        linePipelineConfig.vertexAttributes = {AttribType::VEC3,AttribType::VEC3};
+        linePipelineConfig.vertexAttributes = {AttribType::VEC3};
         linePipelineConfig.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+        linePipelineConfig.shaderName = "lines";
 
         defaultPipeline = registerPipelines("test",&pipelineConfigDefault);
         linesPipeline = registerPipelines("lines",&linePipelineConfig);

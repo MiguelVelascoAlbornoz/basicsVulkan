@@ -10,6 +10,7 @@
 #include "../Menu/EditorMenu.h"
 #include "../renderer/UniformBuffer.h"
 #include "../Scene/Player.h"
+#include "../renderer/Uniforms.h"
 
 #define EDITOR_MENU "editor_menu"
 /**
@@ -18,9 +19,11 @@
  */
 class App {
 public:
+
     enum ShaderField {
         TIME_UNIFORM = 1,
-        VIEW_PROJECTION_MATRIX_UNIFORM = 0
+        VIEW_PROJECTION_MATRIX_UNIFORM = 0,
+
     };
     /** 
      * @brief Constructor of the App class
@@ -28,15 +31,15 @@ public:
     */
     void startMenu();
     void initMenus();
-
+    void initUniforms();
     App();
     void onPlayerRenderUpdate() {
-        uniformBuffer->addIndexToQueue(VIEW_PROJECTION_MATRIX_UNIFORM);
+        Uniforms::cameraUniform->addIndexToQueue(VIEW_PROJECTION_MATRIX_UNIFORM);
     };
     Window* window = nullptr; /**< window pointer, must be deleted must be deleted and end*/
     Renderer* renderer = nullptr; /**< renderer pointer, must be deleted at end */
     Scene* scene = nullptr; /**< scene pointer, must be deleted at end */
-    UniformBuffer* uniformBuffer = nullptr; /**< uniform buffer pointer, must be deleted at end */
+
     ~App();
     Player* player;
     bool editorMode = false;

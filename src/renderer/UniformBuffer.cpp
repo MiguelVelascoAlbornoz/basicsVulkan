@@ -71,6 +71,7 @@ void UniformBuffer::setRaw(const UniformField* uniformField) {
     }
 
 }
+/** @param index Numero del campos que se pretende actualizar. Ex: COLOR;POISITION;NORMAL, 0 es el campo color y 2 atuazliaria el de la normal**/
 void UniformBuffer::setRaw(size_t index) {
     if (index >= fields.size()) {
         std::cerr << "Índice de uniform fuera de rango: " << index << std::endl;

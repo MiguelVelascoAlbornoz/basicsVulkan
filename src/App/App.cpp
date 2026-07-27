@@ -15,6 +15,31 @@
 #include "../renderer/Camera.h"
 
 
+void App::initUniforms()
+{
+    VulkanDevice* device = renderer->getVulkanDevice();
+
+    std::vector<std::pair<const void*,AttribType::INPUT_TYPES>> inputsMap = {
+        {player->camera->getViewProjectionMatrix(),AttribType::MAT4},
+        {&currentTimeInSeconds,AttribType::FLOAT}
+    };
+    Uniforms::cameraUniform = Uniforms::registerUniform("camera_uniform", new UniformBuffer(device,inputsMap));
+
+    inputsMap = {
+        {player->camera->getViewProjectionMatrix(),AttribType::MAT4},
+        {&Uniforms::lineUniform.direction,AttribType::VEC3},
+        {&Uniforms::lineUniform.color,AttribType::VEC3},
+    };
+    Uniforms::lineUniform.uniform = Uniforms::registerUniform("line_uniform", new UniformBuffer(device,inputsMap));
+    Uniforms::lineUniform.color = vec3(1.0f);
+    Uniforms::lineUniform.direction = vec3(0.0f,0.0f,-1.0f);
+
+
+    Uniforms::cameraUniform->updateDescriptorSet(renderer->getVulkanDevice(), renderer->getPipeline("test")->descriptorSet);
+    Uniforms::cameraUniform->updateDescriptorSet(renderer->getVulkanDevice(), renderer->getPipeline("lines")->descriptorSet);
+
+
+}
 
 App::App() {
     //Initizialise window
@@ -43,28 +68,18 @@ App::App() {
          0.5f, -0.5f, 0.0f,    0.0f, 1.0f, 0.0f, // Vértice 2: verde
          0.0f,  0.5f, 0.0f,    0.0f, 0.0f, 1.0f  // Vértice 3: azul
     };
+
     std::vector<uint32_t> indices = { 0, 1, 2 }; // Un solo triangular
     Mesh* mesh = new Mesh( renderer->getVulkanDevice(), vertices.data(), sizeof(float) * 6, 3, indices);
-    scene->addMesh(mesh);
+    Meshes::registerMesh("test_mesh",mesh);
+
     player = new Player(0);
-
-    std::vector<std::pair<const void*,AttribType::INPUT_TYPES>> inputsMap = {
-
-         {player->camera->getViewProjectionMatrix(),AttribType::MAT4},
-         {&currentTimeInSeconds,AttribType::FLOAT}
-    };
-    uniformBuffer = new UniformBuffer(renderer->getVulkanDevice(),inputsMap);
-
-
-
 
 
     //Registers
     Menus::registerMenu(EDITOR_MENU,new EditorMenu(player,[this](){onPlayerRenderUpdate();}));
-
-    uniformBuffer->updateDescriptorSet(renderer->getVulkanDevice(), renderer->getPipeline("test")->descriptorSet);
-    uniformBuffer->updateDescriptorSet(renderer->getVulkanDevice(), renderer->getPipeline("lines")->descriptorSet);
-    Meshes::registerMesh("test_mesh",mesh);
+    initUniforms();
+    Meshes::initMeshes(renderer->getVulkanDevice());
 
     scene->renderFunc = [this](VkCommandBuffer commandBuffer)
     {
@@ -80,8 +95,10 @@ App::App() {
         0,
         nullptr
     );
-        Meshes::meshes["test_mesh"]->bind(commandBuffer);
-        Meshes::meshes["test_mesh"]->draw(commandBuffer);
+
+
+        Meshes::meshes["line_mesh"]->bind(commandBuffer);
+        Meshes::meshes["line_mesh"]->draw(commandBuffer);
     };
     //Finally execution loop
     executionLoop();
@@ -96,7 +113,7 @@ App::~App()
     vkDeviceWaitIdle(renderer->getVulkanDevice()->device);
     Meshes::freeMeshes();
     delete player;
-    delete uniformBuffer;
+    Uniforms::freeUniforms();
     delete scene;
     delete window;
     delete renderer;
@@ -118,8 +135,8 @@ void App::executionLoop()
         renderGUI();
 
        // + + + + +  VULKAN RENDER + + + + +
-        uniformBuffer->addIndexToQueue(TIME_UNIFORM);
-        uniformBuffer->clearQueue();
+        Uniforms::cameraUniform->addIndexToQueue(TIME_UNIFORM);
+        Uniforms::cameraUniform->clearQueue();
 
         renderer->update(scene);
         // - - - - - VULKAN RENDER END - - - -

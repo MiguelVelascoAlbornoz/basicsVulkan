@@ -16,9 +16,11 @@
 
 class Meshes {
 public:
-    static void initMeshes();
-    static void registerMesh(const std::string& id, Mesh* mesh) {
-        registerObject(id, mesh, meshes);
+    static Mesh* lineMesh;
+
+    static void initMeshes(VulkanDevice* device);
+    static Mesh* registerMesh(const std::string& id, Mesh* mesh) {
+        return registerObject(id, mesh, meshes);
     };
     static std::unordered_map<std::string, Mesh*> meshes; /**< @brief Map to store menu rendering functions. */
     static void freeMeshes() {
