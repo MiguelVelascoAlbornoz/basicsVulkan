@@ -7,12 +7,14 @@
 #define APP_H
 
 #include "../renderer/Renderer.h"
-#include "../Menu/EditorMenu.h"
-#include "../renderer/UniformBuffer.h"
+#include  "../Registry/Uniforms.h"
+#include "../Registry/Pipelines.h"
+#include "../Registry/Menus.h"
+#include "../Registry/Meshes.h"
 #include "../Scene/Player.h"
-#include "../renderer/Uniforms.h"
 
-#define EDITOR_MENU "editor_menu"
+
+
 /**
  * @brief The App class serves as the main application class that manages the window, renderer, and the main execution loop. It initializes the window and renderer, handles events, and updates the display in a continuous loop until the application is closed.
  * The App class is responsible for creating the main window and renderer, managing events such as user
@@ -20,26 +22,16 @@
 class App {
 public:
 
-    enum ShaderField {
-        TIME_UNIFORM = 1,
-        VIEW_PROJECTION_MATRIX_UNIFORM = 0,
 
-    };
-    /** 
-     * @brief Constructor of the App class
-     * @details Initializes the window and starts the execution loop. If the window fails to initialize, it prints an error message and exits the program with a failure code.
-    */
-    void startMenu();
-    void initMenus();
-    void initUniforms();
+
     App();
-    void onPlayerRenderUpdate() {
-        Uniforms::cameraUniform->addIndexToQueue(VIEW_PROJECTION_MATRIX_UNIFORM);
-    };
+
+
     Window* window = nullptr; /**< window pointer, must be deleted must be deleted and end*/
     Renderer* renderer = nullptr; /**< renderer pointer, must be deleted at end */
     Scene* scene = nullptr; /**< scene pointer, must be deleted at end */
 
+    App(std::function<void(App*)> registryCallback);
     ~App();
     Player* player;
     bool editorMode = false;

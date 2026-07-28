@@ -5,10 +5,12 @@
 #ifndef BASICSVULKAN_UNIFORMS_H
 #define BASICSVULKAN_UNIFORMS_H
 
-#include "UniformBuffer.h"
-#include <string>
-#include <unordered_map>
+#include "../renderer/UniformBuffer.h"
 #include "../App/Utilitys.h"
+#include <glm/glm.hpp>
+
+#define CAMERA_UNIFORM_ID "camera_uniform"
+#define LINE_UNIFORM_ID "line_uniform"
 
 class Uniforms
 {
@@ -25,9 +27,22 @@ public:
             COLOR
         };
     };
+    struct CameraUBO
+    {
+        enum Fields
+        {
+            VIEW_PROJECTION_MATRIX,
+            TIME
+        };
+    };
+
     static LineUBO lineUniform;
     static UniformBuffer* cameraUniform;
 
+
+    static void onPlayerRenderUpdate() {
+        Uniforms::cameraUniform->addIndexToQueue(CameraUBO::VIEW_PROJECTION_MATRIX);
+    };
 
     static UniformBuffer* registerUniform(const std::string& id, UniformBuffer* uniform) {
         return registerObject(id, uniform, uniforms);
@@ -39,6 +54,7 @@ public:
         }
         uniforms.clear();
     };
+
 };
 
 
