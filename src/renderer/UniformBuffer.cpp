@@ -1,7 +1,7 @@
 
 #include "UniformBuffer.h"
 #include <iostream>
-#include <memory>
+
 
 /**
  * @brief El constructor itera por cada input, obtiene el tamaño y el align de dado dato y calcula el offset al que se deve meter, despues inicailiza un UniformField que deve ser destruido con delete en el destructor

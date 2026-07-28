@@ -1,7 +1,7 @@
 #ifndef VULKAN_DEVICE_H
 #define VULKAN_DEVICE_H
 
-#include <Vulkan/vulkan.h>
+
 #include <imGUI\imgui_impl_vulkan.h>
 #include <vector>
 class VulkanDevice {

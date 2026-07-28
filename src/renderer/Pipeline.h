@@ -1,8 +1,7 @@
 #ifndef PIPELINE_H
 #define PIPELINE_H
 
-#include <Vulkan/vulkan.h>
-#include <vector>
+
 #include <string>
 #include "VulkanDevice.h"
 #include "VertexLayout.h"
@@ -47,7 +46,8 @@ class Pipeline {
             * @param shaderType The type of shader ("vert" for vertex, "frag" for fragment).
          */
         bool loadShader(std::string shaderName, VkShaderModule &shaderModule, std::string shaderType);
-        /**
+
+    /**
          * @brief Creates the graphics pipeline, which bundles shader stages, vertex input, input assembly, viewport/scissor, rasterization, multisampling, color blending, and dynamic state into a single immutable object.
          * @details Steps:
          * 1. Load and wrap vertex/fragment SPIR-V shaders via createShaderModule().
@@ -59,7 +59,8 @@ class Pipeline {
          * 7. Destroy the shader modules (no longer needed once the pipeline is built).
          * @note Requires createPipelineLayout() and createRenderPass() to have run first.
          */
-        Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, PipelineConfig& config);
+        Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, PipelineConfig& config,
+                 VkDescriptorPool descriptorPool);
         ~Pipeline();
         bool error = false;
         void bind(VkCommandBuffer commandBuffer) {

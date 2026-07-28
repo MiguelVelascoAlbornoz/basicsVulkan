@@ -2,10 +2,10 @@
 
 #ifndef UNIFORM_BUFFER_H
 #define UNIFORM_BUFFER_H
-#include <utility>
+
 #include "VertexLayout.h"
 #include "VulkanDevice.h"
-#include <glm/glm.hpp>
+
 
 class UniformBuffer
 {

@@ -1,6 +1,5 @@
 
-#include <iostream>
-#include "../App/App.h"
+#include "../Registry/Registry.h"
 
 int main() {
 
@@ -13,7 +12,7 @@ int main() {
     std::cout << "Release Mode" << std::endl;
     #endif
 
-    App app = App();
+    App app = App(Registry::registryCallback);
 
 
     return 0;

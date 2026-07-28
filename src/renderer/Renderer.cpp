@@ -4,11 +4,10 @@
  * @author Miguel Velasco
  */
 #include "Renderer.h"
-#include <iostream>
-#include <imGUI/imgui.h>
+
 #include <imGUI/imgui_impl_sdl3.h>
 #include <SDL3/SDL_vulkan.h>
-
+#include "../Registry/Pipelines.h"
 
 class Menu;
 /**
@@ -116,25 +115,6 @@ void Renderer::initVulkan(Window* window)  {
          nullptr,
          &descriptorPool
         );
-
-        //Register pipelines
-        Pipeline::PipelineConfig pipelineConfigDefault;
-        pipelineConfigDefault.vertexAttributes = {AttribType::VEC3,AttribType::VEC3};
-
-        Pipeline::PipelineConfig linePipelineConfig;
-        linePipelineConfig.vertexAttributes = {AttribType::VEC3};
-        linePipelineConfig.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-        linePipelineConfig.shaderName = "lines";
-        linePipelineConfig.bindingsCount = 2;
-
-        defaultPipeline = registerPipelines("test",&pipelineConfigDefault);
-        linesPipeline = registerPipelines("lines",&linePipelineConfig);
-
-
-
-
-    
-
 }
 
 
@@ -193,7 +173,7 @@ Renderer::~Renderer()
 
 
     
-    freePipelines();
+    Pipelines::freePipelines();
 
     // 7. Render pass
     if (renderPass != VK_NULL_HANDLE) {

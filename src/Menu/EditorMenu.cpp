@@ -1,7 +1,7 @@
 #include "EditorMenu.h"
-#include <SDL3/SDL_dialog.h>
+
 #include <imGUI/imgui.h>
-#include <iostream>
+
 /**
  * @file EditorMenu.h
  * @brief StartMenu class declaration and all his features.

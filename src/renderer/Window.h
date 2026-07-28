@@ -16,7 +16,7 @@
 #include "Vulkan/vulkan.h"
 
 
-#define DEFAULT_REDUCTION_FACTOR 1.5 /**< @brief Default reduction factor for window size when not in fullscreen mode. */
+#define DEFAULT_REDUCTION_FACTOR 1.5f /**< @brief Default reduction factor for window size when not in fullscreen mode. */
 /**
  * @brief The Window class encapsulates the creation and management of an SDL window, including event handling and error management.
  * It provides methods to initialize the window, manage events, and check for initialization errors. 

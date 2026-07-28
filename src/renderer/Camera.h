@@ -4,8 +4,6 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
-#include "AttribType.h"
-#include "glm/gtx/projection.hpp"
 
 #define DEFAULT_WORLD_UP glm::vec3(0.0f, 1.0f, 0.0f) /**< @brief Default up vector for the camera. */
 #define DEFAULT_WORLD_FRONT glm::vec3(0.0f, 0.0f, 1.0f) /**< @brief Default front vector for the camera. */

@@ -4,23 +4,16 @@
  * @author Miguel Velasco
  */
 #include "Menus.h"
-#include <iostream>
+#include "../App/Utilitys.h"
 
 std::unordered_map<std::string,Menu*> Menus::openMenus;
 std::unordered_map<std::string, Menu*> Menus::menus; /**< @brief Map to store menu rendering functions. */
 
-void Menus::registerMenu(const std::string& menuID, Menu *menu)
+EditorMenu* Menus::editorMenu;
+
+Menu* Menus::registerMenu(const std::string& menuID, Menu *menu)
 {
-    if (menus.count(menuID)==1){
-        std::cout << "Menu with id " << menuID << " already exists." << std::endl;
-        return;
-    }
-    #ifdef _DEBUG
-    std::cout << "Registering menu with id: " << menuID << std::endl;
-    #endif
-
-
-    Menus::menus.emplace(menuID, menu);
+    return registerObject(menuID,menu,menus);
 }
 
 void Menus::openMenu(const std::string& menuID) {

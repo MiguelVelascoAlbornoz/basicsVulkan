@@ -1,8 +1,6 @@
 
 #include <imGUI/imgui_impl_sdl3.h>
 #include "../App/App.h"
-#include <iostream>
-
 
 void App::manageEvents() {
     SDL_Event event;
@@ -29,10 +27,10 @@ void App::manageEvents() {
                 case SDLK_T:
                     if (editorMode) {
                         SDL_SetWindowRelativeMouseMode(window->window, editorMode);
-                        Menus::closeMenu(EDITOR_MENU);
+                        Menus::closeMenu(EDITOR_MENU_ID);
                     } else {
                         SDL_SetWindowRelativeMouseMode(window->window, editorMode);
-                        Menus::openMenu(EDITOR_MENU);
+                        Menus::openMenu(EDITOR_MENU_ID);
                     }
                     this->editorMode = !this->editorMode;
                     break;
@@ -94,7 +92,7 @@ void App::managePlayerMovement() {
             delta = delta*player->speedMultiplier;
         }
         player->move(delta);
-        onPlayerRenderUpdate();
+        Uniforms::onPlayerRenderUpdate();
     }
 }
 void App::manageCameraRotation(SDL_MouseMotionEvent event) {
@@ -102,5 +100,5 @@ void App::manageCameraRotation(SDL_MouseMotionEvent event) {
         float realSensibility = static_cast<float>(deltaTime) * player->rotationSensitivity /1000.0f;
         vec3 newFacing(cameraRotation.x + event.xrel* realSensibility, cameraRotation.y + event.yrel * realSensibility, cameraRotation.z);
          player->setRotation(newFacing.x,newFacing.y,newFacing.z,cameraRotation.w);
-        Uniforms::cameraUniform->addIndexToQueue(VIEW_PROJECTION_MATRIX_UNIFORM);
+        Uniforms::cameraUniform->addIndexToQueue(Uniforms::CameraUBO::VIEW_PROJECTION_MATRIX);
 }

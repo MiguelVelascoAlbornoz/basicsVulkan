@@ -87,7 +87,7 @@ bool Pipeline::loadShader(std::string shaderName, VkShaderModule &shaderModule, 
     return true;
 }
  
-Pipeline::Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, PipelineConfig& config)
+Pipeline::Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, PipelineConfig& config,VkDescriptorPool descriptorPool)
 {
     this->vulkanDevice = vulkanDevice;
     VkDevice device = vulkanDevice->device;
@@ -229,6 +229,20 @@ Pipeline::Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, Pipeline
         error = true;
         return;
     }
+
+    VkDescriptorSetAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocInfo.descriptorPool = descriptorPool;
+    allocInfo.descriptorSetCount = 1;
+    allocInfo.pSetLayouts = &descriptorSetLayout;
+
+
+
+    vkAllocateDescriptorSets(
+      vulkanDevice->device,
+      &allocInfo,
+      &descriptorSet
+    );
 
     // Los shader modules ya no se necesitan una vez creado el pipeline
     vkDestroyShaderModule(device, fragShaderModule, nullptr);

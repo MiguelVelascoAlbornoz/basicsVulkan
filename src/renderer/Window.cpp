@@ -6,7 +6,7 @@
 #include "Window.h"
 #include <imGUI/imgui_impl_sdl3.h>
 #include <iostream>
-#include <SDL3/SDL_vulkan.h>
+
 
 void Window::toggleFullscreen()
 {

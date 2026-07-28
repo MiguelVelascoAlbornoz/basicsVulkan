@@ -12,17 +12,17 @@
 
 #include "../App/Utilitys.h"
 #include "../renderer/Mesh/Mesh.h"
-#include <unordered_map>
 
+#define LINE_MESH_ID "line_mesh"
 class Meshes {
 public:
     static Mesh* lineMesh;
+    static std::unordered_map<std::string, Mesh*> meshes; /**< @brief Map to store menu rendering functions. */
 
-    static void initMeshes(VulkanDevice* device);
     static Mesh* registerMesh(const std::string& id, Mesh* mesh) {
         return registerObject(id, mesh, meshes);
     };
-    static std::unordered_map<std::string, Mesh*> meshes; /**< @brief Map to store menu rendering functions. */
+
     static void freeMeshes() {
         for (auto& [name, mesh] : meshes) {
             delete mesh;

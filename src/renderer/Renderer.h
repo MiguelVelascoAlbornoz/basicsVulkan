@@ -7,21 +7,19 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
-#include <functional>
+
 
 #include "Pipeline.h"
 #include "SwapChain.h"
 #include "../Scene/Scene.h"
-#include "../App/Utilitys.h"
-#include "vulkan/vulkan.hpp"
+
 /**
  * @brief The Renderer class encapsulates the creation and management of an SDL renderer, including error management and GUI initialization.
  * It provides methods to initialize the renderer, manage errors, and set up the GUI.
  */
 class Renderer {
     public:
-        Pipeline* defaultPipeline;
-        Pipeline* linesPipeline;
+
         /**
          * @brief Constructor of the Renderer class.
          * @details Initializes the SDL renderer for the given window and ImGUI. If the renderer fails to initialize, it sets the error flag to true and prints an error message to the standard error stream.
@@ -45,39 +43,22 @@ class Renderer {
 
         bool onWindowResized(Window* window);
 
-        Pipeline* getPipeline(const std::string& pipelineID) {
-            return pipelines[pipelineID];
-        }
-        Pipeline* registerPipelines(const std::string &pipelineID, Pipeline::PipelineConfig* config) {
-            Pipeline* newPipeline = new Pipeline(vulkanDevice,renderPass,*config);
 
-            VkDescriptorSetAllocateInfo allocInfo{};
-            allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-            allocInfo.descriptorPool = descriptorPool;
-            allocInfo.descriptorSetCount = 1;
-            allocInfo.pSetLayouts = &newPipeline->descriptorSetLayout;
+    /// @brief Render pass, describe los attachments y su manejo a lo largo de las subpasses.
+    /** @note RenderPass define:
+     *
+    - Cuántos attachments hay (color, depth, etc.)
 
+    - Sus formatos
 
+    - Cómo se cargan/guardan
 
-            vkAllocateDescriptorSets(
-              vulkanDevice->device,
-              &allocInfo,
-              &newPipeline->descriptorSet
-            );
-            if (newPipeline->error) {
-                this->error = true;
-                return NULL;
-            }
-            return registerObject(pipelineID,newPipeline,pipelines);
-        }
-        void freePipelines() {
-            for (const auto& pipeline : pipelines) {
-                delete pipeline.second;
-            }
-        }
-
+    - Los subpasses
+     */
+    VkRenderPass renderPass = VK_NULL_HANDLE;
+    VkDescriptorPool descriptorPool = VK_NULL_HANDLE; /**< @brief Descriptor pool usado por la aplicación para asignar sus descriptor sets. */
 private:
-    std::unordered_map<std::string, Pipeline*> pipelines; /**< @brief Map to store menu rendering functions. */
+
 
     void initGUI(const Window *window);
     /**< @brief Initializes Vulkan for rendering.
@@ -127,18 +108,7 @@ VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 
 // ==================== Pipeline gráfico ====================
 
-/// @brief Render pass, describe los attachments y su manejo a lo largo de las subpasses.
-/** @note RenderPass define:
- * 
-- Cuántos attachments hay (color, depth, etc.)
 
-- Sus formatos
-
-- Cómo se cargan/guardan
-
-- Los subpasses
- */
-VkRenderPass renderPass = VK_NULL_HANDLE;
 
 VulkanDevice* vulkanDevice = nullptr;
 
@@ -167,7 +137,7 @@ uint32_t currentFrame = 0;
 
 /// @brief Descriptor pool usado por ImGui para asignar sus descriptor sets.
 VkDescriptorPool imguiDescriptorPool = VK_NULL_HANDLE; /**< @brief Descriptor pool usado por ImGui para asignar sus descriptor sets. */
-VkDescriptorPool descriptorPool = VK_NULL_HANDLE; /**< @brief Descriptor pool usado por la aplicación para asignar sus descriptor sets. */
+
 
 };
 

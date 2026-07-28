@@ -1,8 +1,8 @@
 #ifndef SWAPCHAIN_H
 #define SWAPCHAIN_H
 
-#include <vector>
-#include <Vulkan/vulkan.h>
+
+
 #include "Window.h"
 #include "VulkanDevice.h"
 /**
