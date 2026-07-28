@@ -176,29 +176,37 @@ Pipeline::Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, Pipeline
     colorBlending.pAttachments    = &colorBlendAttachment;
 
     // 8. Pipeline layout (vacío por ahora: sin descriptor sets ni push constants)
-    VkDescriptorSetLayoutBinding uboBinding{};
-    uboBinding.binding = 0;
-    uboBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    uboBinding.descriptorCount = 1;
-    uboBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT; // o VERTEX_BIT según dónde esté el uniform
-    uboBinding.pImmutableSamplers = nullptr;
+    VkDescriptorSetLayoutBinding* bindings;
+    bindings = static_cast<VkDescriptorSetLayoutBinding*>(malloc(sizeof (VkDescriptorSetLayoutBinding)*config.bindingsCount));
+    for (int i = 0; i < config.bindingsCount; i++)
+    {
+        bindings[i] = {};
+        bindings[i].binding = i;
+        bindings[i].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        bindings[i].descriptorCount = 1;
+        bindings[i].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT; // o VERTEX_BIT según dónde esté el uniform
+        bindings[i].pImmutableSamplers = nullptr;
+    }
 
-VkDescriptorSetLayoutCreateInfo layoutInfo{};
-layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-layoutInfo.bindingCount = 1;
-layoutInfo.pBindings = &uboBinding;
-vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout);
+
+
+    VkDescriptorSetLayoutCreateInfo layoutInfo{};
+    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    layoutInfo.bindingCount = config.bindingsCount;
+    layoutInfo.pBindings = bindings;
+    vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout);
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-pipelineLayoutInfo.setLayoutCount = 1;
-pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+    pipelineLayoutInfo.setLayoutCount = 1;
+    pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
 
     if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
         std::cout << ("(VULKAN) Error in createPipeline(): No se pudo crear el pipeline layout.") << std::endl;
         error = true;
         return;
     }
+    free(bindings);
 
     // 9. Crear el pipeline gráfico
     VkGraphicsPipelineCreateInfo pipelineInfo{};

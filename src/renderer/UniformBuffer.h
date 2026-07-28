@@ -26,7 +26,7 @@ public:
         fieldToUpdateQueue.push_back(fields[index]);
     };
 
-    void updateDescriptorSet(VulkanDevice *device, VkDescriptorSet descriptorSet);
+
 
     /** @brief Funcion finalmente actualiza los valores en el shader de los fields que esten en el field queue**/
     void clearQueue();
@@ -54,6 +54,8 @@ public:
     * **/
     [[nodiscard]] const UniformBuffer::UniformField* getAndPopOfQueue();
     void setRaw(size_t index);
+    VkWriteDescriptorSet getWriteDescriptor(VkDescriptorSet descriptorSet, uint32_t binding,
+                                            VkDescriptorBufferInfo& bufferInfoOut);
     void setRaw(const UniformField* uniformField);
 
 };

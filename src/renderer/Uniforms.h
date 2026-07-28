@@ -21,7 +21,6 @@ public:
         UniformBuffer* uniform;
         enum Fields
         {
-            VIEW_PROJECTION_MATRIX,
             DIRECTION,
             COLOR
         };

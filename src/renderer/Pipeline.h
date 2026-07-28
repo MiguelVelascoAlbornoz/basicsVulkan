@@ -29,6 +29,8 @@ class Pipeline {
             VK_FRONT_FACE_CLOCKWISE;
 
         float lineWidth = 1.0f;
+
+        int bindingsCount = 1;
     };
         /**
      * @brief Wraps SPIR-V bytecode into a VkShaderModule so it can be used in a pipeline shader stage.

@@ -11,6 +11,10 @@ layout(std140, binding = 0) uniform UniformBufferObject {
     mat4 viewProjectionMatrix;
     float time;
 } ubo;
+layout(std140, binding = 1) uniform ModelUBO {
+    vec3 direction;
+    vec3 color;
+} modelUbo;
 
 
 void main() {

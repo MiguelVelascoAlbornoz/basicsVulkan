@@ -101,7 +101,8 @@ void Renderer::initVulkan(Window* window)  {
         }
         VkDescriptorPoolSize poolSize{};
         poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSize.descriptorCount = 2;
+        poolSize.descriptorCount = 3;
+
         VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = 1;
@@ -124,6 +125,7 @@ void Renderer::initVulkan(Window* window)  {
         linePipelineConfig.vertexAttributes = {AttribType::VEC3};
         linePipelineConfig.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
         linePipelineConfig.shaderName = "lines";
+        linePipelineConfig.bindingsCount = 2;
 
         defaultPipeline = registerPipelines("test",&pipelineConfigDefault);
         linesPipeline = registerPipelines("lines",&linePipelineConfig);

@@ -10,7 +10,7 @@
 #include <imGUI/imgui.h>
 #include <imGUI/imgui_impl_sdl3.h>
 
-#include "../renderer/Mesh/Meshes.h"
+#include "../Registry/Meshes.h"
 #include "../Menu/EditorMenu.h"
 #include "../renderer/Camera.h"
 
@@ -26,19 +26,31 @@ void App::initUniforms()
     Uniforms::cameraUniform = Uniforms::registerUniform("camera_uniform", new UniformBuffer(device,inputsMap));
 
     inputsMap = {
-        {player->camera->getViewProjectionMatrix(),AttribType::MAT4},
         {&Uniforms::lineUniform.direction,AttribType::VEC3},
         {&Uniforms::lineUniform.color,AttribType::VEC3},
     };
     Uniforms::lineUniform.uniform = Uniforms::registerUniform("line_uniform", new UniformBuffer(device,inputsMap));
-    Uniforms::lineUniform.color = vec3(1.0f);
+    Uniforms::lineUniform.color = vec3(1.0f,0.0f,1.0f);
     Uniforms::lineUniform.direction = vec3(0.0f,0.0f,-1.0f);
 
+    std::vector<VkDescriptorBufferInfo> bufferInfos(2);
+    std::vector<VkWriteDescriptorSet> writes;
 
-    Uniforms::cameraUniform->updateDescriptorSet(renderer->getVulkanDevice(), renderer->getPipeline("test")->descriptorSet);
-    Uniforms::cameraUniform->updateDescriptorSet(renderer->getVulkanDevice(), renderer->getPipeline("lines")->descriptorSet);
+    writes.push_back(Uniforms::cameraUniform->getWriteDescriptor(
+        renderer->linesPipeline->descriptorSet, 0, bufferInfos[0]));
 
+    writes.push_back(Uniforms::lineUniform.uniform->getWriteDescriptor(
+        renderer->linesPipeline->descriptorSet, 1, bufferInfos[1]));
 
+    vkUpdateDescriptorSets(device->device,
+        static_cast<uint32_t>(writes.size()), writes.data(),
+        0, nullptr);
+
+    std::vector<VkDescriptorBufferInfo> bufferInfosTest(1);
+    std::vector<VkWriteDescriptorSet> writesTest;
+    writesTest.push_back(Uniforms::cameraUniform->getWriteDescriptor(
+        renderer->defaultPipeline->descriptorSet, 0, bufferInfosTest[0]));
+    vkUpdateDescriptorSets(device->device, 1, writesTest.data(), 0, nullptr);
 }
 
 App::App() {
@@ -85,18 +97,8 @@ App::App() {
     {
         Pipeline* defaultPipeline = renderer->getPipeline("lines");
         defaultPipeline->bind(commandBuffer); // bind the graphics pipeline (shaders + fixed-function state);
-        vkCmdBindDescriptorSets(
-        commandBuffer,
-        VK_PIPELINE_BIND_POINT_GRAPHICS,
-        defaultPipeline->getPipelineLayout(),
-        0,
-        1,
-        &defaultPipeline->descriptorSet,
-        0,
-        nullptr
-    );
-
-
+        vkCmdBindDescriptorSets(commandBuffer,VK_PIPELINE_BIND_POINT_GRAPHICS,defaultPipeline->getPipelineLayout(),0,1,&defaultPipeline->descriptorSet,0,nullptr);
+        Uniforms::lineUniform.uniform->setRaw(Uniforms::LineUBO::COLOR);
         Meshes::meshes["line_mesh"]->bind(commandBuffer);
         Meshes::meshes["line_mesh"]->draw(commandBuffer);
     };

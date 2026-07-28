@@ -10,8 +10,8 @@
 #ifndef BASICSVULKAN_MESHES_H
 #define BASICSVULKAN_MESHES_H
 
-#include "../../App/Utilitys.h"
-#include "Mesh.h"
+#include "../App/Utilitys.h"
+#include "../renderer/Mesh/Mesh.h"
 #include <unordered_map>
 
 class Meshes {

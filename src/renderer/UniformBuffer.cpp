@@ -81,30 +81,20 @@ void UniformBuffer::setRaw(size_t index) {
     setRaw(field);
 }
 
-
-void UniformBuffer::updateDescriptorSet(VulkanDevice* device, VkDescriptorSet descriptorSet)
+VkWriteDescriptorSet UniformBuffer::getWriteDescriptor(VkDescriptorSet descriptorSet, uint32_t binding, VkDescriptorBufferInfo& bufferInfoOut)
 {
-    VkDescriptorBufferInfo bufferInfo{};
-    bufferInfo.buffer = buffer;
-    bufferInfo.offset = 0;
-    bufferInfo.range = bytesCount;
-    VkWriteDescriptorSet descriptorWrite{};
-    descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptorWrite.dstSet = descriptorSet;
-    descriptorWrite.dstBinding = 0;
-    descriptorWrite.dstArrayElement = 0;
+    bufferInfoOut.buffer = buffer;
+    bufferInfoOut.offset = 0;
+    bufferInfoOut.range = bytesCount;
 
-    descriptorWrite.descriptorType =
-    VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-
-    descriptorWrite.descriptorCount = 1;
-
-    descriptorWrite.pBufferInfo = &bufferInfo;
-    vkUpdateDescriptorSets(
-    device->device,
-    1,
-    &descriptorWrite,
-    0,
-    nullptr
-    );
+    VkWriteDescriptorSet write{};
+    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    write.dstSet = descriptorSet;
+    write.dstBinding = binding;
+    write.dstArrayElement = 0;
+    write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    write.descriptorCount = 1;
+    write.pBufferInfo = &bufferInfoOut;
+    return write;
 }
+
