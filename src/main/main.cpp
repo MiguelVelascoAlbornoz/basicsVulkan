@@ -12,7 +12,7 @@ int main() {
     std::cout << "Release Mode" << std::endl;
     #endif
 
-    App app = App(Registry::registryCallback);
+    auto app = App(Registry::registryCallback);
 
 
     return 0;

@@ -22,16 +22,11 @@
 class App {
 public:
 
-
-
-    App();
-
-
     Window* window = nullptr; /**< window pointer, must be deleted must be deleted and end*/
     Renderer* renderer = nullptr; /**< renderer pointer, must be deleted at end */
     Scene* scene = nullptr; /**< scene pointer, must be deleted at end */
 
-    App(std::function<void(App*)> registryCallback);
+    App(const std::function<void(App*)>& registryCallback);
     ~App();
     Player* player;
     bool editorMode = false;

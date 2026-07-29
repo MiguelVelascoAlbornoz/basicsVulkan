@@ -52,9 +52,8 @@ const UniformBuffer::UniformField* UniformBuffer::getAndPopOfQueue(){
         const UniformField* retValue = fieldToUpdateQueue.back();
         fieldToUpdateQueue.pop_back();
         return retValue;
-    } else {
-        return nullptr;
     }
+    return nullptr;
 }
 
 void UniformBuffer::setRaw(const UniformField* uniformField) {

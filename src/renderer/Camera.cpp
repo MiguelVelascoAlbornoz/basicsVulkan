@@ -70,6 +70,7 @@ void Camera::setPerspective(float fov, float aspectRatio, float nearPlane, float
     this->nearPlane = nearPlane;
     this->farPlane = farPlane;
     projectionMatrix = glm::perspective(glm::radians(fov), aspectRatio, nearPlane, farPlane);
+	projectionMatrix[1][1] *=-1;
     updateViewProjectionMatrix();
 
 }

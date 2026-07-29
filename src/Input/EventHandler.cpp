@@ -12,9 +12,9 @@ void App::manageEvents() {
           continue;
         } 
         if (event.type == SDL_EVENT_KEY_DOWN) {
-            switch (SDL_Keycode key = event.key.key) {
+            switch (event.key.key) {
                 case SDLK_ESCAPE:
-                    acosh(key);
+
                     runnig = false;
                     break;
                 case SDLK_F11:
@@ -62,7 +62,7 @@ void App::managePlayerMovement() {
     vec3 delta = vec3();
     if (keys[SDL_SCANCODE_SPACE])
     {
-        delta = delta - cameraWorldMatrix[0];
+        delta = delta + cameraWorldMatrix[0];
 
     }
     if (keys[SDL_SCANCODE_W]) {
@@ -70,11 +70,11 @@ void App::managePlayerMovement() {
 
     }
     if (keys[SDL_SCANCODE_S]) {
-        delta =delta - cameraWorldMatrix[1];
+        delta =delta + cameraWorldMatrix[1];
 
     }
     if (keys[SDL_SCANCODE_A]) {
-        delta =delta + cameraWorldMatrix[2];
+        delta =delta - cameraWorldMatrix[2];
 
     }
     if (keys[SDL_SCANCODE_D]) {
@@ -82,7 +82,7 @@ void App::managePlayerMovement() {
 
     }
     if (keys[SDL_SCANCODE_LSHIFT]) {
-        delta =delta + cameraWorldMatrix[0];
+        delta =delta - cameraWorldMatrix[0];
 
     }
     if (delta.x != 0 || delta.y != 0 || delta.z != 0) {
@@ -98,7 +98,7 @@ void App::managePlayerMovement() {
 void App::manageCameraRotation(SDL_MouseMotionEvent event) {
         vec4 cameraRotation =  player->camera->getCameraRotation();
         float realSensibility = static_cast<float>(deltaTime) * player->rotationSensitivity /1000.0f;
-        vec3 newFacing(cameraRotation.x + event.xrel* realSensibility, cameraRotation.y + event.yrel * realSensibility, cameraRotation.z);
+        vec3 newFacing(cameraRotation.x + event.xrel* realSensibility, cameraRotation.y - event.yrel * realSensibility, cameraRotation.z);
          player->setRotation(newFacing.x,newFacing.y,newFacing.z,cameraRotation.w);
         Uniforms::cameraUniform->addIndexToQueue(Uniforms::CameraUBO::VIEW_PROJECTION_MATRIX);
 }

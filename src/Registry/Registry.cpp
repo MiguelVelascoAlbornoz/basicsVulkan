@@ -26,32 +26,21 @@ void Registry::initUniforms(const App* app)
     };
     Uniforms::cameraUniform = Uniforms::registerUniform(CAMERA_UNIFORM_ID, new UniformBuffer(device,inputsMap));
 
-    inputsMap = {
-        {&Uniforms::lineUniform.direction,AttribType::VEC3},
-        {&Uniforms::lineUniform.color,AttribType::VEC3},
-    };
-    Uniforms::lineUniform.uniform = Uniforms::registerUniform(LINE_UNIFORM_ID, new UniformBuffer(device,inputsMap));
-    Uniforms::lineUniform.color = vec3(1.0f,0.0f,1.0f);
-    Uniforms::lineUniform.direction = vec3(0.0f,0.0f,-1.0f);
-
-    std::vector<VkDescriptorBufferInfo> bufferInfos(2);
-    std::vector<VkWriteDescriptorSet> writes;
-
-    writes.push_back(Uniforms::cameraUniform->getWriteDescriptor(
-        Pipelines::linesPipeline->descriptorSet, 0, bufferInfos[0]));
-
-    writes.push_back(Uniforms::lineUniform.uniform->getWriteDescriptor(
-        Pipelines::linesPipeline->descriptorSet, 1, bufferInfos[1]));
-
-    vkUpdateDescriptorSets(device->device,
-        static_cast<uint32_t>(writes.size()), writes.data(),
-        0, nullptr);
-
     std::vector<VkDescriptorBufferInfo> bufferInfosTest(1);
     std::vector<VkWriteDescriptorSet> writesTest;
     writesTest.push_back(Uniforms::cameraUniform->getWriteDescriptor(
         Pipelines::defaultPipeline->descriptorSet, 0, bufferInfosTest[0]));
     vkUpdateDescriptorSets(device->device, 1, writesTest.data(), 0, nullptr);
+
+    std::vector<VkDescriptorBufferInfo> bufferInfos(1);
+    std::vector<VkWriteDescriptorSet> writes;
+
+    writes.push_back(Uniforms::cameraUniform->getWriteDescriptor(
+        Pipelines::linesPipeline->descriptorSet, 0, bufferInfos[0]));
+
+    vkUpdateDescriptorSets(device->device,static_cast<uint32_t>(writes.size()), writes.data(),0, nullptr);
+
+
 }
 
 void Registry::initPipelines(const App* app)
@@ -65,7 +54,8 @@ void Registry::initPipelines(const App* app)
     linePipelineConfig.vertexAttributes = {AttribType::VEC3};
     linePipelineConfig.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
     linePipelineConfig.shaderName = "lines";
-    linePipelineConfig.bindingsCount = 2;
+    linePipelineConfig.bindingsCount = 1;
+    linePipelineConfig.pushConstantsSize = sizeof(Uniforms::lineUniform);
     Pipelines::linesPipeline = new Pipeline(app->renderer->getVulkanDevice(),app->renderer->renderPass,linePipelineConfig,app->renderer->descriptorPool);
 
 

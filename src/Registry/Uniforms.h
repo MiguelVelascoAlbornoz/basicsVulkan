@@ -16,11 +16,10 @@ class Uniforms
 {
 
 public:
-    struct LineUBO
+    struct alignas(16) LineUBO
     {
-        glm::vec3 color;
-        glm::vec3 direction;
-        UniformBuffer* uniform;
+        alignas(16) glm::vec3 color;
+        alignas(16) glm::vec3 direction;
         enum Fields
         {
             DIRECTION,

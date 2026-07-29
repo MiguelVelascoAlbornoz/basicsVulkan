@@ -6,8 +6,9 @@
  * @author Miguel Velasco
  */
 
+#include <functional>
 #include "Menu.h"
-#include "../Scene/Player.h"
+class Player;
 
 
 

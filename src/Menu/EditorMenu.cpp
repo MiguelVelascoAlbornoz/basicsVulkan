@@ -1,7 +1,6 @@
 #include "EditorMenu.h"
-
 #include <imGUI/imgui.h>
-
+#include "../Scene/Player.h"
 /**
  * @file EditorMenu.h
  * @brief StartMenu class declaration and all his features.
@@ -61,9 +60,11 @@ void EditorMenu::render()
 			onPlayerRenderUpdateCallback();
 		}
 		ImGui::Text("Far:"); ImGui::SameLine();
-		if (DragFloat("##Far", &cameraSettings.farPlane, 1)) {
-			player->setPlayerCameraSettings(cameraSettings);		}
-		onPlayerRenderUpdateCallback();
+		if (DragFloat("##Far", &cameraSettings.farPlane, 1)){
+			player->setPlayerCameraSettings(cameraSettings);
+			onPlayerRenderUpdateCallback();
+		}
+
 		ImGui::Text("Near:"); ImGui::SameLine();
 		if (DragFloat("##Near", &cameraSettings.nearPlane, .1)) {
 			player->setPlayerCameraSettings(cameraSettings);

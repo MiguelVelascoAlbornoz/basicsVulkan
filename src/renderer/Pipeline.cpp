@@ -94,8 +94,15 @@ Pipeline::Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, Pipeline
     
     VkShaderModule vertShaderModule;
     VkShaderModule fragShaderModule;
-    if (!loadShader(config.shaderName, vertShaderModule, "vert") || !loadShader(config.shaderName, fragShaderModule, "frag")) {
+    if (!loadShader(config.shaderName, vertShaderModule, "vert") ) {
         error = true;
+        return;
+    }
+    if (!loadShader(config.shaderName, fragShaderModule, "frag"))
+    {
+        error = true;
+        vkDestroyShaderModule(device, vertShaderModule, nullptr);
+
         return;
     }
 
@@ -188,8 +195,6 @@ Pipeline::Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, Pipeline
         bindings[i].pImmutableSamplers = nullptr;
     }
 
-
-
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     layoutInfo.bindingCount = config.bindingsCount;
@@ -197,13 +202,30 @@ Pipeline::Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, Pipeline
     vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout);
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+    VkPushConstantRange pushConstantRange{}; // vive hasta el final de la función
+
+    if (config.pushConstantsSize != 0)
+    {
+        pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+        pushConstantRange.offset = 0;
+        pushConstantRange.size = config.pushConstantsSize;
+
+        pipelineLayoutInfo.pushConstantRangeCount = 1;
+        pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
+    }
+
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = 1;
     pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
 
+
+
     if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
         std::cout << ("(VULKAN) Error in createPipeline(): No se pudo crear el pipeline layout.") << std::endl;
         error = true;
+        vkDestroyShaderModule(device, fragShaderModule, nullptr);
+        vkDestroyShaderModule(device, vertShaderModule, nullptr);
+        free(bindings);
         return;
     }
     free(bindings);
@@ -227,6 +249,9 @@ Pipeline::Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, Pipeline
     if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
         std::cout << ("(VULKAN) Error in createPipeline(): No se pudo crear el graphics pipeline.") << std::endl;
         error = true;
+        vkDestroyShaderModule(device, fragShaderModule, nullptr);
+        vkDestroyShaderModule(device, vertShaderModule, nullptr);
+
         return;
     }
 

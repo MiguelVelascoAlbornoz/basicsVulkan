@@ -11,7 +11,7 @@
 Player::Player(int id) : playerID(id) {
     camera = new Camera();
 
-    settings =new Settings("player" + (playerID), {
+    settings =new Settings(std::string("player") + std::to_string(playerID), {
                             {&speed, "fspeed"},
                             {&speedMultiplier, "fspeedMultiplier"},
                             {&rotationSensitivity, "frotationSensitivity"},
