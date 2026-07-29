@@ -3,9 +3,11 @@
 //
 
 #include "F3GUI.h"
+
+#include <iostream>
 #include <imGUI/imgui.h>
 #include "../Scene/Player.h"
-
+#include <iostream>
 
 void F3GUI::render()
 {
@@ -19,13 +21,15 @@ void F3GUI::render()
     const float yaw = rotationVector[1];
     const float roll = rotationVector[2];
 
+    const unsigned int fps =static_cast<unsigned > (1000.0f/ *this->deltaTime);
     ImGui::Begin("##Data",nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
     ImGui::Text(("Pos: (" + std::to_string(pos->x) + "," + std::to_string(pos->y) + "," + std::to_string(pos->z) + ")").c_str());
     ImGui::Text(("Direction: (" + std::to_string(directionVector.x) + "," + std::to_string(directionVector.y) + "," + std::to_string(directionVector.z) + ")").c_str());
     ImGui::Text(("Left Direction: (" + std::to_string(leftVector.x) + "," + std::to_string(leftVector.y) + "," + std::to_string(leftVector.z) + ")").c_str());
     ImGui::Text(("Up Direction: (" + std::to_string(upVector.x) + "," + std::to_string(upVector.y) + "," + std::to_string(upVector.z) + ")").c_str());
     ImGui::Text(("Angle (pitch,yaw,roll): (" + std::to_string(pitch) + "," + std::to_string(yaw) + "," + std::to_string(roll) + ")").c_str());
-    //ImGui::Text(("Fps: " + std::to_string(1 / ellapsedTime)).c_str());
+    ImGui::Text(("Fps: " +std::to_string(fps)).c_str());
     //ImGui::Text("Direction Vector: (%.5f, %.5f, %.5f)", directionVector->x, directionVector->y, directionVector->z, "%.5f");
     ImGui::End();
+    std::cout << *deltaTime << std::endl;
 }

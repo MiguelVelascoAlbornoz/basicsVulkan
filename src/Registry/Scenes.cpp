@@ -7,6 +7,9 @@
 #include "Meshes.h"
 #include "Pipelines.h"
 #include "Uniforms.h"
+#include <algorithm>
+
+std::vector<Scenes::SceneFunction> Scenes::activeScenes;
 
 void Scenes::renderAxis( const VkCommandBuffer commandBuffer)
 {
@@ -17,13 +20,13 @@ void Scenes::renderAxis( const VkCommandBuffer commandBuffer)
 
     Meshes::meshes[LINE_MESH_ID]->bind(commandBuffer);
     Uniforms::lineUniform.color = glm::vec3(1.0f, .0f, .0f);
-    Uniforms::lineUniform.direction = glm::vec3(1.0f, .0f, .0f);
+    Uniforms::lineUniform.direction = glm::vec3(10000000000000000.0f, .0f, .0f);
     vkCmdPushConstants(commandBuffer, linesPipeline->getPipelineLayout(),VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Uniforms::lineUniform), &Uniforms::lineUniform);
 
     Meshes::meshes[LINE_MESH_ID]->draw(commandBuffer);
 
     Uniforms::lineUniform.color = glm::vec3(.0f, 1.f, .0f);
-    Uniforms::lineUniform.direction = glm::vec3(.0f, 1.f, .0f);
+    Uniforms::lineUniform.direction = glm::vec3(.0f, 100000000000.f, .0f);
     vkCmdPushConstants(commandBuffer, linesPipeline->getPipelineLayout(),VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Uniforms::lineUniform), &Uniforms::lineUniform);
 
 
@@ -31,9 +34,25 @@ void Scenes::renderAxis( const VkCommandBuffer commandBuffer)
 
     Uniforms::lineUniform.color = glm::vec3(.0f, .0f, 1.0f);
 
-    Uniforms::lineUniform.direction = glm::vec3(.0f, .0f, 1.0f);
+    Uniforms::lineUniform.direction = glm::vec3(.0f, .0f, 10000000000000000000000000.0f);
     vkCmdPushConstants(commandBuffer, linesPipeline->getPipelineLayout(),VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Uniforms::lineUniform), &Uniforms::lineUniform);
 
 
     Meshes::meshes[LINE_MESH_ID]->draw(commandBuffer);
+}
+
+void Scenes::turnOnScene(SceneFunction onScene) {
+        Scenes::activeScenes.push_back(onScene);
+}
+void Scenes::turnOffScene(SceneFunction offScene) {
+    auto it = std::find(Scenes::activeScenes.begin(),  Scenes::activeScenes.end(), offScene);
+
+    if (it != Scenes::activeScenes.end())
+    {
+        Scenes::activeScenes.erase(it);
+    } else
+    {
+        std::cerr << "Scene not active" << std::endl;
+    }
+
 }

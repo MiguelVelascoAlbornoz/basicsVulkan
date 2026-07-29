@@ -4,7 +4,7 @@
 
 #include "Registry.h"
 #include "../Menu/F3GUI.h"
-
+#include "../Renderer/Pipeline.h"
 void Registry::registryCallback(const App* app)
 {
     Registry::initPipelines(app);
@@ -77,6 +77,6 @@ void Registry::initMenus(const App* app)
 
     //Registers
     Menus::editorMenu = dynamic_cast<EditorMenu*>(Menus::registerMenu(EDITOR_MENU_ID,new EditorMenu(app->player,[](){Uniforms::onPlayerRenderUpdate();})));
-    Menus::F3Menu = dynamic_cast<F3GUI*>(Menus::registerMenu(F3_MENU_ID,new F3GUI(app->player)));
+    Menus::F3Menu = dynamic_cast<F3GUI*>(Menus::registerMenu(F3_MENU_ID,new F3GUI(app->player,&app->deltaTime)));
 
 }

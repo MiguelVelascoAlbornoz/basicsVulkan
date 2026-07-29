@@ -12,9 +12,11 @@ class Player;
 class F3GUI : public Menu
 {
 public:
-    explicit F3GUI(Player* player) : player(player) {};
+    explicit F3GUI(Player* player, const  unsigned long long* const dTime) : deltaTime(dTime), player(player)
+    {
+    };
     void render() override;
-
+    const unsigned long long* const deltaTime;
 private:
     Player* player; /**< @brief Pointer to the window, used for file dialog operations. */
 };

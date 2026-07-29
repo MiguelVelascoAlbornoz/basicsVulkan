@@ -197,7 +197,7 @@ Renderer::~Renderer()
     }
 }
 
-void Renderer::recordCommandBuffer(Scene* scene, VkCommandBuffer commandBuffer, uint32_t imageIndex) {
+void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
@@ -237,8 +237,10 @@ void Renderer::recordCommandBuffer(Scene* scene, VkCommandBuffer commandBuffer, 
     scissor.extent = swapchainExtent;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-
-        scene->renderFunc(commandBuffer);
+    for (const auto& scene : Scenes::activeScenes)
+    {
+        scene(commandBuffer);
+    }
 
     //scene->render(commandBuffer); // Renderizar la escena (dibujar los meshes)
 
@@ -251,7 +253,7 @@ void Renderer::recordCommandBuffer(Scene* scene, VkCommandBuffer commandBuffer, 
     }
 }
 
-void Renderer::update(Scene* scene)
+void Renderer::update()
 {
     VkDevice device = vulkanDevice->device;
 
@@ -273,7 +275,7 @@ void Renderer::update(Scene* scene)
 
     // 4. Grabar el command buffer de este frame
     vkResetCommandBuffer(commandBuffers[currentFrame], 0);
-    recordCommandBuffer(scene, commandBuffers[currentFrame], imageIndex);
+    recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
 
     // 5. Enviar el command buffer a la cola de graphics
     VkSemaphore waitSemaphores[]      = { imageAvailableSemaphores[currentFrame] };

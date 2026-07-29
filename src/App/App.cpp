@@ -30,7 +30,7 @@ App::App(const std::function<void(App*)>& registryCallback) {
 
     //Test things
     scene = new Scene();
-        std::vector<float> vertices = {
+        std::vector vertices = {
         // Position (x, y, z)   // Color (r, g, b)
         -0.5f, -0.5f, 0.0f,    1.0f, 0.0f, 0.0f, // Vértice 1: rojo
          0.5f, -0.5f, 0.0f,    0.0f, 1.0f, 0.0f, // Vértice 2: verde
@@ -48,7 +48,7 @@ App::App(const std::function<void(App*)>& registryCallback) {
 
 
     registryCallback(this);
-    scene->renderFunc = Scenes::renderAxis;
+
 
     //Finally execution loop
     executionLoop();
@@ -88,7 +88,7 @@ void App::executionLoop()
         Uniforms::cameraUniform->addIndexToQueue(Uniforms::CameraUBO::TIME);
         Uniforms::cameraUniform->clearQueue();
 
-        renderer->update(scene);
+        renderer->update();
         // - - - - - VULKAN RENDER END - - - -
 
         deltaTime = SDL_GetTicks()  - currentTime; // Diferencia de tiempo desde el último frame

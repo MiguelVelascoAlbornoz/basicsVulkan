@@ -9,10 +9,10 @@
 
 
 
-#include "Pipeline.h"
+
 #include "SwapChain.h"
 #include "../Scene/Scene.h"
-
+#include "../Registry/Scenes.h"
 /**
  * @brief The Renderer class encapsulates the creation and management of an SDL renderer, including error management and GUI initialization.
  * It provides methods to initialize the renderer, manage errors, and set up the GUI.
@@ -33,12 +33,12 @@ class Renderer {
         bool error = false; /**< @brief Flag to indicate if there was an error during initialization. */
         SDL_Renderer* renderer;
         [[nodiscard]] VulkanDevice* getVulkanDevice() const { return vulkanDevice; } /**< @brief Get the Vulkan device used by the renderer. */
-        void recordCommandBuffer(Scene* scene,VkCommandBuffer commandBuffer, uint32_t imageIndex);
+        void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
         /**
          * @brief Updates the renderer, including clearing the screen, rendering the GUI, and presenting the rendered content. This method should be called in the main execution loop to continuously update the display.
          * @details Clears the renderer, calls the updateGUI() method to render the GUI elements, and then presents the rendered content on the screen.
          */
-        void update(Scene* scene);
+        void update();
 
 
         bool onWindowResized(Window* window);
