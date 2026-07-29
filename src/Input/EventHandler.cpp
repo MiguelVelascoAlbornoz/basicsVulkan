@@ -23,6 +23,13 @@ void App::manageEvents() {
                 case SDLK_F3:
 
                     this->F3Mode = !this->F3Mode;
+                    if (F3Mode)
+                    {
+                        Menus::openMenu(F3_MENU_ID);
+                    } else
+                    {
+                        Menus::closeMenu(F3_MENU_ID);
+                    }
                     break;
                 case SDLK_T:
                     if (editorMode) {
@@ -70,11 +77,11 @@ void App::managePlayerMovement() {
 
     }
     if (keys[SDL_SCANCODE_S]) {
-        delta =delta + cameraWorldMatrix[1];
+        delta =delta - cameraWorldMatrix[1];
 
     }
     if (keys[SDL_SCANCODE_A]) {
-        delta =delta - cameraWorldMatrix[2];
+        delta =delta + cameraWorldMatrix[2];
 
     }
     if (keys[SDL_SCANCODE_D]) {

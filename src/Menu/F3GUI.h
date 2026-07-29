@@ -7,10 +7,16 @@
 
 #include "Menu.h"
 
+class Player;
+
 class F3GUI : public Menu
 {
 public:
+    explicit F3GUI(Player* player) : player(player) {};
     void render() override;
+
+private:
+    Player* player; /**< @brief Pointer to the window, used for file dialog operations. */
 };
 
 

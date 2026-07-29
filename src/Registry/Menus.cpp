@@ -9,7 +9,9 @@
 std::unordered_map<std::string,Menu*> Menus::openMenus;
 std::unordered_map<std::string, Menu*> Menus::menus; /**< @brief Map to store menu rendering functions. */
 
+
 EditorMenu* Menus::editorMenu;
+F3GUI* Menus::F3Menu;
 
 Menu* Menus::registerMenu(const std::string& menuID, Menu *menu)
 {

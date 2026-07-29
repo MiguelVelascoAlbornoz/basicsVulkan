@@ -3,8 +3,29 @@
 //
 
 #include "F3GUI.h"
+#include <imGUI/imgui.h>
+#include "../Scene/Player.h"
+
 
 void F3GUI::render()
 {
+    const glm::vec3* pos = player->getPosition();
+    mat3 worldMatrix = player->camera->getWorldMatrix();
+    const vec3 directionVector = worldMatrix[1];
+    const vec3 leftVector = worldMatrix[2];
+    const vec3 upVector = worldMatrix[0];
+    vec3 rotationVector = player->getRotation();
+    const float pitch = rotationVector[0];
+    const float yaw = rotationVector[1];
+    const float roll = rotationVector[2];
 
+    ImGui::Begin("##Data",nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
+    ImGui::Text(("Pos: (" + std::to_string(pos->x) + "," + std::to_string(pos->y) + "," + std::to_string(pos->z) + ")").c_str());
+    ImGui::Text(("Direction: (" + std::to_string(directionVector.x) + "," + std::to_string(directionVector.y) + "," + std::to_string(directionVector.z) + ")").c_str());
+    ImGui::Text(("Left Direction: (" + std::to_string(leftVector.x) + "," + std::to_string(leftVector.y) + "," + std::to_string(leftVector.z) + ")").c_str());
+    ImGui::Text(("Up Direction: (" + std::to_string(upVector.x) + "," + std::to_string(upVector.y) + "," + std::to_string(upVector.z) + ")").c_str());
+    ImGui::Text(("Angle (pitch,yaw,roll): (" + std::to_string(pitch) + "," + std::to_string(yaw) + "," + std::to_string(roll) + ")").c_str());
+    //ImGui::Text(("Fps: " + std::to_string(1 / ellapsedTime)).c_str());
+    //ImGui::Text("Direction Vector: (%.5f, %.5f, %.5f)", directionVector->x, directionVector->y, directionVector->z, "%.5f");
+    ImGui::End();
 }

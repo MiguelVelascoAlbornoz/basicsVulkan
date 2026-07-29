@@ -14,10 +14,14 @@
  */
 
 #define EDITOR_MENU_ID "editor_menu"
+#define F3_MENU_ID "f3_menu"
+
+class F3GUI;
 
 class Menus {
 public:
     static EditorMenu* editorMenu;
+    static F3GUI* F3Menu;
 
     static std::unordered_map<std::string,Menu*> openMenus;
     static std::unordered_map<std::string, Menu*> menus; /**< @brief Map to store menu rendering functions. */
