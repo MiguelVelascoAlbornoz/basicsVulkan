@@ -72,14 +72,27 @@ App::~App()
 
 void App::executionLoop()
 {
+    Uint64 timeAcc = 0;
     Uint64 lastFrameTime = SDL_GetTicks(); // Tiempo del último frame en segundos
+    Uint64 ticksPerSecond = 20;
+    Uint64 msPerTick = static_cast<Uint64>(1000.0f/ticksPerSecond);
+    int maxTicksUntilDesbordo = 5;
     while (runnig) {
         currentTime = SDL_GetTicks(); // Convertir a segundos
         currentTimeInSeconds = static_cast<float>(currentTime)/1000.0f;
         deltaTime = currentTime - lastFrameTime;
         lastFrameTime = currentTime;
+        timeAcc += deltaTime;
 
-        manageEvents();
+        int ticks = 0;
+        while (timeAcc <= msPerTick && ticks < maxTicksUntilDesbordo )
+        {
+            manageEvents();
+            timeAcc -= msPerTick;
+            ticks++;
+        }
+
+
 
         //Render GUI
         renderGUI();
@@ -92,6 +105,7 @@ void App::executionLoop()
         // - - - - - VULKAN RENDER END - - - -
 
         deltaTime = SDL_GetTicks()  - currentTime; // Diferencia de tiempo desde el último frame
+        timeAcc += deltaTime;;
     }
 }
 

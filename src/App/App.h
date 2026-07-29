@@ -35,6 +35,7 @@ public:
     Uint64 lastTickTime = 0; /**< Time of the last frame in seconds.*/
     Uint64 deltaTime = 0; /**< Time difference between the current frame and the last frame in seconds, used for time-based updates. */
     float currentTimeInSeconds = 0.0f;
+
 private:
     /**
      * @brief Main execution loop of the application.
