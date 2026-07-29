@@ -3,3 +3,8 @@
 //
 
 #include "F3GUI.h"
+
+void F3GUI::render()
+{
+
+}
