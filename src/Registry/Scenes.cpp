@@ -41,6 +41,14 @@ void Scenes::renderAxis( const VkCommandBuffer commandBuffer)
     Meshes::meshes[LINE_MESH_ID]->draw(commandBuffer);
 }
 
+void Scenes::renderTest(const VkCommandBuffer commandBuffer) {
+    Pipeline* testPipeline = Pipelines::getPipeline(TEST_PIPELINE_ID);
+    testPipeline->bind(commandBuffer); // bind the graphics pipeline (shaders + fixed-function state);
+    vkCmdBindDescriptorSets(commandBuffer,VK_PIPELINE_BIND_POINT_GRAPHICS,testPipeline->getPipelineLayout(),0,1,&testPipeline->descriptorSet,0,nullptr);
+    Meshes::meshes[CUBE_MESH_ID]->bind(commandBuffer);
+    Meshes::meshes[CUBE_MESH_ID]->draw(commandBuffer);
+}
+
 void Scenes::turnOnScene(SceneFunction onScene) {
         Scenes::activeScenes.push_back(onScene);
 }

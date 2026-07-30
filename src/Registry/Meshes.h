@@ -14,9 +14,12 @@
 #include "../renderer/Mesh/Mesh.h"
 
 #define LINE_MESH_ID "line_mesh"
+#define CUBE_MESH_ID "cube_mesh"
 class Meshes {
 public:
     static Mesh* lineMesh;
+    static Mesh* cubeMesh;
+
     static std::unordered_map<std::string, Mesh*> meshes; /**< @brief Map to store menu rendering functions. */
 
     static Mesh* registerMesh(const std::string& id, Mesh* mesh) {

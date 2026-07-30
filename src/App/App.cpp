@@ -49,7 +49,7 @@ App::App(const std::function<void(App*)>& registryCallback) {
 
     registryCallback(this);
 
-
+    Scenes::turnOnScene(Scenes::renderTest);
     //Finally execution loop
     executionLoop();
 
@@ -73,26 +73,38 @@ App::~App()
 void App::executionLoop()
 {
     Uint64 timeAcc = 0;
-    Uint64 lastFrameTime = SDL_GetTicks(); // Tiempo del último frame en segundos
-    Uint64 ticksPerSecond = 20;
-    Uint64 msPerTick = static_cast<Uint64>(1000.0f/ticksPerSecond);
-    int maxTicksUntilDesbordo = 5;
-    while (runnig) {
-        currentTime = SDL_GetTicks(); // Convertir a segundos
-        currentTimeInSeconds = static_cast<float>(currentTime)/1000.0f;
-        deltaTime = currentTime - lastFrameTime;
-        lastFrameTime = currentTime;
-        timeAcc += deltaTime;
+    Uint64 lastCycleTimeNS = SDL_GetTicks(); // Tiempo del último frame en segundos
 
-        int ticks = 0;
-        while (timeAcc <= msPerTick && ticks < maxTicksUntilDesbordo )
+    Uint64 maxTicksPerSecond = 50;
+    auto minNSPerTick = (1000000000/maxTicksPerSecond);
+    unsigned int maxTicksUntilOverflow = 5;
+
+    //unsigned int lastSecond = 0;
+    //unsigned int cyclesCounter = 0;
+    while (runnig) {
+
+        //Prepare time variables
+        cycleStartTimeNS = SDL_GetTicksNS(); // Convertir a segundos
+        cycleDeltaTimeNS = cycleStartTimeNS - lastCycleTimeNS; //Tiempo entre el inicio del ciclo interior y el inicio de este ciclo
+        lastCycleTimeNS = cycleStartTimeNS;
+        timeAcc += cycleDeltaTimeNS;
+
+
+        //Get evenys
+        manageEvents();
+        //Call update to logic
+        unsigned int ticks = 0;
+
+        while (timeAcc >= minNSPerTick && ticks < maxTicksUntilOverflow )
         {
-            manageEvents();
-            timeAcc -= msPerTick;
+            tickDeltaTimeNS = SDL_GetTicksNS()- tickStartTimeNS;
+            tickStartTimeNS = SDL_GetTicksNS();
+
+            managePlayerMovement();
+            if (!editorMode) manageCameraRotation(mouseMotion);
+            timeAcc -= minNSPerTick;
             ticks++;
         }
-
-
 
         //Render GUI
         renderGUI();
@@ -104,9 +116,25 @@ void App::executionLoop()
         renderer->update();
         // - - - - - VULKAN RENDER END - - - -
 
-        deltaTime = SDL_GetTicks()  - currentTime; // Diferencia de tiempo desde el último frame
-        timeAcc += deltaTime;;
+
+
+        /*//For debug count num of cycles per second
+        uint64_t secondTimer = SDL_GetTicks();
+        unsigned int currentSecond = secondTimer / 1000;
+        if (currentSecond != lastSecond)
+        {
+            //unsigned int numSeconds =currentSecond- lastSecond ;
+
+
+            //unsigned int cyclesPerSecond = static_cast<int>(cyclesCounter / numSeconds);
+
+
+            lastSecond = currentSecond;
+            cyclesCounter = 0;
+        }
+        cyclesCounter++;*/
     }
+
 }
 
 void App::renderGUI() {

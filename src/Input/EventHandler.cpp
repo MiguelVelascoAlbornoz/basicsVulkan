@@ -4,13 +4,15 @@
 
 void App::manageEvents() {
     SDL_Event event;
+    movedMouse = false;
     while (SDL_PollEvent(&event)) {
         ImGui_ImplSDL3_ProcessEvent(&event);
         if (event.type == SDL_EVENT_QUIT) {
            
           runnig = false;
           continue;
-        } 
+        }
+
         if (event.type == SDL_EVENT_KEY_DOWN) {
             switch (event.key.key) {
                 case SDLK_ESCAPE:
@@ -54,12 +56,14 @@ void App::manageEvents() {
                 std::cerr << "Failed to handle window resize event." << std::endl;
                 runnig = false;
             }
-        } else if (event.type == SDL_EVENT_MOUSE_MOTION) {
+        }  if (event.type == SDL_EVENT_MOUSE_MOTION) {
+            mouseMotion = event.motion;
+            movedMouse = true;
 
-            if (!editorMode) manageCameraRotation(event.motion);
+
         }
     }
-    managePlayerMovement();
+
 }
 void App::managePlayerMovement() {
     const bool* keys = SDL_GetKeyboardState(nullptr);
@@ -96,7 +100,7 @@ void App::managePlayerMovement() {
     }
     if (delta.x != 0 || delta.y != 0 || delta.z != 0) {
         delta = normalize(delta);
-        delta = delta*player->speed*static_cast<float>( deltaTime) / 1000.0f;
+        delta = delta*player->speed;
         if (keys[SDL_SCANCODE_LCTRL]) {
             delta = delta*player->speedMultiplier;
         }
@@ -105,8 +109,10 @@ void App::managePlayerMovement() {
     }
 }
 void App::manageCameraRotation(SDL_MouseMotionEvent event) {
+        if (!movedMouse) return;
+
         vec4 cameraRotation =  player->camera->getCameraRotation();
-        float realSensibility = static_cast<float>(deltaTime) * player->rotationSensitivity /1000.0f;
+        float realSensibility =  player->rotationSensitivity;
         vec3 newFacing(cameraRotation.x + event.xrel* realSensibility, cameraRotation.y - event.yrel * realSensibility, cameraRotation.z);
          player->setRotation(newFacing.x,newFacing.y,newFacing.z,cameraRotation.w);
         Uniforms::cameraUniform->addIndexToQueue(Uniforms::CameraUBO::VIEW_PROJECTION_MATRIX);

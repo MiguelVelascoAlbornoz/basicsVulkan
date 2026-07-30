@@ -13,6 +13,8 @@ class Scenes
     using SceneFunction = void(*)(VkCommandBuffer);
     public:
     static void renderAxis( VkCommandBuffer commandBuffer);
+    static void renderTest( VkCommandBuffer commandBuffer);
+
     static void turnOnScene(SceneFunction onScene);
     static void turnOffScene(SceneFunction offScene);
     static std::vector<SceneFunction> activeScenes;
