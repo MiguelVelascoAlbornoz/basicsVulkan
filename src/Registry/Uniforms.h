@@ -16,16 +16,19 @@ class Uniforms
 {
 
 public:
+
     struct alignas(16) LineUBO
     {
-        alignas(16) glm::vec3 color;
         alignas(16) glm::vec3 direction;
+        alignas(16) glm::vec3 color;
+
         enum Fields
         {
             DIRECTION,
             COLOR
         };
     };
+
     struct CameraUBO
     {
         enum Fields

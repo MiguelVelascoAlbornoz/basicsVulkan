@@ -11,10 +11,14 @@ layout(std140, binding = 0) uniform UniformBufferObject {
     mat4 viewProjectionMatrix;
     float time;
 } ubo;
-
+layout(std140,push_constant) uniform ModelUBO {
+    mat4 modelMatrix;
+    vec3 scale;
+    mat4 rotationMatrix;
+} modelUBO;
 
 void main() {
-    fragNormal = normal;
-    vec3 worldPos = vertexLocalPos;
+    fragNormal = vec3(modelUBO.rotationMatrix*vec4(normal,1.0f));
+    vec3 worldPos = vec3(modelUBO.modelMatrix*vec4(vertexLocalPos*modelUBO.scale,1.0f));
     gl_Position = ubo.viewProjectionMatrix*vec4(worldPos, 1.0);
 }

@@ -21,8 +21,7 @@ void F3GUI::render()
     const float yaw = rotationVector[1];
     const float roll = rotationVector[2];
 
-    const unsigned int tps =static_cast<unsigned > (1000000000.0f/ app->tickDeltaTimeNS);
-    const unsigned int cyclesPerSecond =static_cast<unsigned > (1000000000.0f/ app->cycleDeltaTimeNS);
+
     ImGui::SetNextWindowPos(ImVec2(10.0f, 10.0f), ImGuiCond_Always);
     ImGui::Begin("##Data",nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
 
@@ -31,8 +30,8 @@ void F3GUI::render()
     ImGui::Text(("Left Direction: (" + std::to_string(leftVector.x) + "," + std::to_string(leftVector.y) + "," + std::to_string(leftVector.z) + ")").c_str());
     ImGui::Text(("Up Direction: (" + std::to_string(upVector.x) + "," + std::to_string(upVector.y) + "," + std::to_string(upVector.z) + ")").c_str());
     ImGui::Text(("Angle (pitch,yaw,roll): (" + std::to_string(pitch) + "," + std::to_string(yaw) + "," + std::to_string(roll) + ")").c_str());
-    ImGui::Text(("TPS: " +std::to_string(tps)).c_str());
-    ImGui::Text(("Cycles per second: " +std::to_string(cyclesPerSecond)).c_str());
+    ImGui::Text(("TPS: " +std::to_string(app->ticksPerSecond)).c_str());
+    ImGui::Text(("Cycles per second: " +std::to_string(app->cyclesPerSecond)).c_str());
     //ImGui::Text("Direction Vector: (%.5f, %.5f, %.5f)", directionVector->x, directionVector->y, directionVector->z, "%.5f");
     ImGui::End();
     //std::cout << *deltaTime << std::endl;

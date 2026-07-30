@@ -25,7 +25,9 @@ Player::Player(int id) : playerID(id) {
                                 {&cameraSettings.fov, "ffov"},
         {&cameraSettings.aspectRatio, "faspectRatio"},
         {&cameraSettings.nearPlane, "fnearPlane"},
-        {&cameraSettings.farPlane, "ffarPlane"}
+        {&cameraSettings.farPlane, "ffarPlane"},
+        {&cameraSettings.maxCyclesPerSecond, "imaxCyclesPerSecond"},
+        {&cameraSettings.maxTicksPerSecond, "imaxTicksPerSecond"},
                         });
 
     camera->setPosition(position);

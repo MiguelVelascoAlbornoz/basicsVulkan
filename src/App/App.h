@@ -37,7 +37,8 @@ public:
     Uint64 tickDeltaTimeNS = 0; /**< Delay between the start and the start of the past tick. **/
     Uint64 tickStartTimeNS = 0; /**< Exact time of start of the current tick **/
     SDL_MouseMotionEvent mouseMotion;
-
+    Uint64 cyclesPerSecond = 0;
+    Uint64 ticksPerSecond = 0;
     bool movedMouse;
 private:
     /**

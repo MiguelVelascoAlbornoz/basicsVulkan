@@ -5,6 +5,7 @@
 #include "Registry.h"
 #include "../Menu/F3GUI.h"
 #include "../Renderer/Pipeline.h"
+#include "../Scene/Model.h"
 void Registry::registryCallback(const App* app)
 {
     Registry::initPipelines(app);
@@ -49,6 +50,8 @@ void Registry::initPipelines(const App* app)
     //Register pipelines
     Pipeline::PipelineConfig pipelineConfigDefault;
     pipelineConfigDefault.vertexAttributes = {AttribType::VEC3,AttribType::VEC3};
+    pipelineConfigDefault.pushConstantsSize = sizeof(Model::ModelUBO);
+
     Pipelines::defaultPipeline = new Pipeline(app->renderer->getVulkanDevice(),app->renderer->renderPass,pipelineConfigDefault,app->renderer->descriptorPool);
 
     Pipeline::PipelineConfig linePipelineConfig;

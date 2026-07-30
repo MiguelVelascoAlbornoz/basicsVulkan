@@ -119,6 +119,7 @@ bool Renderer::createRenderPass(VkSurfaceFormatKHR* chosenFormat)
     subpass.pipelineBindPoint    = VK_PIPELINE_BIND_POINT_GRAPHICS;
     subpass.colorAttachmentCount = 1;
     subpass.pColorAttachments    = &colorAttachmentRef;
+    
 
     // Dependencia: esperar a que la imagen esté disponible antes de escribir en ella
     VkSubpassDependency dependency{};

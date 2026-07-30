@@ -70,7 +70,14 @@ void EditorMenu::render()
 			player->setPlayerCameraSettings(cameraSettings);
 			onPlayerRenderUpdateCallback();
 		}
-
+		ImGui::Text("Max cycles per second:"); ImGui::SameLine();
+		if (DragInt("##mcps", &cameraSettings.maxCyclesPerSecond, .1)) {
+			player->setPlayerCameraSettings(cameraSettings);
+		}
+		ImGui::Text("Max ticks per second:"); ImGui::SameLine();
+		if (DragInt("##mtps", &cameraSettings.maxTicksPerSecond, .1)) {
+			player->setPlayerCameraSettings(cameraSettings);
+		}
 		Unindent();
 	}
 	if (CollapsingHeader("Movement: ")) {

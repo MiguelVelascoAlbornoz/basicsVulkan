@@ -13,6 +13,8 @@ public:
         float aspectRatio;
         float farPlane;
         float nearPlane;
+        int maxTicksPerSecond;
+        int maxCyclesPerSecond;
     };
     Player(int id);
     ~Player();
