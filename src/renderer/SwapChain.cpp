@@ -178,7 +178,8 @@ bool SwapChain::createSwapChain(Window *window, VkRenderPass renderPass)
         return false;
     }
     uint32_t imageCount = swapchainImageViews.size();
-        // Obtener las imágenes del swapchain
+
+    // Obtener las imágenes del swapchain
     vkGetSwapchainImagesKHR(vulkanDevice->device, swapchain, &imageCount, nullptr);
     swapchainImages.resize(imageCount);
     vkGetSwapchainImagesKHR(vulkanDevice->device, swapchain, &imageCount, swapchainImages.data());

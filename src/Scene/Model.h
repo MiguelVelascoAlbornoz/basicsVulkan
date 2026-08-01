@@ -7,8 +7,11 @@
 
 #include <glm/glm.hpp>
 
+#include "Vulkan/vulkan_core.h"
+
 using namespace glm;
 class Mesh;
+class Pipeline;
 
 class Model
 {
@@ -28,8 +31,10 @@ public:
     };
     void setRotation(vec3 angles);
     void setTranslation(vec3 position);
+    void draw(VkCommandBuffer commandBuffer, Pipeline* pipeline);
     void setModelMatrix(mat4 modelMatrix);
     void setScale(vec3 scale);
+
     Mesh* mesh;
     [[nodiscard]] const ModelUBO* getModelUBO() const {return &model;};
 

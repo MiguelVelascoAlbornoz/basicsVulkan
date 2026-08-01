@@ -67,7 +67,7 @@ createInfo.ppEnabledLayerNames =
     return true;
 }
 
-bool Renderer::createRenderPass(VkSurfaceFormatKHR* chosenFormat)
+bool Renderer::getRenderPassFromSurface(VkSurfaceFormatKHR* chosenFormat)
 {
     //Ver los formatos soportados
     uint32_t formatCount;

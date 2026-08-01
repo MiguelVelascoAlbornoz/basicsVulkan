@@ -82,7 +82,7 @@ private:
      * 3. A subpass dependency to synchronize the implicit layout transition with the swapchain image acquisition.
      * The resulting VkRenderPass is required by createFramebuffers() and createPipeline().
      */
-    bool createRenderPass(VkSurfaceFormatKHR* chosenFormat);
+    bool getRenderPassFromSurface(VkSurfaceFormatKHR* chosenFormat);
 
 
 

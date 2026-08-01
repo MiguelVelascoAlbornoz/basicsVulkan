@@ -72,7 +72,7 @@ void Renderer::initVulkan(Window* window)  {
         }
         this->physicalDevice = vulkanDevice->getPhysicalDevice();
         VkSurfaceFormatKHR* chosenFormat = static_cast<VkSurfaceFormatKHR *>(malloc(sizeof(VkSurfaceFormatKHR)));
-        if (!createRenderPass(chosenFormat)) {
+        if (!getRenderPassFromSurface(chosenFormat)) {
             error = true;
             return;
         }
@@ -91,8 +91,6 @@ void Renderer::initVulkan(Window* window)  {
             return;
         }
         if (
-           
-
              !createSyncObjects()
         ) {
             error = true;

@@ -47,7 +47,7 @@ void Scenes::renderTest(const VkCommandBuffer commandBuffer) {
     Model cubeModel;
     cubeModel.mesh = Meshes::cubeMesh;
     cubeModel.setTranslation(vec3(0.0f,0.0f,0.0f));
-    cubeModel.setRotation(vec3(SDL_GetTicks()/1000.0f,432,0.0f));
+    cubeModel.setRotation(vec3(0,SDL_GetTicks()/1000.0f,0.0f));
     cubeModel.setScale(vec3(1.0f,1.0f,1.0f));
 
     Pipeline* testPipeline = Pipelines::getPipeline(TEST_PIPELINE_ID);
@@ -55,10 +55,7 @@ void Scenes::renderTest(const VkCommandBuffer commandBuffer) {
     vkCmdBindDescriptorSets(commandBuffer,VK_PIPELINE_BIND_POINT_GRAPHICS,testPipeline->getPipelineLayout(),0,1,&testPipeline->descriptorSet,0,nullptr);
 
 
-    vkCmdPushConstants(commandBuffer, testPipeline->getPipelineLayout(),VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(Model::ModelUBO), cubeModel.getModelUBO() );
-
-    Meshes::meshes[CUBE_MESH_ID]->bind(commandBuffer);
-    Meshes::meshes[CUBE_MESH_ID]->draw(commandBuffer);
+    cubeModel.draw(commandBuffer,testPipeline);
 }
 
 void Scenes::turnOnScene(SceneFunction onScene) {
