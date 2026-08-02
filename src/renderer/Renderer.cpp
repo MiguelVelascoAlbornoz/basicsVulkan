@@ -8,7 +8,8 @@
 #include <imGUI/imgui_impl_sdl3.h>
 #include <SDL3/SDL_vulkan.h>
 #include "../Registry/Pipelines.h"
-
+#include "Mesh/FrameBufferObject.h"
+#include "vulkan/vulkan_raii.hpp"
 class Menu;
 /**
  * @brief Initializes the GUI using ImGui with SDL3 and SDL_Renderer3 backends.
@@ -195,6 +196,7 @@ Renderer::~Renderer()
     }
 }
 
+
 void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -204,6 +206,8 @@ void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
         return;
     }
 
+
+    //END INICIO DEL DIBUJO EN EL SWAPCHAIN
     VkClearValue clearColor = { {{0.0f, 0.0f, 0.0f, 1.0f}} }; // negro
 
     VkExtent2D swapchainExtent = swapChain->getSwapchainExtent();

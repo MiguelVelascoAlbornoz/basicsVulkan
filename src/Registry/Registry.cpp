@@ -5,6 +5,7 @@
 #include "Registry.h"
 #include "../Menu/F3GUI.h"
 #include "../Renderer/Pipeline.h"
+#include "../renderer/Mesh/FrameBufferObject.h"
 #include "../Scene/Model.h"
 void Registry::registryCallback(const App* app)
 {

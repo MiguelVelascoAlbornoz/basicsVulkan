@@ -292,7 +292,10 @@ void VulkanDevice::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
     // 4. Asociar la memoria alocada con el buffer creado
     vkBindBufferMemory(device, buffer, bufferMemory, 0);
 }
-uint32_t VulkanDevice::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
+uint32_t VulkanDevice::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
+{
+
+
     VkPhysicalDeviceMemoryProperties memProperties;
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
 

@@ -230,6 +230,21 @@ Pipeline::Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, Pipeline
     }
     free(bindings);
 
+
+    //FOR DEPTHSTENCIL
+    VkPipelineDepthStencilStateCreateInfo depthStencil{};
+    depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    depthStencil.depthTestEnable = VK_TRUE;
+    depthStencil.depthWriteEnable = VK_TRUE;
+    depthStencil.depthCompareOp = VK_COMPARE_OP_LESS; // más cercano gana
+    depthStencil.depthBoundsTestEnable = VK_FALSE;
+    depthStencil.minDepthBounds = 0.0f;
+    depthStencil.maxDepthBounds = 1.0f;
+    depthStencil.stencilTestEnable = VK_FALSE; // ponlo en VK_TRUE si usas stencil
+    depthStencil.front = {}; // solo relevante si stencilTestEnable = VK_TRUE
+    depthStencil.back = {};
+
+
     // 9. Crear el pipeline gráfico
     VkGraphicsPipelineCreateInfo pipelineInfo{};
     pipelineInfo.sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -245,6 +260,7 @@ Pipeline::Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, Pipeline
     pipelineInfo.layout              = pipelineLayout;
     pipelineInfo.renderPass          = renderPass;
     pipelineInfo.subpass             = 0;
+    pipelineInfo.pDepthStencilState = &depthStencil;
 
     if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
         std::cout << ("(VULKAN) Error in createPipeline(): No se pudo crear el graphics pipeline.") << std::endl;

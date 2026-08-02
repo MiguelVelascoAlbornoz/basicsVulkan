@@ -13,6 +13,7 @@
 #include "SwapChain.h"
 #include "../Scene/Scene.h"
 #include "../Registry/Scenes.h"
+class FrameBufferObject;
 /**
  * @brief The Renderer class encapsulates the creation and management of an SDL renderer, including error management and GUI initialization.
  * It provides methods to initialize the renderer, manage errors, and set up the GUI.
@@ -43,7 +44,7 @@ class Renderer {
 
         bool onWindowResized(Window* window);
 
-
+        FrameBufferObject* testFBO;
     /// @brief Render pass, describe los attachments y su manejo a lo largo de las subpasses.
     /** @note RenderPass define:
      *
