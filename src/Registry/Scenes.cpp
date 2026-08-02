@@ -44,7 +44,7 @@ void Scenes::renderAxis( const VkCommandBuffer commandBuffer)
 
 void Scenes::renderTest(const VkCommandBuffer commandBuffer) {
 
-    Model cubeModel;
+    /**Model cubeModel;
     cubeModel.mesh = Meshes::cubeMesh;
     cubeModel.setTranslation(vec3(0.0f,0.0f,0.0f));
     cubeModel.setRotation(vec3(0,SDL_GetTicks()/1000.0f,0.0f));
@@ -55,7 +55,11 @@ void Scenes::renderTest(const VkCommandBuffer commandBuffer) {
     vkCmdBindDescriptorSets(commandBuffer,VK_PIPELINE_BIND_POINT_GRAPHICS,testPipeline->getPipelineLayout(),0,1,&testPipeline->descriptorSet,0,nullptr);
 
 
-    cubeModel.draw(commandBuffer,testPipeline);
+    cubeModel.draw(commandBuffer,testPipeline);**/
+    Pipeline* quadPipeline = Pipelines::getPipeline(POST_PROCESS_PIPELINE_ID);
+    quadPipeline->bind(commandBuffer);
+    Meshes::quadMesh->bind(commandBuffer);
+    Meshes::quadMesh->draw(commandBuffer);
 }
 
 void Scenes::turnOnScene(SceneFunction onScene) {

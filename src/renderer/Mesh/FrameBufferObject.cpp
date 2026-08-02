@@ -5,24 +5,134 @@
 #include <cstring>
 #include <stbImage/stb_image_write.h>
 
-FrameBufferObject::FrameBufferObject(VulkanDevice* device, uint32_t width, uint32_t height, VkFormat colorFormat)
-    : device(device), width(width), height(height), colorFormat(colorFormat)
+FrameBufferObject::FrameBufferObject(VulkanDevice* device, uint32_t width, uint32_t height,
+                                      VkFormat colorFormat, bool useDepth)
+    : device(device), width(width), height(height), colorFormat(colorFormat), useDepth(useDepth)
 {
     createColorResources();
     if (error) return;
+    if (useDepth) {
+        createDepthResources();
+        if (error) return;
+    }
     createRenderPass();
     if (error) return;
     createFramebuffer();
 }
+void FrameBufferObject::createFramebuffer()
+{
+    std::vector<VkImageView> attachments = { colorImageView };
+    if (useDepth) {
+        attachments.push_back(depthImageView);
+    }
 
+    VkFramebufferCreateInfo framebufferInfo{};
+    framebufferInfo.sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+    framebufferInfo.renderPass      = renderPass;
+    framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+    framebufferInfo.pAttachments    = attachments.data();
+    framebufferInfo.width           = width;
+    framebufferInfo.height          = height;
+    framebufferInfo.layers          = 1;
+
+    if (vkCreateFramebuffer(device->device, &framebufferInfo, nullptr, &framebuffer) != VK_SUCCESS) {
+        std::cerr << "(FBO) Error: no se pudo crear el framebuffer." << std::endl;
+        error = true;
+    }
+}
 FrameBufferObject::~FrameBufferObject()
 {
     VkDevice dev = device->device;
-    if (framebuffer != VK_NULL_HANDLE)     vkDestroyFramebuffer(dev, framebuffer, nullptr);
-    if (renderPass != VK_NULL_HANDLE)      vkDestroyRenderPass(dev, renderPass, nullptr);
-    if (colorImageView != VK_NULL_HANDLE)  vkDestroyImageView(dev, colorImageView, nullptr);
-    if (colorImage != VK_NULL_HANDLE)      vkDestroyImage(dev, colorImage, nullptr);
+    if (framebuffer != VK_NULL_HANDLE)      vkDestroyFramebuffer(dev, framebuffer, nullptr);
+    if (renderPass != VK_NULL_HANDLE)       vkDestroyRenderPass(dev, renderPass, nullptr);
+
+    if (depthImageView != VK_NULL_HANDLE)   vkDestroyImageView(dev, depthImageView, nullptr);
+    if (depthImage != VK_NULL_HANDLE)       vkDestroyImage(dev, depthImage, nullptr);
+    if (depthImageMemory != VK_NULL_HANDLE) vkFreeMemory(dev, depthImageMemory, nullptr);
+
+    if (colorImageView != VK_NULL_HANDLE)   vkDestroyImageView(dev, colorImageView, nullptr);
+    if (colorImage != VK_NULL_HANDLE)       vkDestroyImage(dev, colorImage, nullptr);
     if (colorImageMemory != VK_NULL_HANDLE) vkFreeMemory(dev, colorImageMemory, nullptr);
+}
+VkFormat FrameBufferObject::findDepthFormat() const
+{
+    const std::vector<VkFormat> candidates = {
+        VK_FORMAT_D32_SFLOAT,
+        VK_FORMAT_D32_SFLOAT_S8_UINT,
+        VK_FORMAT_D24_UNORM_S8_UINT
+    };
+
+    for (VkFormat format : candidates) {
+        VkFormatProperties props;
+        vkGetPhysicalDeviceFormatProperties(device->getPhysicalDevice(), format, &props);
+        if (props.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+            return format;
+        }
+    }
+    std::cerr << "(FBO) Error: no se encontro un formato de depth soportado." << std::endl;
+    return VK_FORMAT_UNDEFINED;
+}
+void FrameBufferObject::createDepthResources()
+{
+    VkDevice dev = device->device;
+
+    depthFormat = findDepthFormat();
+    if (depthFormat == VK_FORMAT_UNDEFINED) {
+        error = true;
+        return;
+    }
+
+    VkImageCreateInfo imageInfo{};
+    imageInfo.sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    imageInfo.imageType     = VK_IMAGE_TYPE_2D;
+    imageInfo.extent.width  = width;
+    imageInfo.extent.height = height;
+    imageInfo.extent.depth  = 1;
+    imageInfo.mipLevels     = 1;
+    imageInfo.arrayLayers   = 1;
+    imageInfo.format        = depthFormat;
+    imageInfo.tiling        = VK_IMAGE_TILING_OPTIMAL;
+    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    imageInfo.usage         = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    imageInfo.samples       = VK_SAMPLE_COUNT_1_BIT;
+    imageInfo.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
+
+    if (vkCreateImage(dev, &imageInfo, nullptr, &depthImage) != VK_SUCCESS) {
+        std::cerr << "(FBO) Error: no se pudo crear la imagen de depth." << std::endl;
+        error = true;
+        return;
+    }
+
+    VkMemoryRequirements memRequirements;
+    vkGetImageMemoryRequirements(dev, depthImage, &memRequirements);
+
+    VkMemoryAllocateInfo allocInfo{};
+    allocInfo.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize  = memRequirements.size;
+    allocInfo.memoryTypeIndex = device->findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    if (vkAllocateMemory(dev, &allocInfo, nullptr, &depthImageMemory) != VK_SUCCESS) {
+        std::cerr << "(FBO) Error: no se pudo alocar memoria para la imagen de depth." << std::endl;
+        error = true;
+        return;
+    }
+    vkBindImageMemory(dev, depthImage, depthImageMemory, 0);
+
+    VkImageViewCreateInfo viewInfo{};
+    viewInfo.sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    viewInfo.image    = depthImage;
+    viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    viewInfo.format   = depthFormat;
+    viewInfo.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_DEPTH_BIT;
+    viewInfo.subresourceRange.baseMipLevel   = 0;
+    viewInfo.subresourceRange.levelCount     = 1;
+    viewInfo.subresourceRange.baseArrayLayer = 0;
+    viewInfo.subresourceRange.layerCount     = 1;
+
+    if (vkCreateImageView(dev, &viewInfo, nullptr, &depthImageView) != VK_SUCCESS) {
+        std::cerr << "(FBO) Error: no se pudo crear el image view de depth." << std::endl;
+        error = true;
+    }
 }
 
 void FrameBufferObject::createColorResources()
@@ -87,6 +197,8 @@ void FrameBufferObject::createColorResources()
 
 void FrameBufferObject::createRenderPass()
 {
+    std::vector<VkAttachmentDescription> attachments;
+
     VkAttachmentDescription colorAttachment{};
     colorAttachment.format         = colorFormat;
     colorAttachment.samples        = VK_SAMPLE_COUNT_1_BIT;
@@ -95,30 +207,51 @@ void FrameBufferObject::createRenderPass()
     colorAttachment.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     colorAttachment.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
-    // La dejamos en TRANSFER_SRC_OPTIMAL, asi al terminar el render pass ya esta lista para copiarla
     colorAttachment.finalLayout    = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    attachments.push_back(colorAttachment);
 
     VkAttachmentReference colorAttachmentRef{};
     colorAttachmentRef.attachment = 0;
     colorAttachmentRef.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
+    VkAttachmentReference depthAttachmentRef{};
+    if (useDepth) {
+        VkAttachmentDescription depthAttachment{};
+        depthAttachment.format         = depthFormat;
+        depthAttachment.samples        = VK_SAMPLE_COUNT_1_BIT;
+        depthAttachment.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        depthAttachment.storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE; // no lo necesitamos fuera del render pass
+        depthAttachment.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        depthAttachment.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
+        depthAttachment.finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        attachments.push_back(depthAttachment);
+
+        depthAttachmentRef.attachment = 1;
+        depthAttachmentRef.layout     = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    }
+
     VkSubpassDescription subpass{};
     subpass.pipelineBindPoint    = VK_PIPELINE_BIND_POINT_GRAPHICS;
     subpass.colorAttachmentCount = 1;
     subpass.pColorAttachments    = &colorAttachmentRef;
+    subpass.pDepthStencilAttachment = useDepth ? &depthAttachmentRef : nullptr;
 
     VkSubpassDependency dependency{};
     dependency.srcSubpass    = VK_SUBPASS_EXTERNAL;
     dependency.dstSubpass    = 0;
-    dependency.srcStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.srcStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                                VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
     dependency.srcAccessMask = 0;
-    dependency.dstStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dependency.dstStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                                VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+                                VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
     VkRenderPassCreateInfo renderPassInfo{};
     renderPassInfo.sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    renderPassInfo.attachmentCount = 1;
-    renderPassInfo.pAttachments    = &colorAttachment;
+    renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+    renderPassInfo.pAttachments    = attachments.data();
     renderPassInfo.subpassCount    = 1;
     renderPassInfo.pSubpasses      = &subpass;
     renderPassInfo.dependencyCount = 1;
@@ -130,28 +263,18 @@ void FrameBufferObject::createRenderPass()
     }
 }
 
-void FrameBufferObject::createFramebuffer()
-{
-    VkImageView attachments[] = { colorImageView };
-
-    VkFramebufferCreateInfo framebufferInfo{};
-    framebufferInfo.sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-    framebufferInfo.renderPass      = renderPass;
-    framebufferInfo.attachmentCount = 1;
-    framebufferInfo.pAttachments    = attachments;
-    framebufferInfo.width           = width;
-    framebufferInfo.height          = height;
-    framebufferInfo.layers          = 1;
-
-    if (vkCreateFramebuffer(device->device, &framebufferInfo, nullptr, &framebuffer) != VK_SUCCESS) {
-        std::cerr << "(FBO) Error: no se pudo crear el framebuffer." << std::endl;
-        error = true;
-    }
-}
-
 void FrameBufferObject::beginRenderPass(VkCommandBuffer cmd)
 {
-    VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
+    std::vector<VkClearValue> clearValues;
+    VkClearValue clearColor{};
+    clearColor.color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+    clearValues.push_back(clearColor);
+
+    if (useDepth) {
+        VkClearValue clearDepth{};
+        clearDepth.depthStencil = {1.0f, 0};
+        clearValues.push_back(clearDepth);
+    }
 
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType             = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -159,8 +282,8 @@ void FrameBufferObject::beginRenderPass(VkCommandBuffer cmd)
     renderPassInfo.framebuffer       = framebuffer;
     renderPassInfo.renderArea.offset = {0, 0};
     renderPassInfo.renderArea.extent = { width, height };
-    renderPassInfo.clearValueCount   = 1;
-    renderPassInfo.pClearValues      = &clearColor;
+    renderPassInfo.clearValueCount   = static_cast<uint32_t>(clearValues.size());
+    renderPassInfo.pClearValues      = clearValues.data();
 
     vkCmdBeginRenderPass(cmd, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 

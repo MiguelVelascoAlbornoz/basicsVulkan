@@ -10,7 +10,8 @@ AttribType AttribType::possibleAttribs[INPUT_TYPE_COUNT] = {
     { .type = AttribType::UCHAR, .size = sizeof(unsigned char), .format = VK_FORMAT_R8_UINT, .align = 4 },
     { .type = AttribType::VEC3, .size = 3 * sizeof(float), .format = VK_FORMAT_R32G32B32_SFLOAT, .align = 16 },
     { .type = AttribType::VEC4, .size = 4 * sizeof(float), .format = VK_FORMAT_R32G32B32A32_SFLOAT, .align = 16 },
-    { .type = AttribType::MAT4, .size = 16 * sizeof(float), .format = VK_FORMAT_R32G32B32A32_SFLOAT, .align = 16 }
+    { .type = AttribType::MAT4, .size = 16 * sizeof(float), .format = VK_FORMAT_R32G32B32A32_SFLOAT, .align = 16 },
+    {.type = AttribType::VEC2, .size = 2*sizeof(float), .format = VK_FORMAT_R32G32_SFLOAT, .align = 8 }
 };
 
 const AttribType* AttribType::getAttribFromInputType(INPUT_TYPES input)

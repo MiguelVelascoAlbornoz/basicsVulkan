@@ -105,7 +105,7 @@ void Renderer::initVulkan(Window* window)  {
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = 1;
         poolInfo.pPoolSizes = &poolSize;
-        poolInfo.maxSets = 2;
+        poolInfo.maxSets = 3;
 
 
         vkCreateDescriptorPool(

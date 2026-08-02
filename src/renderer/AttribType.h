@@ -2,7 +2,7 @@
 #define ATTRIB_TYPE_H
 
 #include <vulkan/vulkan_core.h>
-#define INPUT_TYPE_COUNT 11
+#define INPUT_TYPE_COUNT 12
 
 class AttribType {
 public:
@@ -17,7 +17,8 @@ public:
         UCHAR,
         VEC3,
         VEC4,
-        MAT4
+        MAT4,
+        VEC2
     };
 
         INPUT_TYPES type;

@@ -8,6 +8,7 @@ std::unordered_map<std::string, Pipeline*> Pipelines::pipelines;
 
 Pipeline* Pipelines::defaultPipeline;
 Pipeline* Pipelines::linesPipeline;
+Pipeline* Pipelines::postProcessPipeline;
 
 Pipeline* Pipelines::registerPipelines(const std::string &pipelineID, Pipeline* pipeline){
     if (pipeline->error) {

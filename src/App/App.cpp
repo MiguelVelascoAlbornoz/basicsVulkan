@@ -127,7 +127,7 @@ void debugTestFBO(App* app)
 }
 void App::executionLoop()
 {
-    debugTestFBO(this);
+
     Uint64 timeAcc = 0;
     Uint64 lastCycleTimeNS = SDL_GetTicks(); // Tiempo del último frame en segundos
 
@@ -205,6 +205,7 @@ void App::executionLoop()
         }
 
     }
+    debugTestFBO(this);
 
 }
 

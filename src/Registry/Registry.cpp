@@ -66,6 +66,11 @@ void Registry::initPipelines(const App* app)
 
     Pipelines::registerPipelines(TEST_PIPELINE_ID,Pipelines::defaultPipeline);
     Pipelines::registerPipelines(LINES_PIPELINE_ID,Pipelines::linesPipeline);
+
+    Pipeline::PipelineConfig postProcessPipelineConfig;
+    postProcessPipelineConfig.vertexAttributes = {AttribType::VEC2};
+    postProcessPipelineConfig.shaderName = "postProcess";
+    Pipelines::postProcessPipeline = Pipelines::registerPipelines(POST_PROCESS_PIPELINE_ID, new Pipeline(app->renderer->getVulkanDevice(),app->renderer->renderPass,postProcessPipelineConfig,app->renderer->descriptorPool));
 }
 void Registry::initMeshes(const App* app)
 {
@@ -140,6 +145,18 @@ void Registry::initMeshes(const App* app)
         21, 23, 22
     };
     Meshes::cubeMesh = Meshes::registerMesh(CUBE_MESH_ID, new Mesh(device,cubeVertices.data(),sizeof(float)*6,24,cubeIndices));
+
+    std::vector quadVertices = {
+        1.0f,1.0f,
+        1.0f,-1.0f,
+        -1.0f,-1.0f,
+        -1.0f,1.0f,
+    };
+    std::vector<uint32_t> quadIndices = {
+        0, 1, 2,
+        2, 3, 0
+    };
+    Meshes::quadMesh = Meshes::registerMesh(QUAD_MESH_ID, new Mesh(device,quadVertices.data(),sizeof(float)*8,4,quadIndices));
 }
 
 void Registry::initMenus(const App* app)
