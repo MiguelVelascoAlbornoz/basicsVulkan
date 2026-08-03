@@ -7,7 +7,7 @@
 
 #include <imGUI/imgui.h>
 #include "../App/App.h"
-
+#include "../Renderer/Camera.h"
 void F3GUI::render()
 {
     Player* player = app->player;

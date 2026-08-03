@@ -3,22 +3,16 @@
 #ifndef UNIFORM_BUFFER_H
 #define UNIFORM_BUFFER_H
 
-#include "VertexLayout.h"
-#include "VulkanDevice.h"
+#include "AttribType.h"
+#include <vector>
+class VulkanDevice;
 
 
 class UniformBuffer
 {
 public:
 
-    ~UniformBuffer() {
-        vkUnmapMemory(device->device, memory);
-        vkDestroyBuffer(device->device, buffer, nullptr);
-        vkFreeMemory(device->device, memory, nullptr);
-        for (auto field : fields) {
-            delete field;
-        }
-    }
+    ~UniformBuffer();
     UniformBuffer(VulkanDevice *device, std::vector< std::pair<const void*,AttribType::INPUT_TYPES>> &inputs);
 
     /** @brief Mete el dado indice de field en el field queue para que sea actualizada en el shader**/

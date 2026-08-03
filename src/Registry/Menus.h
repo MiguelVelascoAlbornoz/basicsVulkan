@@ -6,7 +6,10 @@
 #ifndef MENU_MANAGER_H
 #define MENU_MANAGER_H
 
-#include "../Menu/EditorMenu.h"
+
+#include "../Menu/Menu.h"
+#include <unordered_map>
+class EditorMenu;
 /**
  * @brief Static class que contiene todo lo necesario para gestionarlos menus y guardarlos.
  * Para usar un menu se registra con un dado ID y un pointer a un menu, despues para que el menu sea renderizado al llamar drawMenus() deve usarser openMenu() y poner el id del menu. Para que no se renderize mas es lo mismo pero con close menu.

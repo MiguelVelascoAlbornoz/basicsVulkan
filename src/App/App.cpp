@@ -6,11 +6,13 @@
  */
 #include "App.h"
 #include <imGUI/imgui_impl_sdl3.h>
-#include "../renderer/Camera.h"
+#include "../Renderer/Renderer.h"
 #include "../Registry/Scenes.h"
-#include "../Renderer/Pipeline.h"
-#include "../Renderer/Mesh/FrameBufferObject.h"
+#include "../Renderer/Window.h"
 #include "../Scene/Model.h"
+#include "../Renderer/VulkanDevice.h"
+#include "../Renderer/UniformBuffer.h"
+
 
 App::App(const std::function<void(App*)>& registryCallback) {
     //Initizialise window
@@ -31,18 +33,6 @@ App::App(const std::function<void(App*)>& registryCallback) {
 
 
 
-    //Test things
-    scene = new Scene();
-        std::vector vertices = {
-        // Position (x, y, z)   // Color (r, g, b)
-        -0.5f, -0.5f, 0.0f,    1.0f, 0.0f, 0.0f, // Vértice 1: rojo
-         0.5f, -0.5f, 0.0f,    0.0f, 1.0f, 0.0f, // Vértice 2: verde
-         0.0f,  0.5f, 0.0f,    0.0f, 0.0f, 1.0f  // Vértice 3: azul
-    };
-
-    std::vector<uint32_t> indices = { 0, 1, 2 }; // Un solo triangular
-    Mesh* mesh = new Mesh( renderer->getVulkanDevice(), vertices.data(), sizeof(float) * 6, 3, indices);
-    Meshes::registerMesh("test_mesh",mesh);
 
     player = new Player(0);
 
@@ -67,7 +57,6 @@ App::~App()
     Meshes::freeMeshes();
     delete player;
     Uniforms::freeUniforms();
-    delete scene;
     delete window;
     delete renderer;
     Menus::freeMenus();

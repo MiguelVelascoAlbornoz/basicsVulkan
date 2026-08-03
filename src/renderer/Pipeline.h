@@ -3,8 +3,10 @@
 
 
 #include <string>
-#include "VulkanDevice.h"
-#include "VertexLayout.h"
+class VulkanDevice;
+
+#include "AttribType.h"
+#include <vector>
 
 class Pipeline {
     

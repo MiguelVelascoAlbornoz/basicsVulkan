@@ -1,8 +1,8 @@
 #include "Pipeline.h"
 #include <memory>
 #include <iostream>
-
-
+#include "VulkanDevice.h"
+#include "VertexLayout.h"
 
 
 VkShaderModule Pipeline::createShaderModule(const std::vector<char> &code)

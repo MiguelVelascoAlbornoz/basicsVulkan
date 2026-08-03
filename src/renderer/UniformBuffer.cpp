@@ -1,8 +1,17 @@
 
 #include "UniformBuffer.h"
 #include <iostream>
+#include "VulkanDevice.h"
 
 
+UniformBuffer::~UniformBuffer() {
+        vkUnmapMemory(device->device, memory);
+        vkDestroyBuffer(device->device, buffer, nullptr);
+        vkFreeMemory(device->device, memory, nullptr);
+        for (auto field : fields) {
+            delete field;
+        }
+}
 /**
  * @brief El constructor itera por cada input, obtiene el tamaño y el align de dado dato y calcula el offset al que se deve meter, despues inicailiza un UniformField que deve ser destruido con delete en el destructor
  * y lo mete en el vector de fields de este objeto. Tambien por defecto cada field empieza en el field queue, osea seran mandados al shader encuando se llame clearQueue().

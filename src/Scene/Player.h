@@ -3,8 +3,10 @@
 #define BASICSVULKAN_PLAYER_H
 
 #include "Player.h"
-#include "../Input/Settings.h"
-#include "../renderer/Camera.h"
+class Settings;
+class Camera;
+#include <glm/glm.hpp>
+using namespace glm;
 
 class Player {
 public:
@@ -22,20 +24,8 @@ public:
     float speed = 0.001;
     float speedMultiplier = 2;
     float rotationSensitivity = 0.01;
-    void setRotation(float yaw,float pitch, float roll, float yawToRoll) {
-        this->yaw = yaw;
-        this->pitch = pitch;
-        this->roll = roll;
-        this->yawToRoll = yawToRoll;
-        camera->setRotation(yaw,pitch,roll,yawToRoll);
-    }
-    void setRotation(vec4& rotation) {
-        yaw = rotation.x;
-        pitch = rotation.y;
-        roll = rotation.z;
-        yawToRoll = rotation.w;
-        camera->setRotation(yaw,pitch,roll,yawToRoll);
-    }
+    void setRotation(float yaw,float pitch, float roll, float yawToRoll);
+    void setRotation(vec4& rotation) ;
     void move(vec3 delta);
     const vec3* getPosition() {
         return &position;

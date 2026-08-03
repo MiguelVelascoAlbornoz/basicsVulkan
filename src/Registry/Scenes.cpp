@@ -9,6 +9,8 @@
 #include "Uniforms.h"
 #include <algorithm>
 #include "../Scene/Model.h"
+#include "SDL3/SDL.h"
+#include "../Renderer/Mesh/Mesh.h"
 
 std::vector<Scenes::SceneFunction> Scenes::activeScenes;
 

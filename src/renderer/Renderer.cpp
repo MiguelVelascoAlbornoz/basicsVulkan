@@ -12,7 +12,13 @@
 #include "../Registry/Pipelines.h"
 #include "Mesh/FrameBufferObject.h"
 #include "vulkan/vulkan_raii.hpp"
+#include "VulkanDevice.h"
 #include "../Registry/Meshes.h"
+#include "SwapChain.h"
+#include "../Registry/Scenes.h"
+#include "Window.h"
+#include "imGUI/imgui_impl_vulkan.h"
+#include "Mesh/Mesh.h"
 class Menu;
 /**
  * @brief Initializes the GUI using ImGui with SDL3 and SDL_Renderer3 backends.

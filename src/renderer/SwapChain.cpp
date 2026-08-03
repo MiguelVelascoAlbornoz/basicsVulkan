@@ -2,6 +2,7 @@
 #include <iostream>
 #include <algorithm>
 #include "Window.h"
+#include "VulkanDevice.h"
 
 SwapChain::SwapChain(VulkanDevice* vulkanDevice,Window* window,VkRenderPass renderPass,VkSurfaceFormatKHR chosenFormat )
 

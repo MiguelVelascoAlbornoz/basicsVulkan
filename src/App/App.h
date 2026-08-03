@@ -6,14 +6,14 @@
 #ifndef APP_H
 #define APP_H
 
-#include "../renderer/Renderer.h"
 #include  "../Registry/Uniforms.h"
 #include "../Registry/Pipelines.h"
 #include "../Registry/Menus.h"
 #include "../Registry/Meshes.h"
 #include "../Scene/Player.h"
-
-
+#include <SDL3/SDL.h>
+class Window;
+class Renderer;
 
 /**
  * @brief The App class serves as the main application class that manages the window, renderer, and the main execution loop. It initializes the window and renderer, handles events, and updates the display in a continuous loop until the application is closed.
@@ -24,7 +24,7 @@ public:
 
     Window* window = nullptr; /**< window pointer, must be deleted must be deleted and end*/
     Renderer* renderer = nullptr; /**< renderer pointer, must be deleted at end */
-    Scene* scene = nullptr; /**< scene pointer, must be deleted at end */
+
 
     App(const std::function<void(App*)>& registryCallback);
     ~App();

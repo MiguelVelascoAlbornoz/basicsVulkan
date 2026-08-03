@@ -1,7 +1,11 @@
 
 #include <imGUI/imgui_impl_sdl3.h>
 #include "../App/App.h"
-
+#include "../Renderer/Window.h"
+#include "../Registry/Scenes.h"
+#include "../Renderer/Camera.h"
+#include "../Renderer/Renderer.h"
+#include "../Renderer/UniformBuffer.h"
 void App::manageEvents() {
     SDL_Event event;
     movedMouse = false;

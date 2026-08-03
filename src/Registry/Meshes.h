@@ -11,8 +11,7 @@
 #define BASICSVULKAN_MESHES_H
 
 #include "../App/Utilitys.h"
-#include "../renderer/Mesh/Mesh.h"
-
+class Mesh;
 #define LINE_MESH_ID "line_mesh"
 #define CUBE_MESH_ID "cube_mesh"
 #define QUAD_MESH_ID "quad_mesh"
@@ -28,12 +27,8 @@ public:
         return registerObject(id, mesh, meshes);
     };
 
-    static void freeMeshes() {
-        for (auto& [name, mesh] : meshes) {
-            delete mesh;
-        }
-        meshes.clear();
-    };
+
+    static void freeMeshes();
 };
 
 

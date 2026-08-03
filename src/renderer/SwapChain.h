@@ -3,8 +3,11 @@
 
 
 
-#include "Window.h"
-#include "VulkanDevice.h"
+
+class Window;
+class VulkanDevice;
+#include <Vulkan/vulkan.h>
+#include <vector>
 /**
  * @brief The SwapChain class encapsulates the creation and management of a Vulkan swapchain, which is a series of images that are presented to the screen in a loop.
  * @details El swapChain necesita su Device, es un vector de VKImages, VKImagesViews, VkFramebuffers.

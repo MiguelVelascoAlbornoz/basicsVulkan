@@ -6,6 +6,7 @@
 #include "Menus.h"
 #include "../App/Utilitys.h"
 
+
 std::unordered_map<std::string,Menu*> Menus::openMenus;
 std::unordered_map<std::string, Menu*> Menus::menus; /**< @brief Map to store menu rendering functions. */
 

@@ -5,7 +5,7 @@
 #ifndef BASICSVULKAN_PIPELINES_H
 #define BASICSVULKAN_PIPELINES_H
 
-#include "../Renderer/Renderer.h"
+
 #include "../App/Utilitys.h"
 
 #define TEST_PIPELINE_ID "test_pipeline"

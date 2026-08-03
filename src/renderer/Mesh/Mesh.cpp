@@ -1,7 +1,7 @@
 #include "Mesh.h"
 
 #include <cstring>
-
+#include "../VulkanDevice.h"
 Mesh::Mesh(VulkanDevice* device, void* data, size_t dataSize, int vertexCount, const std::vector<uint32_t>& indices)
     : device(device)
 {

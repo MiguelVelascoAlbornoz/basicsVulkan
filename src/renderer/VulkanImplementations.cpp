@@ -2,7 +2,8 @@
 #include "Renderer.h"
 #include <iostream>
 #include <SDL3/SDL_vulkan.h>
-
+#include "VulkanDevice.h"
+#include "Swapchain.h"
 
 bool Renderer::createVulkanInstance(){
 
@@ -142,12 +143,12 @@ bool Renderer::getRenderPassFromSurface(VkSurfaceFormatKHR* chosenFormat)
 
     VkDevice device = vulkanDevice->device;
     if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
-        SDL_Log("(VULKAN) Error in createRenderPass(): No se pudo crear el render pass.");
+        std::cout << ("(VULKAN) Error in createRenderPass(): No se pudo crear el render pass.")<< std::endl;
         return false;
     }
 
     #ifdef _DEBUG
-    SDL_Log("(VULKAN) Render pass creado correctamente.");
+    std::cout << ("(VULKAN) Render pass creado correctamente.") << std::endl;
     #endif
 
     return true;
@@ -176,26 +177,26 @@ bool Renderer::createSyncObjects()
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         bool result = vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]);
         if (result != VK_SUCCESS) {
-            SDL_Log("(VULKAN) Error in createSyncObjects(): No se pudo crear el semaphore imageAvailable del frame %d.", static_cast<int>(i));
+            std::cout <<"(VULKAN) Error in createSyncObjects(): No se pudo crear el semaphore imageAvailable del frame " << static_cast<int>(i) << std::endl;
             return false;
         }
         result = vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[i]);
         if (result != VK_SUCCESS) {
-            SDL_Log("(VULKAN) Error in createSyncObjects(): No se pudo crear el fence inFlight del frame %d.", static_cast<int>(i));
+            std::cout << "(VULKAN) Error in createSyncObjects(): No se pudo crear el fence inFlight del frame " << static_cast<int>(i) << std::endl ;
             return false;
         }
     }
     for (size_t i = 0; i < renderFinishedSemaphores.size(); i++) {
         bool result = vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]);
         if (result != VK_SUCCESS) {
-            SDL_Log("(VULKAN) Error in createSyncObjects(): No se pudo crear el semaphore renderFinished del frame %d.", static_cast<int>(i));
+            std::cout << "(VULKAN) Error in createSyncObjects(): No se pudo crear el semaphore renderFinished del frame " << static_cast<int>(i)<< std::endl;
             return false;
         }
     }
     
 
     #ifdef _DEBUG
-    SDL_Log("(VULKAN) Objetos de sincronizacion creados correctamente.");
+    std::cout << "(VULKAN) Objetos de sincronizacion creados correctamente." << std::endl;
     #endif
 
     return true;

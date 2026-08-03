@@ -10,10 +10,15 @@
 
 
 
-#include "SwapChain.h"
-#include "../Scene/Scene.h"
-#include "../Registry/Scenes.h"
+
+
+struct SDL_Renderer;
+class SwapChain;
+class Window;
 class FrameBufferObject;
+class VulkanDevice;
+#include <vector>
+#include <Vulkan/vulkan.h>
 /**
  * @brief The Renderer class encapsulates the creation and management of an SDL renderer, including error management and GUI initialization.
  * It provides methods to initialize the renderer, manage errors, and set up the GUI.

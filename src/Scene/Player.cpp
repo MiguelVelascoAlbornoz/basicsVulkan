@@ -7,7 +7,8 @@
 // Created by migue on 17/07/2026.
 //
 #include "Player.h"
-
+#include "../Renderer/Camera.h"
+#include  "../Input/Settings.h"
 Player::Player(int id) : playerID(id) {
     camera = new Camera();
 
@@ -35,6 +36,25 @@ Player::Player(int id) : playerID(id) {
     camera->setPerspective(cameraSettings.fov,cameraSettings.aspectRatio,cameraSettings.nearPlane,cameraSettings.farPlane);
 
 }
+
+void Player::setRotation(float yaw, float pitch, float roll, float yawToRoll) {
+
+        this->yaw = yaw;
+        this->pitch = pitch;
+        this->roll = roll;
+        this->yawToRoll = yawToRoll;
+        camera->setRotation(yaw,pitch,roll,yawToRoll);
+
+}
+
+void Player::setRotation(vec4 &rotation) {
+    yaw = rotation.x;
+    pitch = rotation.y;
+    roll = rotation.z;
+    yawToRoll = rotation.w;
+    camera->setRotation(yaw,pitch,roll,yawToRoll);
+}
+
 void Player::move(vec3 delta) {
     position = position + delta;
     camera->setPosition(position);

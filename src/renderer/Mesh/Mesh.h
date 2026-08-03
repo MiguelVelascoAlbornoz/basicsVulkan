@@ -1,7 +1,9 @@
 #ifndef MESH_H
 #define MESH_H
 
-#include "../VulkanDevice.h"
+class VulkanDevice;
+#include <Vulkan/vulkan.h>
+#include <vector>
 
 class Mesh {
 public:

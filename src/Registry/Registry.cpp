@@ -4,9 +4,15 @@
 
 #include "Registry.h"
 #include "../Menu/F3GUI.h"
-#include "../Renderer/Pipeline.h"
+#include "../Renderer/Renderer.h"
 #include "../renderer/Mesh/FrameBufferObject.h"
 #include "../Scene/Model.h"
+#include "../Renderer/Pipeline.h"
+#include "../Renderer/Camera.h"
+#include "../Renderer/UniformBuffer.h"
+#include "../Renderer/VulkanDevice.h"
+#include "../Renderer/Mesh/Mesh.h"
+#include "../Menu/EditorMenu.h"
 void Registry::registryCallback(const App* app)
 {
     Registry::initPipelines(app);
