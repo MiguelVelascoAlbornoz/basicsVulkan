@@ -22,7 +22,7 @@ void main() {
     vec3 color = vec3(1.0f,0.0f,1.0f);
 
     vec3 lightDir = normalize(lightPos-worldPos);
-    float diffuse = min(max(0,dot(lightDir,fragNormal))+0.1,1);
+    float diffuse = min(max(0,dot(lightDir,fragNormal))+0.01,1);
 
     vec3 postLightningColor = color*diffuse;
     outColor = vec4(postLightningColor, 1.0);

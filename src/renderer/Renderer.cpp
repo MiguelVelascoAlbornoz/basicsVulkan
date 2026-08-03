@@ -7,9 +7,12 @@
 
 #include <imGUI/imgui_impl_sdl3.h>
 #include <SDL3/SDL_vulkan.h>
+
+#include "Pipeline.h"
 #include "../Registry/Pipelines.h"
 #include "Mesh/FrameBufferObject.h"
 #include "vulkan/vulkan_raii.hpp"
+#include "../Registry/Meshes.h"
 class Menu;
 /**
  * @brief Initializes the GUI using ImGui with SDL3 and SDL_Renderer3 backends.
@@ -108,7 +111,7 @@ void Renderer::initVulkan(Window* window)  {
 
         VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        poolInfo.poolSizeCount = 1;
+        poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());;
         poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = 3;
 
@@ -220,9 +223,9 @@ void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
 
     // ---- PASADA 1: escena -> FBO ----
     renderFBO->beginRenderPass(commandBuffer);
-    for (const auto& scene : Scenes::activeScenes) {
-        if (scene != Scenes::renderTest) // el quad de post-proceso NO se dibuja aquí
-            scene(commandBuffer);
+    for (const auto& scene : Scenes::activeScenes)
+    {
+        scene(commandBuffer);
     }
     renderFBO->endRenderPass(commandBuffer);
 
@@ -257,10 +260,12 @@ void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
     scissor.extent = swapchainExtent;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    for (const auto& scene : Scenes::activeScenes)
-    {
-        scene(commandBuffer);
-    }
+    Pipeline* quadPipeline = Pipelines::getPipeline(POST_PROCESS_PIPELINE_ID);
+    quadPipeline->bind(commandBuffer);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+        quadPipeline->getPipelineLayout(), 0, 1, &quadPipeline->descriptorSet, 0, nullptr);
+    Meshes::quadMesh->bind(commandBuffer);
+    Meshes::quadMesh->draw(commandBuffer);
 
     //scene->render(commandBuffer); // Renderizar la escena (dibujar los meshes)
 

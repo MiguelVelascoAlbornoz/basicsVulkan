@@ -58,3 +58,55 @@ private:
 };
 
 #endif //BASICSVULKAN_FRAMEBUFFEROBJECT_H
+/*
+void debugTestFBO(App* app)
+{
+    VulkanDevice* device = app->renderer->getVulkanDevice();
+
+    // Descriptor pool propio para no pelear con el pool de la app
+    VkDescriptorPoolSize poolSize{};
+    poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    poolSize.descriptorCount = 1;
+
+    VkDescriptorPoolCreateInfo poolInfo{};
+    poolInfo.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    poolInfo.poolSizeCount = 1;
+    poolInfo.pPoolSizes    = &poolSize;
+    poolInfo.maxSets       = 1;
+
+    VkDescriptorPool testDescriptorPool;
+    vkCreateDescriptorPool(device->device, &poolInfo, nullptr, &testDescriptorPool);
+
+    FrameBufferObject fbo(device, 800, 600);
+    if (fbo.error) { std::cerr << "Error creando FBO de test." << std::endl; return; }
+
+    Pipeline::PipelineConfig config;
+    config.vertexAttributes  = { AttribType::VEC3, AttribType::VEC3 };
+    config.pushConstantsSize = sizeof(Model::ModelUBO);
+
+    Pipeline testPipeline(device, fbo.getRenderPass(), config, testDescriptorPool);
+    if (testPipeline.error) { std::cerr << "Error creando pipeline de test." << std::endl; return; }
+
+    VkDescriptorBufferInfo bufferInfo{};
+    VkWriteDescriptorSet write = Uniforms::cameraUniform->getWriteDescriptor(testPipeline.descriptorSet, 0, bufferInfo);
+    vkUpdateDescriptorSets(device->device, 1, &write, 0, nullptr);
+
+    VkCommandBuffer cmd = device->beginSingleTimeCommands();
+
+    fbo.beginRenderPass(cmd);
+    testPipeline.bind(cmd);
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, testPipeline.getPipelineLayout(),
+                             0, 1, &testPipeline.descriptorSet, 0, nullptr);
+
+    Model cubeModel;
+    cubeModel.mesh = Meshes::cubeMesh;
+    cubeModel.setTranslation(vec3(0.0f));
+    cubeModel.setRotation(vec3(0.4f, 0.6f, 0.0f));
+    cubeModel.setScale(vec3(1.0f));
+    cubeModel.draw(cmd, &testPipeline);
+
+    fbo.endRenderPass(cmd);
+    device->endSingleTimeCommands(cmd);
+
+    fbo.saveColorImageToPNG("fbo_debug.png");
+}*/
