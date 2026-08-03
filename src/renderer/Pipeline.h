@@ -35,7 +35,7 @@ class Pipeline {
             VK_FRONT_FACE_CLOCKWISE;
 
         float lineWidth = 1.0f;
-        
+
 
         int pushConstantsSize = 0;
         // En PipelineConfig

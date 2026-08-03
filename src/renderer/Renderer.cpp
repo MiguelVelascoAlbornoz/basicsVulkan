@@ -97,14 +97,19 @@ void Renderer::initVulkan(Window* window)  {
             error = true;
             return;
         }
-        VkDescriptorPoolSize poolSize{};
-        poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSize.descriptorCount = 3;
+
+        VkDescriptorPoolSize poolSize1{};
+        poolSize1.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        poolSize1.descriptorCount = 3;
+        VkDescriptorPoolSize poolSize2{};
+        poolSize2.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSize2.descriptorCount = 1;
+        std::vector poolSizes = {poolSize1,poolSize2};
 
         VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = 1;
-        poolInfo.pPoolSizes = &poolSize;
+        poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.maxSets = 3;
 
 
@@ -213,19 +218,25 @@ void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
         return;
     }
 
+    // ---- PASADA 1: escena -> FBO ----
+    renderFBO->beginRenderPass(commandBuffer);
+    for (const auto& scene : Scenes::activeScenes) {
+        if (scene != Scenes::renderTest) // el quad de post-proceso NO se dibuja aquí
+            scene(commandBuffer);
+    }
+    renderFBO->endRenderPass(commandBuffer);
 
-    //END INICIO DEL DIBUJO EN EL SWAPCHAIN
-    VkClearValue clearColor = { {{0.0f, 0.0f, 0.0f, 1.0f}} }; // negro
-
+    // ---- PASADA 2: FBO -> swapchain (post-proceso) ----
     VkExtent2D swapchainExtent = swapChain->getSwapchainExtent();
+    VkClearValue clearColor = { {{0.0f, 0.0f, 0.0f, 1.0f}} };
     VkRenderPassBeginInfo renderPassInfo{};
-    renderPassInfo.sType             = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass        = renderPass;
-    renderPassInfo.framebuffer       = swapChain->getFramebuffer(imageIndex);
-    renderPassInfo.renderArea.offset = {.x = 0, .y = 0};
-    renderPassInfo.renderArea.extent = swapchainExtent;
-    renderPassInfo.clearValueCount   = 1;
-    renderPassInfo.pClearValues      = &clearColor;
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassInfo.renderPass  = renderPass;
+    renderPassInfo.framebuffer = swapChain->getFramebuffer(imageIndex);
+    renderPassInfo.renderArea.extent = swapChain->getSwapchainExtent();
+    renderPassInfo.clearValueCount = 1;
+    renderPassInfo.pClearValues = &clearColor;
+
 
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 

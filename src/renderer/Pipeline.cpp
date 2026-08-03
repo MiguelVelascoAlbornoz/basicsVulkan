@@ -144,7 +144,7 @@ Pipeline::Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, Pipeline
     viewportState.viewportCount = 1;
     viewportState.scissorCount  = 1;
 
-    std::vector<VkDynamicState> dynamicStates = {
+    std::vector dynamicStates = {
         VK_DYNAMIC_STATE_VIEWPORT,
         VK_DYNAMIC_STATE_SCISSOR
     };
@@ -227,7 +227,7 @@ Pipeline::Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, Pipeline
 
         return;
     }
-  
+
 
 
     //FOR DEPTHSTENCIL

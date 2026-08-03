@@ -53,7 +53,9 @@ void Registry::initPipelines(const App* app)
     Pipeline::PipelineConfig pipelineConfigDefault;
     pipelineConfigDefault.vertexAttributes = {AttribType::VEC3,AttribType::VEC3};
     pipelineConfigDefault.pushConstantsSize = sizeof(Model::ModelUBO);
-
+    pipelineConfigDefault.bindings = {
+                { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT },
+        };
     Pipelines::defaultPipeline = new Pipeline(app->renderer->getVulkanDevice(),app->renderer->renderFBO->getRenderPass(),pipelineConfigDefault,app->renderer->descriptorPool);
 
     //LINE PIPELINE
@@ -61,7 +63,9 @@ void Registry::initPipelines(const App* app)
     linePipelineConfig.vertexAttributes = {AttribType::VEC3};
     linePipelineConfig.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
     linePipelineConfig.shaderName = "lines";
-
+    linePipelineConfig.bindings = {
+            { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT },
+    };
     linePipelineConfig.pushConstantsSize = sizeof(Uniforms::lineUniform);
     Pipelines::linesPipeline = new Pipeline(app->renderer->getVulkanDevice(),app->renderer->renderFBO->getRenderPass(),linePipelineConfig,app->renderer->descriptorPool);
 
