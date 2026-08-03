@@ -10,6 +10,7 @@
 #include "../Registry/Pipelines.h"
 #include "../Registry/Menus.h"
 #include "../Registry/Meshes.h"
+#include "../Registry/FrameBuffers.h"
 #include "../Scene/Player.h"
 #include <SDL3/SDL.h>
 class Window;

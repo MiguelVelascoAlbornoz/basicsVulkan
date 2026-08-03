@@ -1,5 +1,8 @@
 
+
+
 #include "../Registry/Registry.h"
+#include "../App/App.h"
 
 int main() {
 

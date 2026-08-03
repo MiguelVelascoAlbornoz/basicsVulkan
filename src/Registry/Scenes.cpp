@@ -8,15 +8,18 @@
 #include "Pipelines.h"
 #include "Uniforms.h"
 #include <algorithm>
+
+#include "FrameBuffers.h"
 #include "../Scene/Model.h"
 #include "SDL3/SDL.h"
 #include "../Renderer/Mesh/Mesh.h"
+#include "../Renderer/Mesh/FrameBufferObject.h"
 
 std::vector<Scenes::SceneFunction> Scenes::activeScenes;
 
 void Scenes::renderAxis( const VkCommandBuffer commandBuffer)
 {
-
+    FrameBuffers::defaultFrameBuffer->beginRenderPass(commandBuffer);
     Pipeline* linesPipeline = Pipelines::getPipeline(LINES_PIPELINE_ID);
     linesPipeline->bind(commandBuffer); // bind the graphics pipeline (shaders + fixed-function state);
     vkCmdBindDescriptorSets(commandBuffer,VK_PIPELINE_BIND_POINT_GRAPHICS,linesPipeline->getPipelineLayout(),0,1,&linesPipeline->descriptorSet,0,nullptr);
@@ -42,9 +45,13 @@ void Scenes::renderAxis( const VkCommandBuffer commandBuffer)
 
 
     Meshes::meshes[LINE_MESH_ID]->draw(commandBuffer);
+
+    FrameBuffers::defaultFrameBuffer->endRenderPass(commandBuffer);
 }
 
 void Scenes::renderTest(const VkCommandBuffer commandBuffer) {
+
+    FrameBuffers::defaultFrameBuffer->beginRenderPass(commandBuffer);
 
     Model cubeModel;
     cubeModel.mesh = Meshes::cubeMesh;
@@ -59,6 +66,7 @@ void Scenes::renderTest(const VkCommandBuffer commandBuffer) {
 
     cubeModel.draw(commandBuffer,testPipeline);
 
+    FrameBuffers::defaultFrameBuffer->endRenderPass(commandBuffer);
 }
 
 void Scenes::turnOnScene(SceneFunction onScene) {

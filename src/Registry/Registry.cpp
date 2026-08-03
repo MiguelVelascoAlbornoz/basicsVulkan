@@ -1,11 +1,11 @@
 //
 // Created by migue on 28/07/2026.
 //
-
+#include "../App/App.h"
 #include "Registry.h"
 #include "../Menu/F3GUI.h"
 #include "../Renderer/Renderer.h"
-#include "../renderer/Mesh/FrameBufferObject.h"
+#include "../Renderer/Mesh/FrameBufferObject.h"
 #include "../Scene/Model.h"
 #include "../Renderer/Pipeline.h"
 #include "../Renderer/Camera.h"
@@ -13,8 +13,10 @@
 #include "../Renderer/VulkanDevice.h"
 #include "../Renderer/Mesh/Mesh.h"
 #include "../Menu/EditorMenu.h"
+
 void Registry::registryCallback(const App* app)
 {
+    Registry::initFramebuffers(app);
     Registry::initPipelines(app);
     Registry::initUniforms(app);
     Registry::initMeshes(app);
@@ -62,7 +64,7 @@ void Registry::initPipelines(const App* app)
     pipelineConfigDefault.bindings = {
                 { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT },
         };
-    Pipelines::defaultPipeline = new Pipeline(app->renderer->getVulkanDevice(),app->renderer->renderFBO->getRenderPass(),pipelineConfigDefault,app->renderer->descriptorPool);
+    Pipelines::defaultPipeline = new Pipeline(app->renderer->getVulkanDevice(),FrameBuffers::defaultFrameBuffer->getRenderPass(),pipelineConfigDefault,app->renderer->descriptorPool);
 
     //LINE PIPELINE
     Pipeline::PipelineConfig linePipelineConfig;
@@ -73,7 +75,7 @@ void Registry::initPipelines(const App* app)
             { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT },
     };
     linePipelineConfig.pushConstantsSize = sizeof(Uniforms::lineUniform);
-    Pipelines::linesPipeline = new Pipeline(app->renderer->getVulkanDevice(),app->renderer->renderFBO->getRenderPass(),linePipelineConfig,app->renderer->descriptorPool);
+    Pipelines::linesPipeline = new Pipeline(app->renderer->getVulkanDevice(),FrameBuffers::defaultFrameBuffer->getRenderPass(),linePipelineConfig,app->renderer->descriptorPool);
 
 
     Pipelines::registerPipelines(TEST_PIPELINE_ID,Pipelines::defaultPipeline);
@@ -89,8 +91,8 @@ void Registry::initPipelines(const App* app)
     Pipelines::postProcessPipeline = Pipelines::registerPipelines(POST_PROCESS_PIPELINE_ID, new Pipeline(app->renderer->getVulkanDevice(),app->renderer->renderPass,postProcessPipelineConfig,app->renderer->descriptorPool));
     VkDescriptorImageInfo imageInfo{};
     imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    imageInfo.imageView   = app->renderer->renderFBO->getColorImageView();
-    imageInfo.sampler     = app->renderer->renderFBO->getColorSampler();
+    imageInfo.imageView   = FrameBuffers::defaultFrameBuffer->getColorImageView();
+    imageInfo.sampler     = FrameBuffers::defaultFrameBuffer->getColorSampler();
 
     VkWriteDescriptorSet write{};
     write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -194,4 +196,9 @@ void Registry::initMenus(const App* app)
     //Registers
     Menus::editorMenu = dynamic_cast<EditorMenu*>(Menus::registerMenu(EDITOR_MENU_ID,new EditorMenu(app->player,[](){Uniforms::onPlayerRenderUpdate();})));
     Menus::F3Menu = dynamic_cast<F3GUI*>(Menus::registerMenu(F3_MENU_ID,new F3GUI(app)));
+}
+
+void Registry::initFramebuffers(const App* app)
+{
+    FrameBuffers::defaultFrameBuffer = FrameBuffers::registerFrameBuffer(DEFAULT_FRAME_BUFFER_ID,new  FrameBufferObject(app->renderer->getVulkanDevice(),800,600));
 }

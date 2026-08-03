@@ -7,18 +7,25 @@
 
 #include <imGUI/imgui_impl_sdl3.h>
 #include <SDL3/SDL_vulkan.h>
+#include <imGUI/imgui_impl_vulkan.h>
 
-#include "Pipeline.h"
+
 #include "../Registry/Pipelines.h"
-#include "Mesh/FrameBufferObject.h"
-#include "vulkan/vulkan_raii.hpp"
-#include "VulkanDevice.h"
-#include "../Registry/Meshes.h"
-#include "SwapChain.h"
 #include "../Registry/Scenes.h"
+#include "../Registry/FrameBuffers.h"
+
+
+#include "VulkanDevice.h"
 #include "Window.h"
-#include "imGUI/imgui_impl_vulkan.h"
 #include "Mesh/Mesh.h"
+#include "SwapChain.h"
+#include "Pipeline.h"
+#include "Mesh/FrameBufferObject.h"
+
+#include "../Registry/Meshes.h"
+
+
+
 class Menu;
 /**
  * @brief Initializes the GUI using ImGui with SDL3 and SDL_Renderer3 backends.
@@ -81,7 +88,7 @@ void Renderer::initVulkan(Window* window)  {
         return;
         }
         this->physicalDevice = vulkanDevice->getPhysicalDevice();
-        VkSurfaceFormatKHR* chosenFormat = static_cast<VkSurfaceFormatKHR *>(malloc(sizeof(VkSurfaceFormatKHR)));
+        auto* chosenFormat = static_cast<VkSurfaceFormatKHR *>(malloc(sizeof(VkSurfaceFormatKHR)));
         if (!getRenderPassFromSurface(chosenFormat)) {
             error = true;
             return;
@@ -129,7 +136,7 @@ void Renderer::initVulkan(Window* window)  {
          &descriptorPool
         );
 
-    renderFBO = new FrameBufferObject(vulkanDevice,800,600);
+
 }
 
 
@@ -153,17 +160,14 @@ Renderer::Renderer(Window *window)
 
 Renderer::~Renderer()
 {
-    VkDevice device = vulkanDevice->device;
+    const VkDevice device = vulkanDevice->device;
     vkDeviceWaitIdle(device);
     //ImGui
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplSDL3_Shutdown();
     ImGui::DestroyContext();
 
-    if (renderFBO)
-    {
-        delete renderFBO;
-    }
+    FrameBuffers::freeFrameBuffers();
    
     vkDestroyDescriptorPool(device, descriptorPool, nullptr);
     vkDestroyDescriptorPool(device, imguiDescriptorPool, nullptr);
@@ -184,9 +188,9 @@ Renderer::~Renderer()
         }
       
       }
-      for (size_t i = 0; i < renderFinishedSemaphores.size(); i++) {
-        if (renderFinishedSemaphores[i] != VK_NULL_HANDLE) {
-            vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
+      for (const auto & renderFinishedSemaphore : renderFinishedSemaphores) {
+        if (renderFinishedSemaphore != VK_NULL_HANDLE) {
+            vkDestroySemaphore(device, renderFinishedSemaphore, nullptr);
         }
       }
     }
@@ -228,12 +232,12 @@ void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
     }
 
     // ---- PASADA 1: escena -> FBO ----
-    renderFBO->beginRenderPass(commandBuffer);
+
     for (const auto& scene : Scenes::activeScenes)
     {
         scene(commandBuffer);
     }
-    renderFBO->endRenderPass(commandBuffer);
+
 
     // ---- PASADA 2: FBO -> swapchain (post-proceso) ----
     VkExtent2D swapchainExtent = swapChain->getSwapchainExtent();

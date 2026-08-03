@@ -37,7 +37,7 @@ class Renderer {
          */
         ~Renderer();
         bool error = false; /**< @brief Flag to indicate if there was an error during initialization. */
-        SDL_Renderer* renderer;
+        SDL_Renderer* renderer = nullptr;
         [[nodiscard]] VulkanDevice* getVulkanDevice() const { return vulkanDevice; } /**< @brief Get the Vulkan device used by the renderer. */
         void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
         /**
@@ -49,7 +49,6 @@ class Renderer {
 
         bool onWindowResized(Window* window);
 
-        FrameBufferObject* renderFBO = nullptr;
     /// @brief Render pass, describe los attachments y su manejo a lo largo de las subpasses.
     /** @note RenderPass define:
      *

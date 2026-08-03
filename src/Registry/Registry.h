@@ -5,7 +5,7 @@
 #ifndef BASICSVULKAN_REGISTRY_H
 #define BASICSVULKAN_REGISTRY_H
 
-#include "../App/App.h"
+class App;
 
 
 class Registry
@@ -15,6 +15,7 @@ public:
     static void initPipelines(const App* app);
     static void initMeshes(const App* app);
     static void initMenus(const App* app);
+    static void initFramebuffers(const App* app);
 
     static void registryCallback(const App* app);
 };
