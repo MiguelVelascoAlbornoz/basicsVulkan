@@ -183,22 +183,21 @@ Pipeline::Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, Pipeline
     colorBlending.pAttachments    = &colorBlendAttachment;
 
     // 8. Pipeline layout (vacío por ahora: sin descriptor sets ni push constants)
-    VkDescriptorSetLayoutBinding* bindings;
-    bindings = static_cast<VkDescriptorSetLayoutBinding*>(malloc(sizeof (VkDescriptorSetLayoutBinding)*config.bindingsCount));
-    for (int i = 0; i < config.bindingsCount; i++)
-    {
-        bindings[i] = {};
-        bindings[i].binding = i;
-        bindings[i].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        bindings[i].descriptorCount = 1;
-        bindings[i].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT; // o VERTEX_BIT según dónde esté el uniform
-        bindings[i].pImmutableSamplers = nullptr;
+
+
+    std::vector<VkDescriptorSetLayoutBinding> layoutBindings(config.bindings.size());
+    for (size_t i = 0; i < config.bindings.size(); i++) {
+        layoutBindings[i].binding = static_cast<uint32_t>(i);
+        layoutBindings[i].descriptorType = config.bindings[i].type;
+        layoutBindings[i].descriptorCount = 1;
+        layoutBindings[i].stageFlags = config.bindings[i].stageFlags;
+        layoutBindings[i].pImmutableSamplers = nullptr;
     }
 
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutInfo.bindingCount = config.bindingsCount;
-    layoutInfo.pBindings = bindings;
+    layoutInfo.bindingCount = config.bindings.size();
+    layoutInfo.pBindings = layoutBindings.data();
     vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout);
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
@@ -225,24 +224,20 @@ Pipeline::Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, Pipeline
         error = true;
         vkDestroyShaderModule(device, fragShaderModule, nullptr);
         vkDestroyShaderModule(device, vertShaderModule, nullptr);
-        free(bindings);
+
         return;
     }
-    free(bindings);
+  
 
 
     //FOR DEPTHSTENCIL
     VkPipelineDepthStencilStateCreateInfo depthStencil{};
     depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    depthStencil.depthTestEnable = VK_TRUE;
-    depthStencil.depthWriteEnable = VK_TRUE;
-    depthStencil.depthCompareOp = VK_COMPARE_OP_LESS; // más cercano gana
+    depthStencil.depthTestEnable = config.depthTestEnable ? VK_TRUE : VK_FALSE;
+    depthStencil.depthWriteEnable = config.depthWriteEnable ? VK_TRUE : VK_FALSE;
+    depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
     depthStencil.depthBoundsTestEnable = VK_FALSE;
-    depthStencil.minDepthBounds = 0.0f;
-    depthStencil.maxDepthBounds = 1.0f;
-    depthStencil.stencilTestEnable = VK_FALSE; // ponlo en VK_TRUE si usas stencil
-    depthStencil.front = {}; // solo relevante si stencilTestEnable = VK_TRUE
-    depthStencil.back = {};
+    depthStencil.stencilTestEnable = VK_FALSE;
 
 
     // 9. Crear el pipeline gráfico
@@ -260,7 +255,8 @@ Pipeline::Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, Pipeline
     pipelineInfo.layout              = pipelineLayout;
     pipelineInfo.renderPass          = renderPass;
     pipelineInfo.subpass             = 0;
-    pipelineInfo.pDepthStencilState = &depthStencil;
+    pipelineInfo.pDepthStencilState =
+    (config.depthTestEnable ) ? &depthStencil : nullptr;
 
     if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
         std::cout << ("(VULKAN) Error in createPipeline(): No se pudo crear el graphics pipeline.") << std::endl;

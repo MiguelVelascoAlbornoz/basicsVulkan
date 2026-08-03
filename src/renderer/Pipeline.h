@@ -11,6 +11,13 @@ class Pipeline {
 
     public:
     struct PipelineConfig {
+        struct BindingDesc {
+            VkDescriptorType type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            VkShaderStageFlags stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT;
+        };
+
+        // en PipelineConfig, reemplaza bindingsCount por:
+        std::vector<BindingDesc> bindings;
         std::string shaderName = "default"; /** @brief file with the main in folder assets/shaders/etc/shaderName.etc  **/
 
         std::vector<AttribType::INPUT_TYPES> vertexAttributes; /** @brief Vector with the vertex layout and the types (order matters)**/
@@ -28,10 +35,12 @@ class Pipeline {
             VK_FRONT_FACE_CLOCKWISE;
 
         float lineWidth = 1.0f;
-
-        int bindingsCount = 1;
+        
 
         int pushConstantsSize = 0;
+        // En PipelineConfig
+        bool depthTestEnable = true;
+        bool depthWriteEnable = true;
     };
         /**
      * @brief Wraps SPIR-V bytecode into a VkShaderModule so it can be used in a pipeline shader stage.

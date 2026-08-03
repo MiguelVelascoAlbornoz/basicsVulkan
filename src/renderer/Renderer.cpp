@@ -114,6 +114,8 @@ void Renderer::initVulkan(Window* window)  {
          nullptr,
          &descriptorPool
         );
+
+    renderFBO = new FrameBufferObject(vulkanDevice,800,600);
 }
 
 
@@ -143,6 +145,11 @@ Renderer::~Renderer()
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplSDL3_Shutdown();
     ImGui::DestroyContext();
+
+    if (renderFBO)
+    {
+        delete renderFBO;
+    }
    
     vkDestroyDescriptorPool(device, descriptorPool, nullptr);
     vkDestroyDescriptorPool(device, imguiDescriptorPool, nullptr);

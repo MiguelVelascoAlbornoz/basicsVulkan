@@ -9,6 +9,9 @@ class VulkanDevice;
 class FrameBufferObject
 {
 public:
+
+
+    [[nodiscard]] VkSampler getColorSampler() const { return colorSampler; }
     FrameBufferObject(VulkanDevice* device, uint32_t width, uint32_t height,
                        VkFormat colorFormat = VK_FORMAT_R8G8B8A8_UNORM,
                        bool useDepth = true); // <-- nuevo parametro, default activado
@@ -34,7 +37,7 @@ private:
     void createRenderPass();
     void createFramebuffer();
     VkFormat findDepthFormat() const;
-
+    VkSampler colorSampler = VK_NULL_HANDLE;
     VulkanDevice* device = nullptr;
     uint32_t width = 0;
     uint32_t height = 0;

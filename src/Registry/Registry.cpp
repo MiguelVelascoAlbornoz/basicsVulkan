@@ -49,28 +49,48 @@ void Registry::initUniforms(const App* app)
 void Registry::initPipelines(const App* app)
 {
     //Register pipelines
+    //DEFAULT PIPELINE
     Pipeline::PipelineConfig pipelineConfigDefault;
     pipelineConfigDefault.vertexAttributes = {AttribType::VEC3,AttribType::VEC3};
     pipelineConfigDefault.pushConstantsSize = sizeof(Model::ModelUBO);
 
-    Pipelines::defaultPipeline = new Pipeline(app->renderer->getVulkanDevice(),app->renderer->renderPass,pipelineConfigDefault,app->renderer->descriptorPool);
+    Pipelines::defaultPipeline = new Pipeline(app->renderer->getVulkanDevice(),app->renderer->renderFBO->getRenderPass(),pipelineConfigDefault,app->renderer->descriptorPool);
 
+    //LINE PIPELINE
     Pipeline::PipelineConfig linePipelineConfig;
     linePipelineConfig.vertexAttributes = {AttribType::VEC3};
     linePipelineConfig.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
     linePipelineConfig.shaderName = "lines";
-    linePipelineConfig.bindingsCount = 1;
+
     linePipelineConfig.pushConstantsSize = sizeof(Uniforms::lineUniform);
-    Pipelines::linesPipeline = new Pipeline(app->renderer->getVulkanDevice(),app->renderer->renderPass,linePipelineConfig,app->renderer->descriptorPool);
+    Pipelines::linesPipeline = new Pipeline(app->renderer->getVulkanDevice(),app->renderer->renderFBO->getRenderPass(),linePipelineConfig,app->renderer->descriptorPool);
 
 
     Pipelines::registerPipelines(TEST_PIPELINE_ID,Pipelines::defaultPipeline);
     Pipelines::registerPipelines(LINES_PIPELINE_ID,Pipelines::linesPipeline);
 
+    //POST_PROCESS PIPELINE
     Pipeline::PipelineConfig postProcessPipelineConfig;
     postProcessPipelineConfig.vertexAttributes = {AttribType::VEC2};
     postProcessPipelineConfig.shaderName = "postProcess";
+    postProcessPipelineConfig.bindings = {
+        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT }
+    };
     Pipelines::postProcessPipeline = Pipelines::registerPipelines(POST_PROCESS_PIPELINE_ID, new Pipeline(app->renderer->getVulkanDevice(),app->renderer->renderPass,postProcessPipelineConfig,app->renderer->descriptorPool));
+    VkDescriptorImageInfo imageInfo{};
+    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    imageInfo.imageView   = app->renderer->renderFBO->getColorImageView();
+    imageInfo.sampler     = app->renderer->renderFBO->getColorSampler();
+
+    VkWriteDescriptorSet write{};
+    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    write.dstSet = Pipelines::postProcessPipeline->descriptorSet;
+    write.dstBinding = 0;
+    write.descriptorCount = 1;
+    write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    write.pImageInfo = &imageInfo;
+
+    vkUpdateDescriptorSets(app->renderer->getVulkanDevice()->device, 1, &write, 0, nullptr);
 }
 void Registry::initMeshes(const App* app)
 {

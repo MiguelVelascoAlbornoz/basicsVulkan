@@ -44,7 +44,7 @@ class Renderer {
 
         bool onWindowResized(Window* window);
 
-        FrameBufferObject* testFBO;
+        FrameBufferObject* renderFBO = nullptr;
     /// @brief Render pass, describe los attachments y su manejo a lo largo de las subpasses.
     /** @note RenderPass define:
      *

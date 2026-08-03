@@ -45,7 +45,7 @@ FrameBufferObject::~FrameBufferObject()
     VkDevice dev = device->device;
     if (framebuffer != VK_NULL_HANDLE)      vkDestroyFramebuffer(dev, framebuffer, nullptr);
     if (renderPass != VK_NULL_HANDLE)       vkDestroyRenderPass(dev, renderPass, nullptr);
-
+    if (colorSampler != VK_NULL_HANDLE)      vkDestroySampler(dev, colorSampler, nullptr);
     if (depthImageView != VK_NULL_HANDLE)   vkDestroyImageView(dev, depthImageView, nullptr);
     if (depthImage != VK_NULL_HANDLE)       vkDestroyImage(dev, depthImage, nullptr);
     if (depthImageMemory != VK_NULL_HANDLE) vkFreeMemory(dev, depthImageMemory, nullptr);
@@ -193,6 +193,17 @@ void FrameBufferObject::createColorResources()
         std::cerr << "(FBO) Error: no se pudo crear el image view de color." << std::endl;
         error = true;
     }
+    // en createColorResources(), después de crear el imageView
+    VkSamplerCreateInfo samplerInfo{};
+    samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    samplerInfo.magFilter = VK_FILTER_LINEAR;
+    samplerInfo.minFilter = VK_FILTER_LINEAR;
+    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+    samplerInfo.unnormalizedCoordinates = VK_FALSE;
+    vkCreateSampler(device->device, &samplerInfo, nullptr, &colorSampler);
 }
 
 void FrameBufferObject::createRenderPass()
@@ -207,7 +218,7 @@ void FrameBufferObject::createRenderPass()
     colorAttachment.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     colorAttachment.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
-    colorAttachment.finalLayout    = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    colorAttachment.finalLayout    = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;// FOR PNG VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
     attachments.push_back(colorAttachment);
 
     VkAttachmentReference colorAttachmentRef{};
