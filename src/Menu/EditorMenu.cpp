@@ -1,6 +1,9 @@
 #include "EditorMenu.h"
 #include <imGUI/imgui.h>
+
+#include "../App/App.h"
 #include "../Scene/Player.h"
+
 /**
  * @file EditorMenu.h
  * @brief StartMenu class declaration and all his features.
@@ -16,7 +19,7 @@ using namespace  ImGui;
 
 void EditorMenu::render()
 {
-
+	Player* player = this->app->player;
 	ImGui::Begin("Camera Control");
 
 	if (CollapsingHeader("World: ")) {
@@ -25,29 +28,29 @@ void EditorMenu::render()
 		ImGui::Text("Pos:"); ImGui::SameLine();
 		if (InputFloat3("##Pos", &playerPosition.x, "%.5f")) {
 			player->setPosition(playerPosition);
-			onPlayerRenderUpdateCallback();
+			Uniforms::onPlayerRenderUpdate();
 		}
 		vec4 playerRotation = player->getRotation();
 		ImGui::Text("Yaw:"); ImGui::SameLine();
 		if (SliderFloat("##Yaw", &playerRotation.x, -180, 180)) {
 			player->setRotation(playerRotation);
-			onPlayerRenderUpdateCallback();
+			Uniforms::onPlayerRenderUpdate();
 		}
 		ImGui::Text("Pitch:"); ImGui::SameLine();
 		if (SliderFloat("##Pitch", &playerRotation.y, -89, 89)) {
 
 			player->setRotation(playerRotation);
-			onPlayerRenderUpdateCallback();
+			Uniforms::onPlayerRenderUpdate();
 		}
 		ImGui::Text("Roll:"); ImGui::SameLine();
 		if (ImGui::SliderFloat("##Roll", &playerRotation.z, -180, 180)) {
 			player->setRotation(playerRotation);
-			onPlayerRenderUpdateCallback();
+			Uniforms::onPlayerRenderUpdate();
 		}
 		ImGui::Text("Yaw To Roll:"); ImGui::SameLine();
 		if (ImGui::SliderFloat("##YawToRoll", &playerRotation.w, -180, 180)) {
 			player->setRotation(playerRotation);
-			onPlayerRenderUpdateCallback();
+			Uniforms::onPlayerRenderUpdate();
 		}
 
 	}
@@ -57,26 +60,31 @@ void EditorMenu::render()
 		ImGui::Text("Fov:"); ImGui::SameLine();
 		if (SliderFloat("##Fov", &cameraSettings.fov, 0, 180)) {
 			player->setPlayerCameraSettings(cameraSettings);
-			onPlayerRenderUpdateCallback();
+			Uniforms::onPlayerRenderUpdate();
 		}
 		ImGui::Text("Far:"); ImGui::SameLine();
-		if (DragFloat("##Far", &cameraSettings.farPlane, 1)){
+		if (DragFloat("##Far", &cameraSettings.farPlane, .1,cameraSettings.nearPlane)){
 			player->setPlayerCameraSettings(cameraSettings);
-			onPlayerRenderUpdateCallback();
+			Uniforms::onPlayerRenderUpdate();
 		}
 
 		ImGui::Text("Near:"); ImGui::SameLine();
-		if (DragFloat("##Near", &cameraSettings.nearPlane, .1)) {
+		if (DragFloat("##Near", &cameraSettings.nearPlane, .1,0.0000001,cameraSettings.farPlane)) {
 			player->setPlayerCameraSettings(cameraSettings);
-			onPlayerRenderUpdateCallback();
+			Uniforms::onPlayerRenderUpdate();
 		}
 		ImGui::Text("Max cycles per second:"); ImGui::SameLine();
-		if (DragInt("##mcps", &cameraSettings.maxCyclesPerSecond, .1)) {
+		if (DragInt("##mcps", &cameraSettings.maxCyclesPerSecond, .1,1)) {
 			player->setPlayerCameraSettings(cameraSettings);
 		}
 		ImGui::Text("Max ticks per second:"); ImGui::SameLine();
-		if (DragInt("##mtps", &cameraSettings.maxTicksPerSecond, .1)) {
+		if (DragInt("##mtps", &cameraSettings.maxTicksPerSecond, .1,1)) {
 			player->setPlayerCameraSettings(cameraSettings);
+		}
+		ImGui::Text("FBO resolution ratio:"); ImGui::SameLine();
+		if (DragFloat("##FBORes", &cameraSettings.fboResolutionMultiplier, .1,0.000001)) {
+			player->setPlayerCameraSettings(cameraSettings);
+			app->onFBOResolutionChange();
 		}
 		Unindent();
 	}

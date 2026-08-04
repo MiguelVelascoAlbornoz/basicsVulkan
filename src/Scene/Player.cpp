@@ -23,12 +23,13 @@ Player::Player(int id) : playerID(id) {
                             {&position.x, "fposition.x"},
                             {&position.y, "fposition.y"},
                             {&position.z, "fposition.z"},
-                                {&cameraSettings.fov, "ffov"},
+        {&cameraSettings.fov, "ffov"},
         {&cameraSettings.aspectRatio, "faspectRatio"},
         {&cameraSettings.nearPlane, "fnearPlane"},
         {&cameraSettings.farPlane, "ffarPlane"},
         {&cameraSettings.maxCyclesPerSecond, "imaxCyclesPerSecond"},
         {&cameraSettings.maxTicksPerSecond, "imaxTicksPerSecond"},
+        {&cameraSettings.fboResolutionMultiplier, "ffboResolutionMultiplier"},
                         });
 
     camera->setPosition(position);

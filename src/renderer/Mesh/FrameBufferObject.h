@@ -38,6 +38,7 @@ public:
 
     [[nodiscard]] VkSampler getDepthSampler() const { return depthSampler; }
     [[nodiscard]] VkImageView getDepthImageView() const { return depthImageView; }
+    void changeResolution(int newWidth, int newHeight);
 private:
 
     std::vector<SceneFunction> scenes;

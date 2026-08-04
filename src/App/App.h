@@ -41,6 +41,7 @@ public:
     Uint64 cyclesPerSecond = 0;
     Uint64 ticksPerSecond = 0;
     bool movedMouse;
+    void onFBOResolutionChange() const;
 private:
     /**
      * @brief Main execution loop of the application.
@@ -53,6 +54,8 @@ private:
     void manageEvents();
 
     void managePlayerMovement();
+
+
 
     void manageCameraRotation(SDL_MouseMotionEvent event);
 

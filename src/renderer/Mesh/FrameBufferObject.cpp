@@ -132,7 +132,7 @@ void FrameBufferObject::createDepthResources()
     viewInfo.subresourceRange.baseArrayLayer = 0;
     viewInfo.subresourceRange.layerCount     = 1;
 
-    if (createDepthSampler)
+    if (createDepthSampler && depthSampler == VK_NULL_HANDLE)
     {
         VkSamplerCreateInfo samplerInfo{};
         samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -175,6 +175,29 @@ void FrameBufferObject::renderScenes(VkCommandBuffer cmd)
     {
         scene(cmd);
     }
+}
+
+void FrameBufferObject::changeResolution(int newWidth, int newHeight) {
+
+    width = newWidth;
+    height = newHeight;
+    VkDevice dev = device->device;
+    if (framebuffer != VK_NULL_HANDLE)      vkDestroyFramebuffer(dev, framebuffer, nullptr);
+    if (depthImageView != VK_NULL_HANDLE)   vkDestroyImageView(dev, depthImageView, nullptr);
+    if (depthImage != VK_NULL_HANDLE)       vkDestroyImage(dev, depthImage, nullptr);
+    if (depthImageMemory != VK_NULL_HANDLE) vkFreeMemory(dev, depthImageMemory, nullptr);
+
+    if (colorImageView != VK_NULL_HANDLE)   vkDestroyImageView(dev, colorImageView, nullptr);
+    if (colorImage != VK_NULL_HANDLE)       vkDestroyImage(dev, colorImage, nullptr);
+    if (colorImageMemory != VK_NULL_HANDLE) vkFreeMemory(dev, colorImageMemory, nullptr);
+    createColorResources();
+    if (error) return;
+    if (useDepth) {
+        createDepthResources();
+        if (error) return;
+    }
+    if (error) return;
+    createFramebuffer();
 }
 
 void FrameBufferObject::createColorResources()
@@ -235,17 +258,19 @@ void FrameBufferObject::createColorResources()
         std::cerr << "(FBO) Error: no se pudo crear el image view de color." << std::endl;
         error = true;
     }
-    // en createColorResources(), después de crear el imageView
-    VkSamplerCreateInfo samplerInfo{};
-    samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-    samplerInfo.magFilter = VK_FILTER_LINEAR;
-    samplerInfo.minFilter = VK_FILTER_LINEAR;
-    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-    samplerInfo.unnormalizedCoordinates = VK_FALSE;
-    vkCreateSampler(device->device, &samplerInfo, nullptr, &colorSampler);
+    if (colorSampler ==VK_NULL_HANDLE) {
+        // en createColorResources(), después de crear el imageView
+        VkSamplerCreateInfo samplerInfo{};
+        samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        samplerInfo.magFilter = VK_FILTER_LINEAR;
+        samplerInfo.minFilter = VK_FILTER_LINEAR;
+        samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+        samplerInfo.unnormalizedCoordinates = VK_FALSE;
+        vkCreateSampler(device->device, &samplerInfo, nullptr, &colorSampler);
+    }
 }
 
 void FrameBufferObject::createRenderPass()

@@ -28,6 +28,7 @@ public:
     static void turnOnFBO(FrameBufferObject* fbo);
     static void turnOffFBO(FrameBufferObject* fbo);
     static std::vector<FrameBufferObject*> activeFBOs;
+
 };
 
 

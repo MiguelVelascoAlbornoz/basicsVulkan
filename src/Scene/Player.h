@@ -17,6 +17,7 @@ public:
         float nearPlane;
         int maxTicksPerSecond;
         int maxCyclesPerSecond;
+        float fboResolutionMultiplier = 1;
     };
     Player(int id);
     ~Player();
