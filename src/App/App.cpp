@@ -42,7 +42,7 @@ App::App(const std::function<void(App*)>& registryCallback) {
 
     registryCallback(this);
 
-    Scenes::turnOnScene(Scenes::renderTest);
+    FrameBuffers::turnOnFBO(FrameBuffers::defaultFrameBuffer);
     //Finally execution loop
     executionLoop();
 

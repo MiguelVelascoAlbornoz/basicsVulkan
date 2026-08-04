@@ -4,6 +4,7 @@
 #include <vector>
 #include <cstring>
 #include <stbImage/stb_image_write.h>
+#include <algorithm>
 
 FrameBufferObject::FrameBufferObject(VulkanDevice* device, uint32_t width, uint32_t height,
                                       VkFormat colorFormat, bool useDepth)
@@ -132,6 +133,32 @@ void FrameBufferObject::createDepthResources()
     if (vkCreateImageView(dev, &viewInfo, nullptr, &depthImageView) != VK_SUCCESS) {
         std::cerr << "(FBO) Error: no se pudo crear el image view de depth." << std::endl;
         error = true;
+    }
+}
+
+void FrameBufferObject::addScene(SceneFunction scene)
+{
+    scenes.push_back(scene);
+}
+
+void FrameBufferObject::removeScene(SceneFunction scene)
+{
+    auto it = std::find(scenes.begin(),  scenes.end(), scene);
+
+    if (it != scenes.end())
+    {
+        scenes.erase(it);
+    } else
+    {
+        std::cerr << "Scene not active" << std::endl;
+    }
+}
+
+void FrameBufferObject::renderScenes(VkCommandBuffer cmd)
+{
+    for (auto & scene : scenes)
+    {
+        scene(cmd);
     }
 }
 

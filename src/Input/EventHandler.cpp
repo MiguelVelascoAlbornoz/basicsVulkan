@@ -6,6 +6,8 @@
 #include "../Renderer/Camera.h"
 #include "../Renderer/Renderer.h"
 #include "../Renderer/UniformBuffer.h"
+#include "../renderer/Mesh/FrameBufferObject.h"
+
 void App::manageEvents() {
     SDL_Event event;
     movedMouse = false;
@@ -31,11 +33,11 @@ void App::manageEvents() {
                     this->F3Mode = !this->F3Mode;
                     if (F3Mode)
                     {
-                        Scenes::turnOnScene(Scenes::renderAxis);
+                        FrameBuffers::defaultFrameBuffer->addScene(Scenes::renderAxis);
                         Menus::openMenu(F3_MENU_ID);
                     } else
                     {
-                        Scenes::turnOffScene(Scenes::renderAxis);
+                        FrameBuffers::defaultFrameBuffer->removeScene(Scenes::renderAxis);
                         Menus::closeMenu(F3_MENU_ID);
                     }
                     break;

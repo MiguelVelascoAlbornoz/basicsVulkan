@@ -7,6 +7,7 @@
 #include <string>
 #include <unordered_map>
 #include "../App/Utilitys.h"
+#include <vector>
 
 class FrameBufferObject;
 
@@ -15,6 +16,7 @@ class FrameBufferObject;
 class FrameBuffers
 {
 public:
+
     static FrameBufferObject* defaultFrameBuffer;
 
     static FrameBufferObject* registerFrameBuffer(const std::string& id, FrameBufferObject* frameBuffer) {
@@ -22,6 +24,10 @@ public:
     };
     static std::unordered_map<std::string, FrameBufferObject*> frameBuffers; /**< @brief Map to store menu rendering functions. */
     static void freeFrameBuffers();
+
+    static void turnOnFBO(FrameBufferObject* fbo);
+    static void turnOffFBO(FrameBufferObject* fbo);
+    static std::vector<FrameBufferObject*> activeFBOs;
 };
 
 

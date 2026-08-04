@@ -3,8 +3,11 @@
 
 #include "vulkan/vulkan_core.h"
 #include <string>
+#include <vector>
+
 
 class VulkanDevice;
+
 
 class FrameBufferObject
 {
@@ -28,10 +31,14 @@ public:
     [[nodiscard]] VkFramebuffer getFramebuffer() const { return framebuffer; }
     [[nodiscard]] VkExtent2D getExtent() const { return { width, height }; }
     [[nodiscard]] bool hasDepth() const { return useDepth; }
-
+    using SceneFunction = void(*)(VkCommandBuffer);
+    void addScene(SceneFunction scene);
+    void removeScene(SceneFunction scene);
     bool error = false;
-
+    void renderScenes(VkCommandBuffer cmd);
 private:
+
+    std::vector<SceneFunction> scenes;
     void createColorResources();
     void createDepthResources();
     void createRenderPass();
