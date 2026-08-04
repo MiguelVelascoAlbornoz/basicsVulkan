@@ -275,7 +275,7 @@ void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
     Pipeline* quadPipeline = Pipelines::getPipeline(POST_PROCESS_PIPELINE_ID);
     quadPipeline->bind(commandBuffer);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-        quadPipeline->getPipelineLayout(), 0, 1, &quadPipeline->descriptorSet, 0, nullptr);
+    quadPipeline->getPipelineLayout(), 0, 1, &quadPipeline->descriptorSet, 0, nullptr);
     Meshes::quadMesh->bind(commandBuffer);
     Meshes::quadMesh->draw(commandBuffer);
 

@@ -7,8 +7,8 @@
 #include <algorithm>
 
 FrameBufferObject::FrameBufferObject(VulkanDevice* device, uint32_t width, uint32_t height,
-                                      VkFormat colorFormat, bool useDepth)
-    : device(device), width(width), height(height), colorFormat(colorFormat), useDepth(useDepth)
+                                      VkFormat colorFormat, bool useDepth, bool createDepthSampler)
+    : device(device), width(width), height(height), colorFormat(colorFormat), createDepthSampler(createDepthSampler), useDepth(useDepth)
 {
     createColorResources();
     if (error) return;
@@ -47,6 +47,7 @@ FrameBufferObject::~FrameBufferObject()
     if (framebuffer != VK_NULL_HANDLE)      vkDestroyFramebuffer(dev, framebuffer, nullptr);
     if (renderPass != VK_NULL_HANDLE)       vkDestroyRenderPass(dev, renderPass, nullptr);
     if (colorSampler != VK_NULL_HANDLE)      vkDestroySampler(dev, colorSampler, nullptr);
+    if (depthSampler != VK_NULL_HANDLE)     vkDestroySampler(dev, depthSampler, nullptr);
     if (depthImageView != VK_NULL_HANDLE)   vkDestroyImageView(dev, depthImageView, nullptr);
     if (depthImage != VK_NULL_HANDLE)       vkDestroyImage(dev, depthImage, nullptr);
     if (depthImageMemory != VK_NULL_HANDLE) vkFreeMemory(dev, depthImageMemory, nullptr);
@@ -95,6 +96,7 @@ void FrameBufferObject::createDepthResources()
     imageInfo.tiling        = VK_IMAGE_TILING_OPTIMAL;
     imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     imageInfo.usage         = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    if (createDepthSampler) imageInfo.usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
     imageInfo.samples       = VK_SAMPLE_COUNT_1_BIT;
     imageInfo.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
 
@@ -130,6 +132,19 @@ void FrameBufferObject::createDepthResources()
     viewInfo.subresourceRange.baseArrayLayer = 0;
     viewInfo.subresourceRange.layerCount     = 1;
 
+    if (createDepthSampler)
+    {
+        VkSamplerCreateInfo samplerInfo{};
+        samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        samplerInfo.magFilter = VK_FILTER_LINEAR; // o NEAREST si prefieres depth sin filtrar
+        samplerInfo.minFilter = VK_FILTER_LINEAR;
+        samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_WHITE; // 1.0 = "infinitamente lejos" fuera de rango
+        samplerInfo.unnormalizedCoordinates = VK_FALSE;
+        vkCreateSampler(device->device, &samplerInfo, nullptr, &depthSampler);
+    }
     if (vkCreateImageView(dev, &viewInfo, nullptr, &depthImageView) != VK_SUCCESS) {
         std::cerr << "(FBO) Error: no se pudo crear el image view de depth." << std::endl;
         error = true;
@@ -258,11 +273,11 @@ void FrameBufferObject::createRenderPass()
         depthAttachment.format         = depthFormat;
         depthAttachment.samples        = VK_SAMPLE_COUNT_1_BIT;
         depthAttachment.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        depthAttachment.storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE; // no lo necesitamos fuera del render pass
+        depthAttachment.storeOp        = createDepthSampler ? VK_ATTACHMENT_STORE_OP_DONT_CARE : VK_ATTACHMENT_STORE_OP_STORE; // no lo necesitamos fuera del render pass
         depthAttachment.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
         depthAttachment.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
-        depthAttachment.finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        depthAttachment.finalLayout    = createDepthSampler ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
         attachments.push_back(depthAttachment);
 
         depthAttachmentRef.attachment = 1;

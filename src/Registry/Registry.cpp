@@ -92,9 +92,9 @@ void Registry::initPipelines(const App* app)
     };
     Pipelines::postProcessPipeline = Pipelines::registerPipelines(POST_PROCESS_PIPELINE_ID, new Pipeline(app->renderer->getVulkanDevice(),app->renderer->renderPass,postProcessPipelineConfig,app->renderer->descriptorPool));
     VkDescriptorImageInfo imageInfo{};
-    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    imageInfo.imageView   = FrameBuffers::defaultFrameBuffer->getColorImageView();
-    imageInfo.sampler     = FrameBuffers::defaultFrameBuffer->getColorSampler();
+    imageInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+    imageInfo.imageView   = FrameBuffers::defaultFrameBuffer->getDepthImageView();
+    imageInfo.sampler     = FrameBuffers::defaultFrameBuffer->getDepthSampler();
 
     VkWriteDescriptorSet write{};
     write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -202,6 +202,6 @@ void Registry::initMenus(const App* app)
 
 void Registry::initFramebuffers(const App* app)
 {
-    FrameBuffers::defaultFrameBuffer = FrameBuffers::registerFrameBuffer(DEFAULT_FRAME_BUFFER_ID,new  FrameBufferObject(app->renderer->getVulkanDevice(),800,600));
+    FrameBuffers::defaultFrameBuffer = FrameBuffers::registerFrameBuffer(DEFAULT_FRAME_BUFFER_ID,new  FrameBufferObject(app->renderer->getVulkanDevice(),800,600,VK_FORMAT_R8G8B8A8_UNORM,true,true));
     FrameBuffers::defaultFrameBuffer->addScene(Scenes::renderTest);
 }
