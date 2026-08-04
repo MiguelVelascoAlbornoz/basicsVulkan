@@ -233,9 +233,11 @@ void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
 
     // ---- PASADA 1: escena -> FBO ----
 
-    for (const auto& scene : Scenes::activeScenes)
+    for (const auto& fbo : FrameBuffers::activeFBOs)
     {
-        scene(commandBuffer);
+     fbo->beginRenderPass(commandBuffer);
+        fbo->renderScenes(commandBuffer);
+        fbo->endRenderPass(commandBuffer);
     }
 
 

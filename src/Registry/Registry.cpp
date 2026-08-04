@@ -3,6 +3,8 @@
 //
 #include "../App/App.h"
 #include "Registry.h"
+
+#include "Scenes.h"
 #include "../Menu/F3GUI.h"
 #include "../Renderer/Renderer.h"
 #include "../Renderer/Mesh/FrameBufferObject.h"
@@ -201,4 +203,5 @@ void Registry::initMenus(const App* app)
 void Registry::initFramebuffers(const App* app)
 {
     FrameBuffers::defaultFrameBuffer = FrameBuffers::registerFrameBuffer(DEFAULT_FRAME_BUFFER_ID,new  FrameBufferObject(app->renderer->getVulkanDevice(),800,600));
+    FrameBuffers::defaultFrameBuffer->addScene(Scenes::renderTest);
 }
