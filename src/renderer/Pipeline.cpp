@@ -3,7 +3,7 @@
 #include <iostream>
 #include "VulkanDevice.h"
 #include "VertexLayout.h"
-
+#include "UniformBuffer.h"
 
 VkShaderModule Pipeline::createShaderModule(const std::vector<char> &code)
 {
@@ -89,6 +89,7 @@ bool Pipeline::loadShader(std::string shaderName, VkShaderModule &shaderModule, 
  
 Pipeline::Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, PipelineConfig& config,VkDescriptorPool descriptorPool)
 {
+
     this->vulkanDevice = vulkanDevice;
     VkDevice device = vulkanDevice->device;
     
@@ -183,20 +184,28 @@ Pipeline::Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, Pipeline
     colorBlending.pAttachments    = &colorBlendAttachment;
 
     // 8. Pipeline layout (vacío por ahora: sin descriptor sets ni push constants)
-
-
-    std::vector<VkDescriptorSetLayoutBinding> layoutBindings(config.bindings.size());
-    for (size_t i = 0; i < config.bindings.size(); i++) {
-        layoutBindings[i].binding = static_cast<uint32_t>(i);
-        layoutBindings[i].descriptorType = config.bindings[i].type;
+    std::vector<VkDescriptorSetLayoutBinding> layoutBindings(config.uniformObjects.size()+config.images.size());
+    uint32_t bindingCount = 0;
+    for (size_t i = 0; i < config.uniformObjects.size(); i++,bindingCount++)
+    {
+        layoutBindings[i].binding = bindingCount;
+        layoutBindings[i].descriptorType = config.uniformObjects[i].type;
         layoutBindings[i].descriptorCount = 1;
-        layoutBindings[i].stageFlags = config.bindings[i].stageFlags;
+        layoutBindings[i].stageFlags = config.uniformObjects[i].stageFlags;
+        layoutBindings[i].pImmutableSamplers = nullptr;
+    }
+    for (size_t i = 0; i < config.images.size(); i++,bindingCount++)
+    {
+        layoutBindings[i].binding = bindingCount;
+        layoutBindings[i].descriptorType = config.images[i].type;
+        layoutBindings[i].descriptorCount = 1;
+        layoutBindings[i].stageFlags = config.images[i].stageFlags;
         layoutBindings[i].pImmutableSamplers = nullptr;
     }
 
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutInfo.bindingCount = config.bindings.size();
+    layoutInfo.bindingCount = layoutBindings.size();
     layoutInfo.pBindings = layoutBindings.data();
     vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout);
 
@@ -285,12 +294,53 @@ Pipeline::Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, Pipeline
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
 
+    //Create writtes and update descriptor
+    std::vector <VkWriteDescriptorSet> writes;
+    std::vector<VkDescriptorBufferInfo> bufferInfos(config.uniformObjects.size());
+    std::vector<VkDescriptorImageInfo> imageInfos(config.images.size());
+
+     bindingCount = 0;
+    for (size_t i = 0; i < config.uniformObjects.size(); i++,++bindingCount)
+    {
+        UniformBuffer* uniform = config.uniformObjects[i].uniformBuffer;
+
+        uniform->getBufferInfo(bufferInfos[i]);
+        VkWriteDescriptorSet write{};
+        write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        write.dstSet = descriptorSet;
+        write.dstBinding = bindingCount;
+        write.dstArrayElement = 0;
+        write.descriptorType = config.uniformObjects[i].type;
+        write.descriptorCount = 1;
+        write.pBufferInfo = &bufferInfos[i];
+        writes.push_back(write);
+    }
+    for (size_t i = 0; i < config.images.size(); i++,++bindingCount)
+    {
+        PipelineConfig::ImageBinding image = config.images[i];
+
+
+        imageInfos[i].imageLayout = image.layout;//VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
+        imageInfos[i].imageView   = image.image;
+        imageInfos[i].sampler     = image.sampler;
+
+
+        VkWriteDescriptorSet write{};
+        write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        write.dstSet = descriptorSet;
+        write.dstBinding = bindingCount;
+        write.descriptorCount = 1;
+        write.descriptorType = image.type;
+        write.pImageInfo = &imageInfos[i];
+        writes.push_back(write);
+    }
+    vkUpdateDescriptorSets(device, writes.size(), writes.data(), 0, nullptr);
 
     #ifdef _DEBUG
     std::cout << "(VULKAN) Pipeline gráfico creado correctamente." << std::endl;
     #endif
 
-    
+
 }
 
 Pipeline::~Pipeline()

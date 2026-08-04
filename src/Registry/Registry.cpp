@@ -20,8 +20,9 @@
 void Registry::registryCallback(const App* app)
 {
     Registry::initFramebuffers(app);
-    Registry::initPipelines(app);
     Registry::initUniforms(app);
+    Registry::initPipelines(app);
+
     Registry::initMeshes(app);
     Registry::initMenus(app);
 };
@@ -40,20 +41,6 @@ void Registry::initUniforms(const App* app)
     };
     Uniforms::cameraUniform = Uniforms::registerUniform(CAMERA_UNIFORM_ID, new UniformBuffer(device,inputsMap));
 
-    std::vector<VkDescriptorBufferInfo> bufferInfosTest(1);
-    std::vector<VkWriteDescriptorSet> writesTest;
-    writesTest.push_back(Uniforms::cameraUniform->getWriteDescriptor(
-        Pipelines::defaultPipeline->descriptorSet, 0, bufferInfosTest[0]));
-    vkUpdateDescriptorSets(device->device, 1, writesTest.data(), 0, nullptr);
-
-    std::vector<VkDescriptorBufferInfo> bufferInfos(1);
-    std::vector<VkWriteDescriptorSet> writes;
-
-    writes.push_back(Uniforms::cameraUniform->getWriteDescriptor(
-        Pipelines::linesPipeline->descriptorSet, 0, bufferInfos[0]));
-
-    vkUpdateDescriptorSets(device->device,static_cast<uint32_t>(writes.size()), writes.data(),0, nullptr);
-
 
 }
 
@@ -64,9 +51,9 @@ void Registry::initPipelines(const App* app)
     Pipeline::PipelineConfig pipelineConfigDefault;
     pipelineConfigDefault.vertexAttributes = {AttribType::VEC3,AttribType::VEC3};
     pipelineConfigDefault.pushConstantsSize = sizeof(Model::ModelUBO);
-    pipelineConfigDefault.bindings = {
-                { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT },
-        };
+    pipelineConfigDefault.uniformObjects = {
+                {Uniforms::cameraUniform, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT },
+    };
     Pipelines::defaultPipeline = new Pipeline(app->renderer->getVulkanDevice(),FrameBuffers::defaultFrameBuffer->getRenderPass(),pipelineConfigDefault,app->renderer->descriptorPool);
 
     //LINE PIPELINE
@@ -74,38 +61,31 @@ void Registry::initPipelines(const App* app)
     linePipelineConfig.vertexAttributes = {AttribType::VEC3};
     linePipelineConfig.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
     linePipelineConfig.shaderName = "lines";
-    linePipelineConfig.bindings = {
-            { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT },
+    linePipelineConfig.uniformObjects = {
+            {Uniforms::cameraUniform, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT },
     };
     linePipelineConfig.pushConstantsSize = sizeof(Uniforms::lineUniform);
     Pipelines::linesPipeline = new Pipeline(app->renderer->getVulkanDevice(),FrameBuffers::defaultFrameBuffer->getRenderPass(),linePipelineConfig,app->renderer->descriptorPool);
-
-
-    Pipelines::registerPipelines(TEST_PIPELINE_ID,Pipelines::defaultPipeline);
-    Pipelines::registerPipelines(LINES_PIPELINE_ID,Pipelines::linesPipeline);
 
     //POST_PROCESS PIPELINE
     Pipeline::PipelineConfig postProcessPipelineConfig;
     postProcessPipelineConfig.vertexAttributes = {AttribType::VEC2};
     postProcessPipelineConfig.shaderName = "postProcess";
-    postProcessPipelineConfig.bindings = {
-        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT }
+    postProcessPipelineConfig.images = {
+        {
+            FrameBuffers::defaultFrameBuffer->getColorImageView(),
+            FrameBuffers::defaultFrameBuffer->getColorSampler(),
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            VK_SHADER_STAGE_FRAGMENT_BIT
+        }
     };
+
+
+    Pipelines::registerPipelines(TEST_PIPELINE_ID,Pipelines::defaultPipeline);
+    Pipelines::registerPipelines(LINES_PIPELINE_ID,Pipelines::linesPipeline);
     Pipelines::postProcessPipeline = Pipelines::registerPipelines(POST_PROCESS_PIPELINE_ID, new Pipeline(app->renderer->getVulkanDevice(),app->renderer->renderPass,postProcessPipelineConfig,app->renderer->descriptorPool));
-    VkDescriptorImageInfo imageInfo{};
-    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;//VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
-    imageInfo.imageView   = FrameBuffers::defaultFrameBuffer->getColorImageView();
-    imageInfo.sampler     = FrameBuffers::defaultFrameBuffer->getColorSampler();
 
-    VkWriteDescriptorSet write{};
-    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    write.dstSet = Pipelines::postProcessPipeline->descriptorSet;
-    write.dstBinding = 0;
-    write.descriptorCount = 1;
-    write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    write.pImageInfo = &imageInfo;
-
-    vkUpdateDescriptorSets(app->renderer->getVulkanDevice()->device, 1, &write, 0, nullptr);
 }
 void Registry::initMeshes(const App* app)
 {

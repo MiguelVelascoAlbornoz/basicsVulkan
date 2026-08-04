@@ -50,6 +50,7 @@ public:
     void setRaw(size_t index);
     VkWriteDescriptorSet getWriteDescriptor(VkDescriptorSet descriptorSet, uint32_t binding,
                                             VkDescriptorBufferInfo& bufferInfoOut);
+    void getBufferInfo(VkDescriptorBufferInfo& bufferInfoOut);
     void setRaw(const UniformField* uniformField);
 
 };

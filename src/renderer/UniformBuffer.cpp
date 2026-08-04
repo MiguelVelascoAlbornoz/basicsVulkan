@@ -106,3 +106,9 @@ VkWriteDescriptorSet UniformBuffer::getWriteDescriptor(VkDescriptorSet descripto
     return write;
 }
 
+void UniformBuffer::getBufferInfo(VkDescriptorBufferInfo& bufferInfoOut)
+{
+    bufferInfoOut.buffer = buffer;
+    bufferInfoOut.offset = 0;
+    bufferInfoOut.range = bytesCount;
+}

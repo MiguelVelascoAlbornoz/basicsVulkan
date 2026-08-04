@@ -82,7 +82,7 @@ void EditorMenu::render()
 			player->setPlayerCameraSettings(cameraSettings);
 		}
 		ImGui::Text("FBO resolution ratio:"); ImGui::SameLine();
-		if (DragFloat("##FBORes", &cameraSettings.fboResolutionMultiplier, .1,0.000001)) {
+		if (DragFloat("##FBORes", &cameraSettings.fboResolutionMultiplier, .01,0.01)) {
 			player->setPlayerCameraSettings(cameraSettings);
 			app->onFBOResolutionChange();
 		}

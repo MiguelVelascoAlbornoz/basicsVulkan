@@ -8,18 +8,32 @@ class VulkanDevice;
 #include "AttribType.h"
 #include <vector>
 
+class UniformBuffer;
+
 class Pipeline {
     
 
     public:
+    struct ImageBinding
+    {
+        VkImageView image = VK_NULL_HANDLE;
+        VkSampler sampler = VK_NULL_HANDLE;
+        VkImageLayout layout;
+        VkDescriptorType type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;//VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        VkShaderStageFlags stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT;
+    };
+    struct UniformBinding
+    {
+        UniformBuffer* uniformBuffer = nullptr;
+        VkDescriptorType type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        VkShaderStageFlags stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT;
+    };
+    std::vector<ImageBinding> images;
+    std::vector<UniformBinding> uniformObjects;
     struct PipelineConfig {
-        struct BindingDesc {
-            VkDescriptorType type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            VkShaderStageFlags stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT;
-        };
 
-        // en PipelineConfig, reemplaza bindingsCount por:
-        std::vector<BindingDesc> bindings;
+
+
         std::string shaderName = "default"; /** @brief file with the main in folder assets/shaders/etc/shaderName.etc  **/
 
         std::vector<AttribType::INPUT_TYPES> vertexAttributes; /** @brief Vector with the vertex layout and the types (order matters)**/
@@ -73,14 +87,14 @@ class Pipeline {
          * @note Requires createPipelineLayout() and createRenderPass() to have run first.
          */
         Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, PipelineConfig& config,
-                 VkDescriptorPool descriptorPool);
+                 VkDescriptorPool descriptorPool,std::vector<UniformBinding> uniformBuffers = {}, std::vector<UniformBinding> uniformObjects = {});
         ~Pipeline();
         bool error = false;
         void bind(VkCommandBuffer commandBuffer) {
             vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
         }
         VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
-        VkDescriptorSet descriptorSet;
+        VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
         VkPipelineLayout getPipelineLayout() const { return pipelineLayout; } /**< @brief Get the pipeline layout handle. */
     private:
 

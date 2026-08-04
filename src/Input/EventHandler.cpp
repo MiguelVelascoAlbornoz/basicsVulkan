@@ -119,21 +119,7 @@ void App::managePlayerMovement() {
 void App::onFBOResolutionChange() const {
     vkDeviceWaitIdle(renderer->getVulkanDevice()->device);
     FrameBuffers::defaultFrameBuffer->changeResolution(window->getWidth()*player->getPlayerCameraSettings()->fboResolutionMultiplier, window->getHeight()*player->getPlayerCameraSettings()->fboResolutionMultiplier);
-
-    VkDescriptorImageInfo imageInfo{};
-    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;//VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
-    imageInfo.imageView   = FrameBuffers::defaultFrameBuffer->getColorImageView();
-    imageInfo.sampler     = FrameBuffers::defaultFrameBuffer->getColorSampler();
-
-    VkWriteDescriptorSet write{};
-    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    write.dstSet = Pipelines::postProcessPipeline->descriptorSet;
-    write.dstBinding = 0;
-    write.descriptorCount = 1;
-    write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    write.pImageInfo = &imageInfo;
-
-    vkUpdateDescriptorSets(renderer->getVulkanDevice()->device, 1, &write, 0, nullptr);
+    //Pipelines::postProcessPipeline->updateDescriptorSet();
 }
 void App::manageCameraRotation(SDL_MouseMotionEvent event) {
         if (!movedMouse) return;
