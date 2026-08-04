@@ -8,7 +8,6 @@
 
 class VulkanDevice;
 
-
 class FrameBufferObject
 {
 public:
