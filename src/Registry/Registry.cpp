@@ -92,7 +92,7 @@ void Registry::initPipelines(const App* app)
     };
     Pipelines::postProcessPipeline = Pipelines::registerPipelines(POST_PROCESS_PIPELINE_ID, new Pipeline(app->renderer->getVulkanDevice(),app->renderer->renderPass,postProcessPipelineConfig,app->renderer->descriptorPool));
     VkDescriptorImageInfo imageInfo{};
-    imageInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+    imageInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;//VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
     imageInfo.imageView   = FrameBuffers::defaultFrameBuffer->getDepthImageView();
     imageInfo.sampler     = FrameBuffers::defaultFrameBuffer->getDepthSampler();
 
