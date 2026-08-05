@@ -16,7 +16,7 @@ public:
     [[nodiscard]] VkSampler getColorSampler() const { return colorSampler; }
     FrameBufferObject(VulkanDevice* device, uint32_t width, uint32_t height,
                        VkFormat colorFormat = VK_FORMAT_R8G8B8A8_UNORM,
-                       bool useDepth = true,bool createDepthSampler = false); // <-- nuevo parametro, default activado
+                       bool useDepth = true,bool createDepthSampler = false, int multiSamplerPower = 0); // <-- nuevo parametro, default activado
     ~FrameBufferObject();
 
     void beginRenderPass(VkCommandBuffer cmd);
@@ -35,12 +35,15 @@ public:
     void removeScene(SceneFunction scene);
     bool error = false;
     void renderScenes(VkCommandBuffer cmd);
+    void recreateFrameBuffer();
 
     [[nodiscard]] VkSampler getDepthSampler() const { return depthSampler; }
     [[nodiscard]] VkImageView getDepthImageView() const { return depthImageView; }
     void changeResolution(int newWidth, int newHeight);
+    void changeMultiSamplerPower(int newMultiSamplerPower);
+    int getSamplesPower() const {return multiSamplerPower;}
 private:
-    VkSampleCountFlagBits samplesCount =VK_SAMPLE_COUNT_1_BIT;
+
     std::vector<SceneFunction> scenes;
     void createColorResources();
     void createDepthResources();
@@ -55,7 +58,7 @@ private:
     VkFormat colorFormat;
     bool createDepthSampler;
     bool useDepth;
-
+    int multiSamplerPower;
     VkImage colorImage = VK_NULL_HANDLE;
     VkDeviceMemory colorImageMemory = VK_NULL_HANDLE;
     VkImageView colorImageView = VK_NULL_HANDLE;

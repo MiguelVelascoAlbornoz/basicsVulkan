@@ -2,6 +2,7 @@
 #include <memory>
 #include <iostream>
 #include <optional>
+#include <cmath>
 
 #include "VulkanDevice.h"
 #include "VertexLayout.h"
@@ -88,6 +89,14 @@ bool Pipeline::loadShader(std::string shaderName, VkShaderModule &shaderModule, 
 
     return true;
 }
+
+
+void Pipeline::updateMSAASamples(int newValue)
+{
+    config.multisamplerSamples = newValue;
+    recreate(this->config,this->renderPass);
+}
+
 Pipeline::Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, PipelineConfig& config, VkDescriptorPool descriptorPool)
 {
     this->vulkanDevice = vulkanDevice;
@@ -195,8 +204,8 @@ void Pipeline::buildPipeline(bool shouldCreateDescriptorSet)
     // 6. Multisampling (deshabilitado)
     VkPipelineMultisampleStateCreateInfo multisampling{};
     multisampling.sType                = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    multisampling.sampleShadingEnable  = VK_FALSE;
-    multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    multisampling.sampleShadingEnable  = config.sampleShadding;
+    multisampling.rasterizationSamples = static_cast<VkSampleCountFlagBits>(std::pow(2,config.multisamplerSamples));
 
     // 7. Color blending
     VkPipelineColorBlendAttachmentState colorBlendAttachment{};

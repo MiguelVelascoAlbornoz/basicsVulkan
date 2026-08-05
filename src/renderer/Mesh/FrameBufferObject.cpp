@@ -5,10 +5,11 @@
 #include <cstring>
 #include <stbImage/stb_image_write.h>
 #include <algorithm>
+#include <cmath>
 
 FrameBufferObject::FrameBufferObject(VulkanDevice* device, uint32_t width, uint32_t height,
-                                      VkFormat colorFormat, bool useDepth, bool createDepthSampler)
-    : device(device), width(width), height(height), colorFormat(colorFormat), createDepthSampler(createDepthSampler), useDepth(useDepth)
+                                     VkFormat colorFormat, bool useDepth, bool createDepthSampler, int multiSamplerPower)
+    : device(device), width(width), height(height), colorFormat(colorFormat), createDepthSampler(createDepthSampler), useDepth(useDepth), multiSamplerPower(multiSamplerPower)
 {
     createColorResources();
     if (error) return;
@@ -97,7 +98,7 @@ void FrameBufferObject::createDepthResources()
     imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     imageInfo.usage         = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
     if (createDepthSampler) imageInfo.usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
-    imageInfo.samples       = VK_SAMPLE_COUNT_1_BIT;
+    imageInfo.samples       = static_cast<VkSampleCountFlagBits>(std::pow(2,multiSamplerPower));
     imageInfo.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
 
     if (vkCreateImage(dev, &imageInfo, nullptr, &depthImage) != VK_SUCCESS) {
@@ -176,12 +177,10 @@ void FrameBufferObject::renderScenes(VkCommandBuffer cmd)
         scene(cmd);
     }
 }
-
-void FrameBufferObject::changeResolution(int newWidth, int newHeight) {
-
-    width = newWidth;
-    height = newHeight;
+void FrameBufferObject::recreateFrameBuffer()
+{
     VkDevice dev = device->device;
+    vkDeviceWaitIdle(dev);;
     if (framebuffer != VK_NULL_HANDLE)      vkDestroyFramebuffer(dev, framebuffer, nullptr);
     if (depthImageView != VK_NULL_HANDLE)   vkDestroyImageView(dev, depthImageView, nullptr);
     if (depthImage != VK_NULL_HANDLE)       vkDestroyImage(dev, depthImage, nullptr);
@@ -200,6 +199,18 @@ void FrameBufferObject::changeResolution(int newWidth, int newHeight) {
     createFramebuffer();
 }
 
+void FrameBufferObject::changeResolution(int newWidth, int newHeight) {
+
+    width = newWidth;
+    height = newHeight;
+    recreateFrameBuffer();
+}
+
+void FrameBufferObject::changeMultiSamplerPower(int newMultiSamplerPower)
+{
+    multiSamplerPower = newMultiSamplerPower;
+    recreateFrameBuffer();
+}
 void FrameBufferObject::createColorResources()
 {
     VkDevice dev = device->device;
@@ -217,7 +228,7 @@ void FrameBufferObject::createColorResources()
     imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     // COLOR_ATTACHMENT para renderizar, TRANSFER_SRC para poder copiarla despues a un buffer (debug PNG)
     imageInfo.usage         = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-    imageInfo.samples       = VK_SAMPLE_COUNT_1_BIT;
+    imageInfo.samples       = static_cast<VkSampleCountFlagBits>(std::pow(2,multiSamplerPower));;
     imageInfo.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
 
     if (vkCreateImage(dev, &imageInfo, nullptr, &colorImage) != VK_SUCCESS) {

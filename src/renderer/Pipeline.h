@@ -30,7 +30,7 @@ class Pipeline {
     };
     struct PipelineConfig {
 
-
+        int multisamplerSamples = 0;
         std::vector<ImageBinding> images;
         std::vector<UniformBinding> uniformObjects;
 
@@ -57,6 +57,7 @@ class Pipeline {
         // En PipelineConfig
         bool depthTestEnable = true;
         bool depthWriteEnable = true;
+        bool sampleShadding = false;
     };
 
         /**
@@ -103,9 +104,9 @@ class Pipeline {
         VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
         VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
         VkPipelineLayout getPipelineLayout() const { return pipelineLayout; } /**< @brief Get the pipeline layout handle. */
+    void updateMSAASamples(int newValue);
     private:
     // Pipeline.h
-private:
         PipelineConfig config; // copia, no referencia
         VkRenderPass renderPass = VK_NULL_HANDLE;
         VkDescriptorPool descriptorPool = VK_NULL_HANDLE;

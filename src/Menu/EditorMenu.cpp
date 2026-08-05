@@ -3,6 +3,7 @@
 
 #include "../App/App.h"
 #include "../Renderer/Pipeline.h"
+#include "../renderer/Mesh/FrameBufferObject.h"
 #include "../Scene/Player.h"
 
 /**
@@ -93,6 +94,12 @@ void EditorMenu::render()
 			{
 				pipeline->updateShaders();
 			});
+		}
+		ImGui::Text("MSAA samples:"); ImGui::SameLine();
+		int samples = FrameBuffers::defaultFrameBuffer->getSamplesPower();
+		if (InputInt("##samples", &samples,1)) {
+			FrameBuffers::defaultFrameBuffer->changeMultiSamplerPower(samples);
+			Pipelines::defaultPipeline->updateMSAASamples(samples);
 		}
 		Unindent();
 	}
