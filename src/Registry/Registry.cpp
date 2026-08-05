@@ -73,11 +73,11 @@ void Registry::initPipelines(const App* app)
     postProcessPipelineConfig.shaderName = "postProcess";
     postProcessPipelineConfig.images = {
         {
-            FrameBuffers::defaultFrameBuffer->getColorImageView(),
-            FrameBuffers::defaultFrameBuffer->getColorSampler(),
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            VK_SHADER_STAGE_FRAGMENT_BIT
+            FrameBuffers::defaultFrameBuffer->getDepthImageView(),
+        FrameBuffers::defaultFrameBuffer->getDepthSampler(),
+        VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+        VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+        VK_SHADER_STAGE_FRAGMENT_BIT
         }
     };
 
@@ -183,6 +183,6 @@ void Registry::initMenus(const App* app)
 
 void Registry::initFramebuffers(const App* app)
 {
-    FrameBuffers::defaultFrameBuffer = FrameBuffers::registerFrameBuffer(DEFAULT_FRAME_BUFFER_ID,new  FrameBufferObject(app->renderer->getVulkanDevice(),app->window->getWidth()*app->player->getPlayerCameraSettings()->fboResolutionMultiplier,app->window->getHeight()*app->player->getPlayerCameraSettings()->fboResolutionMultiplier,VK_FORMAT_R8G8B8A8_UNORM,true,false));
+    FrameBuffers::defaultFrameBuffer = FrameBuffers::registerFrameBuffer(DEFAULT_FRAME_BUFFER_ID,new  FrameBufferObject(app->renderer->getVulkanDevice(),app->window->getWidth()*app->player->getPlayerCameraSettings()->fboResolutionMultiplier,app->window->getHeight()*app->player->getPlayerCameraSettings()->fboResolutionMultiplier,VK_FORMAT_R8G8B8A8_UNORM,true,true));
     FrameBuffers::defaultFrameBuffer->addScene(Scenes::renderTest);
 }

@@ -298,7 +298,7 @@ void FrameBufferObject::createRenderPass()
         depthAttachment.format         = depthFormat;
         depthAttachment.samples        = VK_SAMPLE_COUNT_1_BIT;
         depthAttachment.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        depthAttachment.storeOp        = createDepthSampler ? VK_ATTACHMENT_STORE_OP_DONT_CARE : VK_ATTACHMENT_STORE_OP_STORE; // no lo necesitamos fuera del render pass
+        depthAttachment.storeOp = createDepthSampler ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE;
         depthAttachment.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
         depthAttachment.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;

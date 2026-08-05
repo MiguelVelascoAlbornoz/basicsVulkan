@@ -60,7 +60,9 @@ void App::manageEvents() {
             std::cout << "Window close requested." << std::endl;
             runnig = false;
         } else if (event.type == SDL_EVENT_WINDOW_RESIZED) {
+            onFBOResolutionChange();
             if (!renderer->onWindowResized(window)) {
+
                 std::cerr << "Failed to handle window resize event." << std::endl;
                 runnig = false;
             }
