@@ -1,6 +1,8 @@
 #include "Pipeline.h"
 #include <memory>
 #include <iostream>
+#include <optional>
+
 #include "VulkanDevice.h"
 #include "VertexLayout.h"
 #include "UniformBuffer.h"
@@ -86,13 +88,37 @@ bool Pipeline::loadShader(std::string shaderName, VkShaderModule &shaderModule, 
 
     return true;
 }
- 
-Pipeline::Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, PipelineConfig& config,VkDescriptorPool descriptorPool)
+Pipeline::Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, PipelineConfig& config, VkDescriptorPool descriptorPool)
 {
-
-
     this->vulkanDevice = vulkanDevice;
+    this->renderPass = renderPass;
+    this->descriptorPool = descriptorPool;
+    this->config = config;
+    buildPipeline(true);
+}
+
+void Pipeline::recreate(std::optional<PipelineConfig> newConfig, VkRenderPass newRenderPass)
+{
+    vkDeviceWaitIdle(vulkanDevice->device);
+    if (newConfig)   config = *newConfig;
+    if (newRenderPass != VK_NULL_HANDLE) renderPass = newRenderPass;
+
+    destroyPipelineObjects(); // ver punto 3
+    buildPipeline(false);
+}
+void Pipeline::destroyPipelineObjects()
+{
     VkDevice device = vulkanDevice->device;
+
+    if (graphicsPipeline != VK_NULL_HANDLE) vkDestroyPipeline(device, graphicsPipeline, nullptr);
+    if (pipelineLayout != VK_NULL_HANDLE) vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+    //if (descriptorSetLayout != VK_NULL_HANDLE) vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+    graphicsPipeline = VK_NULL_HANDLE;
+    pipelineLayout = VK_NULL_HANDLE;
+    //descriptorSetLayout = VK_NULL_HANDLE;
+}
+void Pipeline::buildPipeline(bool shouldCreateDescriptorSet)
+{
     
     VkShaderModule vertShaderModule;
     VkShaderModule fragShaderModule;
@@ -103,7 +129,7 @@ Pipeline::Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, Pipeline
     if (!loadShader(config.shaderName, fragShaderModule, "frag"))
     {
         error = true;
-        vkDestroyShaderModule(device, vertShaderModule, nullptr);
+        vkDestroyShaderModule(vulkanDevice->device, vertShaderModule, nullptr);
 
         return;
     }
@@ -185,30 +211,46 @@ Pipeline::Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, Pipeline
     colorBlending.pAttachments    = &colorBlendAttachment;
 
     // 8. Pipeline layout (vacío por ahora: sin descriptor sets ni push constants)
-    std::vector<VkDescriptorSetLayoutBinding> layoutBindings(config.uniformObjects.size()+config.images.size());
-    uint32_t bindingCount = 0;
-    for (size_t i = 0; i < config.uniformObjects.size(); i++,bindingCount++)
+    if (shouldCreateDescriptorSet)
     {
-        layoutBindings[i].binding = bindingCount;
-        layoutBindings[i].descriptorType = config.uniformObjects[i].type;
-        layoutBindings[i].descriptorCount = 1;
-        layoutBindings[i].stageFlags = config.uniformObjects[i].stageFlags;
-        layoutBindings[i].pImmutableSamplers = nullptr;
-    }
-    for (size_t i = 0; i < config.images.size(); i++,bindingCount++)
-    {
-        layoutBindings[i].binding = bindingCount;
-        layoutBindings[i].descriptorType = config.images[i].type;
-        layoutBindings[i].descriptorCount = 1;
-        layoutBindings[i].stageFlags = config.images[i].stageFlags;
-        layoutBindings[i].pImmutableSamplers = nullptr;
-    }
+        std::vector<VkDescriptorSetLayoutBinding> layoutBindings(config.uniformObjects.size()+config.images.size());
+        uint32_t bindingCount = 0;
+        for (size_t i = 0; i < config.uniformObjects.size(); i++,bindingCount++)
+        {
+            layoutBindings[i].binding = bindingCount;
+            layoutBindings[i].descriptorType = config.uniformObjects[i].type;
+            layoutBindings[i].descriptorCount = 1;
+            layoutBindings[i].stageFlags = config.uniformObjects[i].stageFlags;
+            layoutBindings[i].pImmutableSamplers = nullptr;
+        }
+        for (size_t i = 0; i < config.images.size(); i++,bindingCount++)
+        {
+            layoutBindings[i].binding = bindingCount;
+            layoutBindings[i].descriptorType = config.images[i].type;
+            layoutBindings[i].descriptorCount = 1;
+            layoutBindings[i].stageFlags = config.images[i].stageFlags;
+            layoutBindings[i].pImmutableSamplers = nullptr;
+        }
 
-    VkDescriptorSetLayoutCreateInfo layoutInfo{};
-    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutInfo.bindingCount = layoutBindings.size();
-    layoutInfo.pBindings = layoutBindings.data();
-    vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout);
+        VkDescriptorSetLayoutCreateInfo layoutInfo{};
+        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        layoutInfo.bindingCount = layoutBindings.size();
+        layoutInfo.pBindings = layoutBindings.data();
+        vkCreateDescriptorSetLayout(vulkanDevice->device, &layoutInfo, nullptr, &descriptorSetLayout);
+        VkDescriptorSetAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfo.descriptorPool = descriptorPool;
+        allocInfo.descriptorSetCount = 1;
+        allocInfo.pSetLayouts = &descriptorSetLayout;
+
+
+
+        vkAllocateDescriptorSets(
+          vulkanDevice->device,
+          &allocInfo,
+          &descriptorSet
+        );
+    }
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     VkPushConstantRange pushConstantRange{}; // vive hasta el final de la función
@@ -229,11 +271,11 @@ Pipeline::Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, Pipeline
 
 
 
-    if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
+    if (vkCreatePipelineLayout(vulkanDevice->device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
         std::cout << ("(VULKAN) Error in createPipeline(): No se pudo crear el pipeline layout.") << std::endl;
         error = true;
-        vkDestroyShaderModule(device, fragShaderModule, nullptr);
-        vkDestroyShaderModule(device, vertShaderModule, nullptr);
+        vkDestroyShaderModule(vulkanDevice->device, fragShaderModule, nullptr);
+        vkDestroyShaderModule(vulkanDevice->device, vertShaderModule, nullptr);
 
         return;
     }
@@ -268,32 +310,20 @@ Pipeline::Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, Pipeline
     pipelineInfo.pDepthStencilState =
     (config.depthTestEnable ) ? &depthStencil : nullptr;
 
-    if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
+    if (vkCreateGraphicsPipelines(vulkanDevice->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
         std::cout << ("(VULKAN) Error in createPipeline(): No se pudo crear el graphics pipeline.") << std::endl;
         error = true;
-        vkDestroyShaderModule(device, fragShaderModule, nullptr);
-        vkDestroyShaderModule(device, vertShaderModule, nullptr);
+        vkDestroyShaderModule(vulkanDevice->device, fragShaderModule, nullptr);
+        vkDestroyShaderModule(vulkanDevice->device, vertShaderModule, nullptr);
 
         return;
     }
 
-    VkDescriptorSetAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    allocInfo.descriptorPool = descriptorPool;
-    allocInfo.descriptorSetCount = 1;
-    allocInfo.pSetLayouts = &descriptorSetLayout;
 
-
-
-    vkAllocateDescriptorSets(
-      vulkanDevice->device,
-      &allocInfo,
-      &descriptorSet
-    );
 
     // Los shader modules ya no se necesitan una vez creado el pipeline
-    vkDestroyShaderModule(device, fragShaderModule, nullptr);
-    vkDestroyShaderModule(device, vertShaderModule, nullptr);
+    vkDestroyShaderModule(vulkanDevice->device, fragShaderModule, nullptr);
+    vkDestroyShaderModule(vulkanDevice->device, vertShaderModule, nullptr);
 
     //Create writtes and update descriptor
 
@@ -344,6 +374,13 @@ void Pipeline::updateDescriptorSet( std::vector<UniformBinding> uniformObjects, 
 
     vkUpdateDescriptorSets(device, static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
 }
+
+void Pipeline::updateShaders()
+{
+
+    recreate(this->config,this->renderPass);
+}
+
 Pipeline::~Pipeline()
 {
     VkDevice device = vulkanDevice->device;

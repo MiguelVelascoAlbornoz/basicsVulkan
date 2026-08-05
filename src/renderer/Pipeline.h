@@ -2,6 +2,7 @@
 #define PIPELINE_H
 
 
+#include <optional>
 #include <string>
 #include "AttribType.h"
 #include <vector>
@@ -73,6 +74,7 @@ class Pipeline {
             * @param shaderType The type of shader ("vert" for vertex, "frag" for fragment).
          */
         bool loadShader(std::string shaderName, VkShaderModule &shaderModule, std::string shaderType);
+    int recreate();
 
     /**
          * @brief Creates the graphics pipeline, which bundles shader stages, vertex input, input assembly, viewport/scissor, rasterization, multisampling, color blending, and dynamic state into a single immutable object.
@@ -88,7 +90,11 @@ class Pipeline {
          */
         Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, PipelineConfig& config,
                  VkDescriptorPool descriptorPool);
+    void recreate(std::optional<PipelineConfig> newConfig, VkRenderPass newRenderPass);
+    void destroyPipelineObjects();
+    void buildPipeline(bool shouldCreateDescriptorSet);
     void updateDescriptorSet(std::vector<UniformBinding> uniformObjects, std::vector<ImageBinding> images);
+    void updateShaders();
     ~Pipeline();
         bool error = false;
         void bind(VkCommandBuffer commandBuffer) {
@@ -98,6 +104,11 @@ class Pipeline {
         VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
         VkPipelineLayout getPipelineLayout() const { return pipelineLayout; } /**< @brief Get the pipeline layout handle. */
     private:
+    // Pipeline.h
+private:
+        PipelineConfig config; // copia, no referencia
+        VkRenderPass renderPass = VK_NULL_HANDLE;
+        VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
         VulkanDevice* vulkanDevice = nullptr;
         VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
         VkPipeline graphicsPipeline = VK_NULL_HANDLE;

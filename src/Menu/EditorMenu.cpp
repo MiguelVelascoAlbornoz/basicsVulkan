@@ -2,6 +2,7 @@
 #include <imGUI/imgui.h>
 
 #include "../App/App.h"
+#include "../Renderer/Pipeline.h"
 #include "../Scene/Player.h"
 
 /**
@@ -85,6 +86,13 @@ void EditorMenu::render()
 		if (DragFloat("##FBORes", &cameraSettings.fboResolutionMultiplier, .01,0.01)) {
 			player->setPlayerCameraSettings(cameraSettings);
 			app->onFBOResolutionChange();
+		}
+		if (ImGui::Button("Update shaders"))
+		{
+			Pipelines::callForEveryOne( [] (Pipeline* pipeline)
+			{
+				pipeline->updateShaders();
+			});
 		}
 		Unindent();
 	}

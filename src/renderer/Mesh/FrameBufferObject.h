@@ -40,7 +40,7 @@ public:
     [[nodiscard]] VkImageView getDepthImageView() const { return depthImageView; }
     void changeResolution(int newWidth, int newHeight);
 private:
-
+    VkSampleCountFlagBits samplesCount =VK_SAMPLE_COUNT_1_BIT;
     std::vector<SceneFunction> scenes;
     void createColorResources();
     void createDepthResources();

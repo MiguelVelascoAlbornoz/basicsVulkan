@@ -29,6 +29,13 @@ class Pipelines
     static Pipeline* getPipeline(const std::string& pipelineID) {
         return pipelines[pipelineID];
     }
+    static void callForEveryOne(void call(Pipeline*))
+    {
+        for (const auto& pipeline : pipelines)
+        {
+            call(pipeline.second);
+        }
+    }
 
 };
 
