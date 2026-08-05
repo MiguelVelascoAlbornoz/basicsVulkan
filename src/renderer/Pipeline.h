@@ -3,12 +3,11 @@
 
 
 #include <string>
-class VulkanDevice;
-
 #include "AttribType.h"
 #include <vector>
 
 class UniformBuffer;
+class VulkanDevice;
 
 class Pipeline {
     
@@ -28,11 +27,11 @@ class Pipeline {
         VkDescriptorType type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         VkShaderStageFlags stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT;
     };
-    std::vector<ImageBinding> images;
-    std::vector<UniformBinding> uniformObjects;
     struct PipelineConfig {
 
 
+        std::vector<ImageBinding> images;
+        std::vector<UniformBinding> uniformObjects;
 
         std::string shaderName = "default"; /** @brief file with the main in folder assets/shaders/etc/shaderName.etc  **/
 
@@ -58,6 +57,7 @@ class Pipeline {
         bool depthTestEnable = true;
         bool depthWriteEnable = true;
     };
+
         /**
      * @brief Wraps SPIR-V bytecode into a VkShaderModule so it can be used in a pipeline shader stage.
      * @param code The raw SPIR-V bytecode, read from a compiled .spv file.
@@ -87,8 +87,9 @@ class Pipeline {
          * @note Requires createPipelineLayout() and createRenderPass() to have run first.
          */
         Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, PipelineConfig& config,
-                 VkDescriptorPool descriptorPool,std::vector<UniformBinding> uniformBuffers = {}, std::vector<UniformBinding> uniformObjects = {});
-        ~Pipeline();
+                 VkDescriptorPool descriptorPool);
+    void updateDescriptorSet(std::vector<UniformBinding> uniformObjects, std::vector<ImageBinding> images);
+    ~Pipeline();
         bool error = false;
         void bind(VkCommandBuffer commandBuffer) {
             vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
@@ -97,7 +98,6 @@ class Pipeline {
         VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
         VkPipelineLayout getPipelineLayout() const { return pipelineLayout; } /**< @brief Get the pipeline layout handle. */
     private:
-
         VulkanDevice* vulkanDevice = nullptr;
         VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
         VkPipeline graphicsPipeline = VK_NULL_HANDLE;
