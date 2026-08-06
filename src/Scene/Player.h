@@ -18,6 +18,9 @@ public:
         int maxTicksPerSecond;
         int maxCyclesPerSecond;
         float fboResolutionMultiplier = 1;
+        int MSAAsamples = 0;
+        bool sampleShadding = false;
+
     };
     Player(int id);
     ~Player();

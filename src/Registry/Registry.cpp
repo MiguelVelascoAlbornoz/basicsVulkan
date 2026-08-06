@@ -54,6 +54,8 @@ void Registry::initPipelines(const App* app)
     pipelineConfigDefault.uniformObjects = {
                 {Uniforms::cameraUniform, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT },
     };
+    pipelineConfigDefault.multisamplerSamples = app->player->getPlayerCameraSettings()->MSAAsamples;
+    pipelineConfigDefault.sampleShadding = app->player->getPlayerCameraSettings()->sampleShadding;
     Pipelines::defaultPipeline = new Pipeline(app->renderer->getVulkanDevice(),FrameBuffers::defaultFrameBuffer->getRenderPass(),pipelineConfigDefault,app->renderer->descriptorPool);
 
     //LINE PIPELINE
@@ -64,6 +66,9 @@ void Registry::initPipelines(const App* app)
     linePipelineConfig.uniformObjects = {
             {Uniforms::cameraUniform, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT },
     };
+    linePipelineConfig.multisamplerSamples = app->player->getPlayerCameraSettings()->MSAAsamples;
+    linePipelineConfig.sampleShadding = app->player->getPlayerCameraSettings()->sampleShadding;
+
     linePipelineConfig.pushConstantsSize = sizeof(Uniforms::lineUniform);
     Pipelines::linesPipeline = new Pipeline(app->renderer->getVulkanDevice(),FrameBuffers::defaultFrameBuffer->getRenderPass(),linePipelineConfig,app->renderer->descriptorPool);
 
@@ -73,9 +78,9 @@ void Registry::initPipelines(const App* app)
     postProcessPipelineConfig.shaderName = "postProcess";
     postProcessPipelineConfig.images = {
         {
-            FrameBuffers::defaultFrameBuffer->getDepthImageView(),
-        FrameBuffers::defaultFrameBuffer->getDepthSampler(),
-        VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+            FrameBuffers::defaultFrameBuffer->getColorImageView(),
+        FrameBuffers::defaultFrameBuffer->getColorSampler(),
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,//VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
         VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
         VK_SHADER_STAGE_FRAGMENT_BIT
         }
@@ -86,6 +91,8 @@ void Registry::initPipelines(const App* app)
     Pipelines::registerPipelines(LINES_PIPELINE_ID,Pipelines::linesPipeline);
     Pipelines::postProcessPipeline = Pipelines::registerPipelines(POST_PROCESS_PIPELINE_ID, new Pipeline(app->renderer->getVulkanDevice(),app->renderer->renderPass,postProcessPipelineConfig,app->renderer->descriptorPool));
 
+    FrameBuffers::defaultFrameBuffer->registerDependentPipeline(Pipelines::defaultPipeline);
+    FrameBuffers::defaultFrameBuffer->registerDependentPipeline(Pipelines::linesPipeline);
 }
 void Registry::initMeshes(const App* app)
 {
@@ -183,6 +190,17 @@ void Registry::initMenus(const App* app)
 
 void Registry::initFramebuffers(const App* app)
 {
-    FrameBuffers::defaultFrameBuffer = FrameBuffers::registerFrameBuffer(DEFAULT_FRAME_BUFFER_ID,new  FrameBufferObject(app->renderer->getVulkanDevice(),app->window->getWidth()*app->player->getPlayerCameraSettings()->fboResolutionMultiplier,app->window->getHeight()*app->player->getPlayerCameraSettings()->fboResolutionMultiplier,VK_FORMAT_R8G8B8A8_UNORM,true,true));
+    FrameBuffers::defaultFrameBuffer = FrameBuffers::registerFrameBuffer(
+        DEFAULT_FRAME_BUFFER_ID,
+        new FrameBufferObject(
+            app->renderer->getVulkanDevice(),
+            app->window->getWidth()*app->player->getPlayerCameraSettings()->fboResolutionMultiplier,
+            app->window->getHeight()*app->player->getPlayerCameraSettings()->fboResolutionMultiplier,
+            VK_FORMAT_R8G8B8A8_UNORM,
+            true,
+            true,app->player->getPlayerCameraSettings()->MSAAsamples
+        )
+    );
     FrameBuffers::defaultFrameBuffer->addScene(Scenes::renderTest);
+
 }

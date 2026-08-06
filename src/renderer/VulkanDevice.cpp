@@ -115,6 +115,7 @@ bool VulkanDevice::pickPhysicalDevice(VkInstance instance)
 }
 bool VulkanDevice::createLogicalDevice(VkSurfaceKHR surface)
 {
+
     uint32_t graphicsFamily = -1;
     uint32_t presentFamily = -1;
     /**
@@ -169,13 +170,20 @@ bool VulkanDevice::createLogicalDevice(VkSurfaceKHR surface)
     const std::vector<const char*> deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME
     };
-
+    VkPhysicalDeviceFeatures deviceFeatures{}; // <-- nuevo
+    deviceFeatures.sampleRateShading = VK_TRUE; // <-- nuevo, necesario para sampleShadingEnable
+    
     VkDeviceCreateInfo createInfo{};
     createInfo.sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     createInfo.queueCreateInfoCount    = queueCreateInfo.queueCount;
     createInfo.pQueueCreateInfos       = &queueCreateInfo;
     createInfo.enabledExtensionCount   = deviceExtensions.size();
     createInfo.ppEnabledExtensionNames = deviceExtensions.data();
+    createInfo.pEnabledFeatures        = &deviceFeatures;
+
+
+
+     // <-- nuevo
 
     if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {
         std::cerr << "(VULKAN) Error in createLogicalDevice(): No se pudo crear el dispositivo lógico." << std::endl;

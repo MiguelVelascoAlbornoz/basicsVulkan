@@ -95,11 +95,24 @@ void EditorMenu::render()
 				pipeline->updateShaders();
 			});
 		}
+		if (ImGui::Button(("Sample Shadding: "+std::to_string(cameraSettings.sampleShadding)).c_str()))
+		{
+			cameraSettings.sampleShadding = !cameraSettings.sampleShadding;
+			player->setPlayerCameraSettings(cameraSettings);
+		}
 		ImGui::Text("MSAA samples:"); ImGui::SameLine();
-		int samples = FrameBuffers::defaultFrameBuffer->getSamplesPower();
-		if (InputInt("##samples", &samples,1)) {
-			FrameBuffers::defaultFrameBuffer->changeMultiSamplerPower(samples);
-			Pipelines::defaultPipeline->updateMSAASamples(samples);
+		if (InputInt("##samples", &cameraSettings.MSAAsamples,1)) {
+			player->setPlayerCameraSettings(cameraSettings);
+			FrameBuffers::defaultFrameBuffer->changeMultiSamplerPower(cameraSettings.MSAAsamples);
+			Pipelines::defaultPipeline->updateMSAASamples(cameraSettings.MSAAsamples);
+			Pipelines::postProcessPipeline->updateDescriptorSet({}, {
+		{
+			.image = FrameBuffers::defaultFrameBuffer->getColorImageView(),
+			.sampler = FrameBuffers::defaultFrameBuffer->getColorSampler(),
+			.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
+		}});
 		}
 		Unindent();
 	}

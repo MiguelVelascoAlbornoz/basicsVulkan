@@ -5,18 +5,17 @@
 #include <string>
 #include <vector>
 
-
 class VulkanDevice;
+class Pipeline;
 
 class FrameBufferObject
 {
 public:
 
-
     [[nodiscard]] VkSampler getColorSampler() const { return colorSampler; }
     FrameBufferObject(VulkanDevice* device, uint32_t width, uint32_t height,
                        VkFormat colorFormat = VK_FORMAT_R8G8B8A8_UNORM,
-                       bool useDepth = true,bool createDepthSampler = false, int multiSamplerPower = 0); // <-- nuevo parametro, default activado
+                       bool useDepth = true, bool createDepthSampler = false, int multiSamplerPower = 0);
     ~FrameBufferObject();
 
     void beginRenderPass(VkCommandBuffer cmd);
@@ -25,8 +24,10 @@ public:
     void saveColorImageToPNG(const std::string& filename);
 
     [[nodiscard]] VkRenderPass getRenderPass() const { return renderPass; }
-    [[nodiscard]] VkImage getColorImage() const { return colorImage; }
-    [[nodiscard]] VkImageView getColorImageView() const { return colorImageView; }
+    // Con MSAA activo, esta view apunta al resolve attachment (samples=1), sampleable normalmente.
+    [[nodiscard]] VkImageView getColorImageView() const {
+        return multiSamplerPower > 0 ? resolveColorImageView : colorImageView;
+    }
     [[nodiscard]] VkFramebuffer getFramebuffer() const { return framebuffer; }
     [[nodiscard]] VkExtent2D getExtent() const { return { width, height }; }
     [[nodiscard]] bool hasDepth() const { return useDepth; }
@@ -40,13 +41,25 @@ public:
     [[nodiscard]] VkSampler getDepthSampler() const { return depthSampler; }
     [[nodiscard]] VkImageView getDepthImageView() const { return depthImageView; }
     void changeResolution(int newWidth, int newHeight);
+
+    /** @brief Cambia el sample count del FBO y recrea en cascada: color/depth/resolve,
+     *  render pass, framebuffer, y todos los pipelines dependientes registrados. */
     void changeMultiSamplerPower(int newMultiSamplerPower);
-    int getSamplesPower() const {return multiSamplerPower;}
+    int getSamplesPower() const { return multiSamplerPower; }
+
+    /** @brief Registra un pipeline que dibuja usando este FBO como render target,
+     *  para que se recree automáticamente cuando cambia el sample count. */
+    void registerDependentPipeline(Pipeline* pipeline) { dependentPipelines.push_back(pipeline); }
+
 private:
 
     std::vector<SceneFunction> scenes;
+    std::vector<Pipeline*> dependentPipelines;
+
     void createColorResources();
     void createDepthResources();
+    void createResolveResources(); // nuevo
+    void destroyResolveResources(); // nuevo
     void createRenderPass();
     void createFramebuffer();
     VkFormat findDepthFormat() const;
@@ -63,6 +76,11 @@ private:
     VkDeviceMemory colorImageMemory = VK_NULL_HANDLE;
     VkImageView colorImageView = VK_NULL_HANDLE;
 
+    // Resolve attachment: solo existe cuando multiSamplerPower > 0
+    VkImage resolveColorImage = VK_NULL_HANDLE;
+    VkDeviceMemory resolveColorImageMemory = VK_NULL_HANDLE;
+    VkImageView resolveColorImageView = VK_NULL_HANDLE;
+
     VkImage depthImage = VK_NULL_HANDLE;
     VkDeviceMemory depthImageMemory = VK_NULL_HANDLE;
     VkImageView depthImageView = VK_NULL_HANDLE;
@@ -73,55 +91,3 @@ private:
 };
 
 #endif //BASICSVULKAN_FRAMEBUFFEROBJECT_H
-/*
-void debugTestFBO(App* app)
-{
-    VulkanDevice* device = app->renderer->getVulkanDevice();
-
-    // Descriptor pool propio para no pelear con el pool de la app
-    VkDescriptorPoolSize poolSize{};
-    poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSize.descriptorCount = 1;
-
-    VkDescriptorPoolCreateInfo poolInfo{};
-    poolInfo.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    poolInfo.poolSizeCount = 1;
-    poolInfo.pPoolSizes    = &poolSize;
-    poolInfo.maxSets       = 1;
-
-    VkDescriptorPool testDescriptorPool;
-    vkCreateDescriptorPool(device->device, &poolInfo, nullptr, &testDescriptorPool);
-
-    FrameBufferObject fbo(device, 800, 600);
-    if (fbo.error) { std::cerr << "Error creando FBO de test." << std::endl; return; }
-
-    Pipeline::PipelineConfig config;
-    config.vertexAttributes  = { AttribType::VEC3, AttribType::VEC3 };
-    config.pushConstantsSize = sizeof(Model::ModelUBO);
-
-    Pipeline testPipeline(device, fbo.getRenderPass(), config, testDescriptorPool);
-    if (testPipeline.error) { std::cerr << "Error creando pipeline de test." << std::endl; return; }
-
-    VkDescriptorBufferInfo bufferInfo{};
-    VkWriteDescriptorSet write = Uniforms::cameraUniform->getWriteDescriptor(testPipeline.descriptorSet, 0, bufferInfo);
-    vkUpdateDescriptorSets(device->device, 1, &write, 0, nullptr);
-
-    VkCommandBuffer cmd = device->beginSingleTimeCommands();
-
-    fbo.beginRenderPass(cmd);
-    testPipeline.bind(cmd);
-    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, testPipeline.getPipelineLayout(),
-                             0, 1, &testPipeline.descriptorSet, 0, nullptr);
-
-    Model cubeModel;
-    cubeModel.mesh = Meshes::cubeMesh;
-    cubeModel.setTranslation(vec3(0.0f));
-    cubeModel.setRotation(vec3(0.4f, 0.6f, 0.0f));
-    cubeModel.setScale(vec3(1.0f));
-    cubeModel.draw(cmd, &testPipeline);
-
-    fbo.endRenderPass(cmd);
-    device->endSingleTimeCommands(cmd);
-
-    fbo.saveColorImageToPNG("fbo_debug.png");
-}*/

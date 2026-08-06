@@ -1,7 +1,9 @@
 #include "FrameBufferObject.h"
 #include "../VulkanDevice.h"
+#include "../Pipeline.h"   // <-- nuevo
 #include <iostream>
 #include <vector>
+#include <array>           // <-- nuevo (para las 2 dependencies)
 #include <cstring>
 #include <stbImage/stb_image_write.h>
 #include <algorithm>
@@ -17,6 +19,10 @@ FrameBufferObject::FrameBufferObject(VulkanDevice* device, uint32_t width, uint3
         createDepthResources();
         if (error) return;
     }
+
+
+        createResolveResources();
+    
     createRenderPass();
     if (error) return;
     createFramebuffer();
@@ -26,6 +32,9 @@ void FrameBufferObject::createFramebuffer()
     std::vector<VkImageView> attachments = { colorImageView };
     if (useDepth) {
         attachments.push_back(depthImageView);
+    }
+    if (multiSamplerPower > 0) {
+        attachments.push_back(resolveColorImageView); // debe ir en el mismo orden que en createRenderPass
     }
 
     VkFramebufferCreateInfo framebufferInfo{};
@@ -42,21 +51,7 @@ void FrameBufferObject::createFramebuffer()
         error = true;
     }
 }
-FrameBufferObject::~FrameBufferObject()
-{
-    VkDevice dev = device->device;
-    if (framebuffer != VK_NULL_HANDLE)      vkDestroyFramebuffer(dev, framebuffer, nullptr);
-    if (renderPass != VK_NULL_HANDLE)       vkDestroyRenderPass(dev, renderPass, nullptr);
-    if (colorSampler != VK_NULL_HANDLE)      vkDestroySampler(dev, colorSampler, nullptr);
-    if (depthSampler != VK_NULL_HANDLE)     vkDestroySampler(dev, depthSampler, nullptr);
-    if (depthImageView != VK_NULL_HANDLE)   vkDestroyImageView(dev, depthImageView, nullptr);
-    if (depthImage != VK_NULL_HANDLE)       vkDestroyImage(dev, depthImage, nullptr);
-    if (depthImageMemory != VK_NULL_HANDLE) vkFreeMemory(dev, depthImageMemory, nullptr);
 
-    if (colorImageView != VK_NULL_HANDLE)   vkDestroyImageView(dev, colorImageView, nullptr);
-    if (colorImage != VK_NULL_HANDLE)       vkDestroyImage(dev, colorImage, nullptr);
-    if (colorImageMemory != VK_NULL_HANDLE) vkFreeMemory(dev, colorImageMemory, nullptr);
-}
 VkFormat FrameBufferObject::findDepthFormat() const
 {
     const std::vector<VkFormat> candidates = {
@@ -179,38 +174,65 @@ void FrameBufferObject::renderScenes(VkCommandBuffer cmd)
 }
 void FrameBufferObject::recreateFrameBuffer()
 {
+    // Solo recursos de imagen (color/depth/resolve), SIN framebuffer ni render pass
     VkDevice dev = device->device;
-    vkDeviceWaitIdle(dev);;
-    if (framebuffer != VK_NULL_HANDLE)      vkDestroyFramebuffer(dev, framebuffer, nullptr);
+    if (framebuffer != VK_NULL_HANDLE)      { vkDestroyFramebuffer(dev, framebuffer, nullptr); framebuffer = VK_NULL_HANDLE; }
     if (depthImageView != VK_NULL_HANDLE)   vkDestroyImageView(dev, depthImageView, nullptr);
     if (depthImage != VK_NULL_HANDLE)       vkDestroyImage(dev, depthImage, nullptr);
     if (depthImageMemory != VK_NULL_HANDLE) vkFreeMemory(dev, depthImageMemory, nullptr);
-
     if (colorImageView != VK_NULL_HANDLE)   vkDestroyImageView(dev, colorImageView, nullptr);
     if (colorImage != VK_NULL_HANDLE)       vkDestroyImage(dev, colorImage, nullptr);
     if (colorImageMemory != VK_NULL_HANDLE) vkFreeMemory(dev, colorImageMemory, nullptr);
+    destroyResolveResources();
+
     createColorResources();
     if (error) return;
     if (useDepth) {
         createDepthResources();
         if (error) return;
     }
-    if (error) return;
-    createFramebuffer();
+    createResolveResources();
+    // NOTA: ya NO llama createFramebuffer() acá
 }
 
 void FrameBufferObject::changeResolution(int newWidth, int newHeight) {
-
+    VkDevice dev = device->device;
+    vkDeviceWaitIdle(dev);
     width = newWidth;
     height = newHeight;
-    recreateFrameBuffer();
+    recreateFrameBuffer();          // recrea imágenes (mismo sample count, mismo renderPass)
+    if (error) return;
+    createFramebuffer();            // renderPass no cambió, se puede rehacer el framebuffer ya
 }
 
 void FrameBufferObject::changeMultiSamplerPower(int newMultiSamplerPower)
 {
+    VkDevice dev = device->device;
+    vkDeviceWaitIdle(dev);
+
     multiSamplerPower = newMultiSamplerPower;
+
+    // 1. Recrear imágenes (color/depth/resolve) según el nuevo sample count
     recreateFrameBuffer();
+    if (error) return;
+
+    // 2. Recrear el render pass CON el nuevo attachment count (antes que el framebuffer)
+    if (renderPass != VK_NULL_HANDLE) { vkDestroyRenderPass(dev, renderPass, nullptr); renderPass = VK_NULL_HANDLE; }
+    createRenderPass();
+    if (error) return;
+
+    // 3. Ahora sí, un único createFramebuffer, con imágenes Y render pass ya consistentes
+    createFramebuffer();
+    if (error) return;
+
+    // 4. Cascada a los pipelines dependientes
+    for (Pipeline* pipeline : dependentPipelines) {
+        Pipeline::PipelineConfig cfg = pipeline->getConfig();
+        cfg.multisamplerSamples = newMultiSamplerPower;
+        pipeline->recreate(cfg, renderPass);
+    }
 }
+
 void FrameBufferObject::createColorResources()
 {
     VkDevice dev = device->device;
@@ -288,15 +310,21 @@ void FrameBufferObject::createRenderPass()
 {
     std::vector<VkAttachmentDescription> attachments;
 
+    VkSampleCountFlagBits samples = static_cast<VkSampleCountFlagBits>(1 << multiSamplerPower);
+
     VkAttachmentDescription colorAttachment{};
     colorAttachment.format         = colorFormat;
-    colorAttachment.samples        = VK_SAMPLE_COUNT_1_BIT;
+    colorAttachment.samples        = samples; // antes estaba hardcodeado a VK_SAMPLE_COUNT_1_BIT
     colorAttachment.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
     colorAttachment.storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
     colorAttachment.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     colorAttachment.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
-    colorAttachment.finalLayout    = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;// FOR PNG VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    // si hay resolve, esta imagen multisample no se samplea directo, solo la resolve;
+    // si no hay MSAA, se comporta como antes
+    colorAttachment.finalLayout    = (multiSamplerPower > 0)
+        ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+        : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     attachments.push_back(colorAttachment);
 
     VkAttachmentReference colorAttachmentRef{};
@@ -307,8 +335,10 @@ void FrameBufferObject::createRenderPass()
     if (useDepth) {
         VkAttachmentDescription depthAttachment{};
         depthAttachment.format         = depthFormat;
-        depthAttachment.samples        = VK_SAMPLE_COUNT_1_BIT;
+        depthAttachment.samples        = samples; // debe coincidir con el color attachment
         depthAttachment.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        // FIX: estaba invertido. Si vas a samplear el depth después (createDepthSampler=true),
+        // hay que GUARDARLO (STORE), no descartarlo.
         depthAttachment.storeOp = createDepthSampler ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE;
         depthAttachment.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -320,22 +350,55 @@ void FrameBufferObject::createRenderPass()
         depthAttachmentRef.layout     = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
     }
 
+    // ---- Resolve attachment: solo si hay MSAA ----
+    VkAttachmentReference resolveAttachmentRef{};
+    if (multiSamplerPower > 0) {
+        VkAttachmentDescription resolveAttachment{};
+        resolveAttachment.format         = colorFormat;
+        resolveAttachment.samples        = VK_SAMPLE_COUNT_1_BIT; // siempre 1, es la imagen "final"
+        resolveAttachment.loadOp         = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        resolveAttachment.storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
+        resolveAttachment.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        resolveAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        resolveAttachment.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
+        resolveAttachment.finalLayout    = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        attachments.push_back(resolveAttachment);
+
+        resolveAttachmentRef.attachment = static_cast<uint32_t>(attachments.size() - 1);
+        resolveAttachmentRef.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    }
+
     VkSubpassDescription subpass{};
     subpass.pipelineBindPoint    = VK_PIPELINE_BIND_POINT_GRAPHICS;
     subpass.colorAttachmentCount = 1;
     subpass.pColorAttachments    = &colorAttachmentRef;
     subpass.pDepthStencilAttachment = useDepth ? &depthAttachmentRef : nullptr;
+    subpass.pResolveAttachments = (multiSamplerPower > 0) ? &resolveAttachmentRef : nullptr;
 
-    VkSubpassDependency dependency{};
-    dependency.srcSubpass    = VK_SUBPASS_EXTERNAL;
-    dependency.dstSubpass    = 0;
-    dependency.srcStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-                                VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    dependency.srcAccessMask = 0;
-    dependency.dstStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-                                VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-                                VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    // Dependency de entrada (ya existía)
+    VkSubpassDependency dependencyIn{};
+    dependencyIn.srcSubpass    = VK_SUBPASS_EXTERNAL;
+    dependencyIn.dstSubpass    = 0;
+    dependencyIn.srcStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                                  VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    dependencyIn.srcAccessMask = 0;
+    dependencyIn.dstStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                                  VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    dependencyIn.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+                                  VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+    // Dependency de salida (nueva): garantiza que el post-proceso vea las escrituras completas
+    VkSubpassDependency dependencyOut{};
+    dependencyOut.srcSubpass    = 0;
+    dependencyOut.dstSubpass    = VK_SUBPASS_EXTERNAL;
+    dependencyOut.srcStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                                   VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+    dependencyOut.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+                                   VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    dependencyOut.dstStageMask  = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    dependencyOut.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+    std::array<VkSubpassDependency, 2> dependencies = { dependencyIn, dependencyOut };
 
     VkRenderPassCreateInfo renderPassInfo{};
     renderPassInfo.sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -343,8 +406,8 @@ void FrameBufferObject::createRenderPass()
     renderPassInfo.pAttachments    = attachments.data();
     renderPassInfo.subpassCount    = 1;
     renderPassInfo.pSubpasses      = &subpass;
-    renderPassInfo.dependencyCount = 1;
-    renderPassInfo.pDependencies   = &dependency;
+    renderPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
+    renderPassInfo.pDependencies   = dependencies.data();
 
     if (vkCreateRenderPass(device->device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
         std::cerr << "(FBO) Error: no se pudo crear el render pass." << std::endl;
@@ -439,4 +502,85 @@ void FrameBufferObject::saveColorImageToPNG(const std::string& filename)
     vkFreeMemory(dev, stagingMemory, nullptr);
 
     std::cout << "(FBO) Imagen guardada en: " << filename << std::endl;
+}
+void FrameBufferObject::createResolveResources()
+{
+    if (multiSamplerPower == 0) return; // nada que hacer sin MSAA
+
+    VkDevice dev = device->device;
+
+    VkImageCreateInfo imageInfo{};
+    imageInfo.sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    imageInfo.imageType     = VK_IMAGE_TYPE_2D;
+    imageInfo.extent.width  = width;
+    imageInfo.extent.height = height;
+    imageInfo.extent.depth  = 1;
+    imageInfo.mipLevels     = 1;
+    imageInfo.arrayLayers   = 1;
+    imageInfo.format        = colorFormat;
+    imageInfo.tiling        = VK_IMAGE_TILING_OPTIMAL;
+    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    imageInfo.usage         = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    imageInfo.samples       = VK_SAMPLE_COUNT_1_BIT; // resolve siempre es 1 sample
+    imageInfo.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
+
+    if (vkCreateImage(dev, &imageInfo, nullptr, &resolveColorImage) != VK_SUCCESS) {
+        std::cerr << "(FBO) Error: no se pudo crear la imagen de resolve." << std::endl;
+        error = true;
+        return;
+    }
+
+    VkMemoryRequirements memRequirements;
+    vkGetImageMemoryRequirements(dev, resolveColorImage, &memRequirements);
+
+    VkMemoryAllocateInfo allocInfo{};
+    allocInfo.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize  = memRequirements.size;
+    allocInfo.memoryTypeIndex = device->findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    if (vkAllocateMemory(dev, &allocInfo, nullptr, &resolveColorImageMemory) != VK_SUCCESS) {
+        std::cerr << "(FBO) Error: no se pudo alocar memoria para la imagen de resolve." << std::endl;
+        error = true;
+        return;
+    }
+    vkBindImageMemory(dev, resolveColorImage, resolveColorImageMemory, 0);
+
+    VkImageViewCreateInfo viewInfo{};
+    viewInfo.sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    viewInfo.image    = resolveColorImage;
+    viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    viewInfo.format   = colorFormat;
+    viewInfo.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+    viewInfo.subresourceRange.baseMipLevel   = 0;
+    viewInfo.subresourceRange.levelCount     = 1;
+    viewInfo.subresourceRange.baseArrayLayer = 0;
+    viewInfo.subresourceRange.layerCount     = 1;
+
+    if (vkCreateImageView(dev, &viewInfo, nullptr, &resolveColorImageView) != VK_SUCCESS) {
+        std::cerr << "(FBO) Error: no se pudo crear el image view de resolve." << std::endl;
+        error = true;
+    }
+}
+
+FrameBufferObject::~FrameBufferObject()
+{
+    VkDevice dev = device->device;
+    if (framebuffer != VK_NULL_HANDLE)      vkDestroyFramebuffer(dev, framebuffer, nullptr);
+    if (renderPass != VK_NULL_HANDLE)       vkDestroyRenderPass(dev, renderPass, nullptr);
+    if (colorSampler != VK_NULL_HANDLE)     vkDestroySampler(dev, colorSampler, nullptr);
+    if (depthSampler != VK_NULL_HANDLE)     vkDestroySampler(dev, depthSampler, nullptr);
+    if (depthImageView != VK_NULL_HANDLE)   vkDestroyImageView(dev, depthImageView, nullptr);
+    if (depthImage != VK_NULL_HANDLE)       vkDestroyImage(dev, depthImage, nullptr);
+    if (depthImageMemory != VK_NULL_HANDLE) vkFreeMemory(dev, depthImageMemory, nullptr);
+    if (colorImageView != VK_NULL_HANDLE)   vkDestroyImageView(dev, colorImageView, nullptr);
+    if (colorImage != VK_NULL_HANDLE)       vkDestroyImage(dev, colorImage, nullptr);
+    if (colorImageMemory != VK_NULL_HANDLE) vkFreeMemory(dev, colorImageMemory, nullptr);
+    destroyResolveResources(); // <-- nuevo
+}
+void FrameBufferObject::destroyResolveResources()
+{
+    VkDevice dev = device->device;
+    if (resolveColorImageView != VK_NULL_HANDLE) { vkDestroyImageView(dev, resolveColorImageView, nullptr); resolveColorImageView = VK_NULL_HANDLE; }
+    if (resolveColorImage != VK_NULL_HANDLE)     { vkDestroyImage(dev, resolveColorImage, nullptr);         resolveColorImage = VK_NULL_HANDLE; }
+    if (resolveColorImageMemory != VK_NULL_HANDLE) { vkFreeMemory(dev, resolveColorImageMemory, nullptr);   resolveColorImageMemory = VK_NULL_HANDLE; }
 }

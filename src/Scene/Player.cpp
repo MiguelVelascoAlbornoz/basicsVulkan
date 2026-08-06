@@ -30,7 +30,8 @@ Player::Player(int id) : playerID(id) {
         {&cameraSettings.maxCyclesPerSecond, "imaxCyclesPerSecond"},
         {&cameraSettings.maxTicksPerSecond, "imaxTicksPerSecond"},
         {&cameraSettings.fboResolutionMultiplier, "ffboResolutionMultiplier"},
-                        });
+           {&cameraSettings.sampleShadding,"bsampleShadding"},
+    {&cameraSettings.MSAAsamples,"iMSAAsamples"}});
 
     camera->setPosition(position);
     camera->setRotation(yaw,pitch,roll,yawToRoll);
