@@ -116,10 +116,11 @@ void Renderer::initVulkan(Window* window)  {
 
         VkDescriptorPoolSize poolSize1{};
         poolSize1.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSize1.descriptorCount = 3;
+        poolSize1.descriptorCount = 4;
         VkDescriptorPoolSize poolSize2{};
         poolSize2.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSize2.descriptorCount = 1;
+        poolSize2.descriptorCount = 4;
+
         std::vector poolSizes = {poolSize1,poolSize2};
 
     VkDescriptorPoolCreateInfo poolInfo{};
@@ -127,7 +128,7 @@ void Renderer::initVulkan(Window* window)  {
     poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT; // <-- agregado
     poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
     poolInfo.pPoolSizes = poolSizes.data();
-    poolInfo.maxSets = 3;
+    poolInfo.maxSets = 5;
 
 
         vkCreateDescriptorPool(
@@ -236,7 +237,7 @@ void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
 
     for (const auto& fbo : FrameBuffers::activeFBOs)
     {
-     fbo->beginRenderPass(commandBuffer);
+        fbo->beginRenderPass(commandBuffer);
         fbo->renderScenes(commandBuffer);
         fbo->endRenderPass(commandBuffer);
     }
@@ -273,7 +274,7 @@ void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
     scissor.extent = swapchainExtent;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    Pipeline* quadPipeline = Pipelines::getPipeline(POST_PROCESS_PIPELINE_ID);
+    Pipeline* quadPipeline = FrameBuffers::defaultFrameBuffer->getMultiSamplerPower() > 0 ?Pipelines::getPipeline(POST_PROCESS_PIPELINE_MSAA_ID) : Pipelines::getPipeline(POST_PROCESS_PIPELINE_ID);
     quadPipeline->bind(commandBuffer);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
     quadPipeline->getPipelineLayout(), 0, 1, &quadPipeline->descriptorSet, 0, nullptr);

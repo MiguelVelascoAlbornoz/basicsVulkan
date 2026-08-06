@@ -324,6 +324,7 @@ void Pipeline::updateDescriptorSet( std::vector<UniformBinding> uniformObjects, 
 
     uint32_t bindingCount = 0;
     for (size_t i = 0; i < uniformObjects.size(); i++, ++bindingCount) {
+        if (uniformObjects[i].uniformBuffer == nullptr) continue;
         uniformObjects[i].uniformBuffer->getBufferInfo(bufferInfos[i]);
 
         VkWriteDescriptorSet write{};
@@ -338,6 +339,7 @@ void Pipeline::updateDescriptorSet( std::vector<UniformBinding> uniformObjects, 
     }
 
     for (size_t i = 0; i < images.size(); i++, ++bindingCount) {
+        if (images[i].image == VK_NULL_HANDLE || images[i].sampler == VK_NULL_HANDLE) continue;
         imageInfos[i].imageLayout = images[i].layout;
         imageInfos[i].imageView   = images[i].image;
         imageInfos[i].sampler     = images[i].sampler;

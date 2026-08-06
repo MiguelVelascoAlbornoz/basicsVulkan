@@ -25,9 +25,11 @@ public:
 
     [[nodiscard]] VkRenderPass getRenderPass() const { return renderPass; }
     // Con MSAA activo, esta view apunta al resolve attachment (samples=1), sampleable normalmente.
-    [[nodiscard]] VkImageView getColorImageView() const {
-        return multiSamplerPower > 0 ? resolveColorImageView : colorImageView;
+    [[nodiscard]] VkImageView getColorImageView() const
+    {
+    return    colorImageView;
     }
+    int getMultiSamplerPower() const { return multiSamplerPower; }
     [[nodiscard]] VkFramebuffer getFramebuffer() const { return framebuffer; }
     [[nodiscard]] VkExtent2D getExtent() const { return { width, height }; }
     [[nodiscard]] bool hasDepth() const { return useDepth; }

@@ -11,6 +11,7 @@
 #define TEST_PIPELINE_ID "test_pipeline"
 #define LINES_PIPELINE_ID "lines_pipeline"
 #define POST_PROCESS_PIPELINE_ID "post_process_pipeline"
+#define POST_PROCESS_PIPELINE_MSAA_ID "post_process_pipeline_msaa"
 
 class Pipeline;
 
@@ -20,8 +21,10 @@ class Pipelines
     static Pipeline* defaultPipeline;
     static Pipeline* linesPipeline;
     static Pipeline* postProcessPipeline;
+    static Pipeline* postProcessPipelineMSAA;
 
     static std::unordered_map<std::string, Pipeline*> pipelines; /**< @brief Map to store menu rendering functions. */
+
 
     static Pipeline* registerPipelines(const std::string &pipelineID, Pipeline* pipeline);
     static void freePipelines();

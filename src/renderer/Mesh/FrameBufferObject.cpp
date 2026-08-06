@@ -21,7 +21,7 @@ FrameBufferObject::FrameBufferObject(VulkanDevice* device, uint32_t width, uint3
     }
 
 
-        createResolveResources();
+    createResolveResources();
     
     createRenderPass();
     if (error) return;
@@ -29,7 +29,7 @@ FrameBufferObject::FrameBufferObject(VulkanDevice* device, uint32_t width, uint3
 }
 void FrameBufferObject::createFramebuffer()
 {
-    std::vector<VkImageView> attachments = { colorImageView };
+    std::vector attachments = { colorImageView };
     if (useDepth) {
         attachments.push_back(depthImageView);
     }
@@ -322,9 +322,7 @@ void FrameBufferObject::createRenderPass()
     colorAttachment.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
     // si hay resolve, esta imagen multisample no se samplea directo, solo la resolve;
     // si no hay MSAA, se comporta como antes
-    colorAttachment.finalLayout    = (multiSamplerPower > 0)
-        ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-        : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    colorAttachment.finalLayout    = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     attachments.push_back(colorAttachment);
 
     VkAttachmentReference colorAttachmentRef{};

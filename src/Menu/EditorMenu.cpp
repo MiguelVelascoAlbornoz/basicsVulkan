@@ -104,10 +104,18 @@ void EditorMenu::render()
 		if (InputInt("##samples", &cameraSettings.MSAAsamples,1)) {
 			player->setPlayerCameraSettings(cameraSettings);
 			FrameBuffers::defaultFrameBuffer->changeMultiSamplerPower(cameraSettings.MSAAsamples);
-			Pipelines::defaultPipeline->updateMSAASamples(cameraSettings.MSAAsamples);
+			//Pipelines::defaultPipeline->updateMSAASamples(cameraSettings.MSAAsamples);
 			Pipelines::postProcessPipeline->updateDescriptorSet({}, {
 		{
-			.image = FrameBuffers::defaultFrameBuffer->getColorImageView(),
+			.image = app->player->getPlayerCameraSettings()->MSAAsamples > 0 ?   VK_NULL_HANDLE : FrameBuffers::defaultFrameBuffer->getColorImageView() ,
+			.sampler = FrameBuffers::defaultFrameBuffer->getColorSampler(),
+			.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
+		}});
+			Pipelines::postProcessPipelineMSAA->updateDescriptorSet({}, {
+		{
+			.image = app->player->getPlayerCameraSettings()->MSAAsamples > 0 ?  FrameBuffers::defaultFrameBuffer->getColorImageView() : VK_NULL_HANDLE,
 			.sampler = FrameBuffers::defaultFrameBuffer->getColorSampler(),
 			.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,

@@ -78,7 +78,7 @@ void Registry::initPipelines(const App* app)
     postProcessPipelineConfig.shaderName = "postProcess";
     postProcessPipelineConfig.images = {
         {
-            FrameBuffers::defaultFrameBuffer->getColorImageView(),
+        app->player->getPlayerCameraSettings()->MSAAsamples > 0 ?  VK_NULL_HANDLE : FrameBuffers::defaultFrameBuffer->getColorImageView() ,
         FrameBuffers::defaultFrameBuffer->getColorSampler(),
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,//VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
         VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -86,10 +86,25 @@ void Registry::initPipelines(const App* app)
         }
     };
 
+    //POST_PROCESS_PIPELINE_MSAA
+    Pipeline::PipelineConfig postProcessPipelineConfigMSAA =postProcessPipelineConfig ;
+    postProcessPipelineConfigMSAA.shaderName = "postProcessMSAA";
+    postProcessPipelineConfigMSAA.images = {
+            {
+                app->player->getPlayerCameraSettings()->MSAAsamples > 0 ?  FrameBuffers::defaultFrameBuffer->getColorImageView() : VK_NULL_HANDLE,
+                FrameBuffers::defaultFrameBuffer->getColorSampler(),
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,//VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+                VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                VK_SHADER_STAGE_FRAGMENT_BIT
+                }
+    };
+
 
     Pipelines::registerPipelines(TEST_PIPELINE_ID,Pipelines::defaultPipeline);
     Pipelines::registerPipelines(LINES_PIPELINE_ID,Pipelines::linesPipeline);
     Pipelines::postProcessPipeline = Pipelines::registerPipelines(POST_PROCESS_PIPELINE_ID, new Pipeline(app->renderer->getVulkanDevice(),app->renderer->renderPass,postProcessPipelineConfig,app->renderer->descriptorPool));
+    Pipelines::postProcessPipelineMSAA = Pipelines::registerPipelines(POST_PROCESS_PIPELINE_MSAA_ID, new Pipeline(app->renderer->getVulkanDevice(),app->renderer->renderPass,postProcessPipelineConfigMSAA,app->renderer->descriptorPool));
+
 
     FrameBuffers::defaultFrameBuffer->registerDependentPipeline(Pipelines::defaultPipeline);
     FrameBuffers::defaultFrameBuffer->registerDependentPipeline(Pipelines::linesPipeline);
