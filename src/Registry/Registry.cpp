@@ -48,7 +48,7 @@ void Registry::initPipelines(const App* app)
 {
     //Register pipelines
     //DEFAULT PIPELINE
-    Pipeline::PipelineConfig pipelineConfigDefault;
+    PipelineConfig pipelineConfigDefault;
     pipelineConfigDefault.vertexAttributes = {AttribType::VEC3,AttribType::VEC3};
     pipelineConfigDefault.pushConstantsSize = sizeof(Model::ModelUBO);
     pipelineConfigDefault.uniformObjects = {
@@ -59,7 +59,7 @@ void Registry::initPipelines(const App* app)
     Pipelines::defaultPipeline = new Pipeline(app->renderer->getVulkanDevice(),FrameBuffers::defaultFrameBuffer->getRenderPass(),pipelineConfigDefault,app->renderer->descriptorPool);
 
     //LINE PIPELINE
-    Pipeline::PipelineConfig linePipelineConfig;
+    PipelineConfig linePipelineConfig;
     linePipelineConfig.vertexAttributes = {AttribType::VEC3};
     linePipelineConfig.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
     linePipelineConfig.shaderName = "lines";
@@ -73,31 +73,16 @@ void Registry::initPipelines(const App* app)
     Pipelines::linesPipeline = new Pipeline(app->renderer->getVulkanDevice(),FrameBuffers::defaultFrameBuffer->getRenderPass(),linePipelineConfig,app->renderer->descriptorPool);
 
     //POST_PROCESS PIPELINE
-    Pipeline::PipelineConfig postProcessPipelineConfig;
+    PipelineConfig postProcessPipelineConfig;
     postProcessPipelineConfig.vertexAttributes = {AttribType::VEC2};
     postProcessPipelineConfig.shaderName = "postProcess";
-    postProcessPipelineConfig.images = {
-        {
-        app->player->getPlayerCameraSettings()->MSAAsamples > 0 ?  VK_NULL_HANDLE : FrameBuffers::defaultFrameBuffer->getColorImageView() ,
-        FrameBuffers::defaultFrameBuffer->getColorSampler(),
-        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,//VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
-        VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-        VK_SHADER_STAGE_FRAGMENT_BIT
-        }
-    };
+    Pipelines::getPostProcessPipelineConfig(&postProcessPipelineConfig,app->player->getPlayerCameraSettings()->MSAAsamples > 0,Pipelines::NO_MSAA);
 
     //POST_PROCESS_PIPELINE_MSAA
-    Pipeline::PipelineConfig postProcessPipelineConfigMSAA =postProcessPipelineConfig ;
+    PipelineConfig postProcessPipelineConfigMSAA =postProcessPipelineConfig ;
     postProcessPipelineConfigMSAA.shaderName = "postProcessMSAA";
-    postProcessPipelineConfigMSAA.images = {
-            {
-                app->player->getPlayerCameraSettings()->MSAAsamples > 0 ?  FrameBuffers::defaultFrameBuffer->getColorImageView() : VK_NULL_HANDLE,
-                FrameBuffers::defaultFrameBuffer->getColorSampler(),
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,//VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
-                VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                VK_SHADER_STAGE_FRAGMENT_BIT
-                }
-    };
+    Pipelines::getPostProcessPipelineConfig(&postProcessPipelineConfigMSAA,app->player->getPlayerCameraSettings()->MSAAsamples > 0,Pipelines::MSAA);
+
 
 
     Pipelines::registerPipelines(TEST_PIPELINE_ID,Pipelines::defaultPipeline);

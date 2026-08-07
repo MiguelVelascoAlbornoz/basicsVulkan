@@ -94,7 +94,7 @@ void FrameBufferObject::changeMultiSamplerPower(int newMultiSamplerPower)
 
     // 4. Cascada a los pipelines dependientes
     for (Pipeline* pipeline : dependentPipelines) {
-        Pipeline::PipelineConfig cfg = pipeline->getConfig();
+        PipelineConfig cfg = pipeline->getConfig();
         cfg.multisamplerSamples = newMultiSamplerPower;
         pipeline->recreate(cfg, renderPass);
     }
@@ -189,7 +189,12 @@ void FrameBufferObject::createColorResources()
 void FrameBufferObject::createDepthResources()
 {
     depthFormat = findDepthFormat();
-    createImage(device,width,height,depthFormat,VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,multiSamplerPower,VK_IMAGE_ASPECT_DEPTH_BIT,depthImage,depthImageMemory,depthImageView);
+    VkImageUsageFlags usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    if (createDepthSampler)
+    {
+        usage |=VK_IMAGE_USAGE_SAMPLED_BIT;
+    }
+    createImage(device,width,height,depthFormat,usage,multiSamplerPower,VK_IMAGE_ASPECT_DEPTH_BIT,depthImage,depthImageMemory,depthImageView);
     if (createDepthSampler && depthSampler == VK_NULL_HANDLE)
     {
         createSampler(device->device,depthSampler,VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_BORDER_COLOR_INT_OPAQUE_WHITE);

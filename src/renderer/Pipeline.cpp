@@ -107,8 +107,7 @@ Pipeline::Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, Pipeline
 }
 void Pipeline::recreate(std::optional<PipelineConfig> newConfig, VkRenderPass newRenderPass)
 {
-    // OJO: vkDeviceWaitIdle debe haberse llamado ANTES de invocar esto, desde el caller
-    // (Renderer u FBO), porque quien recreate no siempre tiene acceso directo al VkDevice.
+    vkDeviceWaitIdle(vulkanDevice->device);
     if (newConfig)   config = *newConfig;
     if (newRenderPass != VK_NULL_HANDLE) renderPass = newRenderPass;
 
@@ -316,6 +315,7 @@ void Pipeline::buildPipeline()
 }
 void Pipeline::updateDescriptorSet( std::vector<UniformBinding> uniformObjects,  std::vector<ImageBinding> images)
 {
+
     VkDevice device = vulkanDevice->device;
 
     std::vector<VkWriteDescriptorSet> writes;
@@ -355,11 +355,13 @@ void Pipeline::updateDescriptorSet( std::vector<UniformBinding> uniformObjects, 
     }
 
     vkUpdateDescriptorSets(device, static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
+    config.images = std::move(images);
+    config.uniformObjects = std::move(uniformObjects);
 }
 
 void Pipeline::updateShaders()
 {
-
+    vkDeviceWaitIdle(vulkanDevice->device);
     recreate(this->config,this->renderPass);
 }
 

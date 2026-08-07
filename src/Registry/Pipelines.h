@@ -14,7 +14,7 @@
 #define POST_PROCESS_PIPELINE_MSAA_ID "post_process_pipeline_msaa"
 
 class Pipeline;
-
+struct PipelineConfig;;
 class Pipelines
 {
     public:
@@ -22,6 +22,15 @@ class Pipelines
     static Pipeline* linesPipeline;
     static Pipeline* postProcessPipeline;
     static Pipeline* postProcessPipelineMSAA;
+
+    enum PostProcessType
+    {
+        MSAA,
+        NO_MSAA
+    };
+
+   static void getPostProcessPipelineConfig( PipelineConfig* config,bool MSAA,PostProcessType type);
+    static void updatePostProcessPipelinesDescriptors(bool MSAA);
 
     static std::unordered_map<std::string, Pipeline*> pipelines; /**< @brief Map to store menu rendering functions. */
 

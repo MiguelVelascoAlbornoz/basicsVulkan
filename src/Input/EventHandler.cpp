@@ -122,14 +122,8 @@ void App::onFBOResolutionChange() const {
     vkDeviceWaitIdle(renderer->getVulkanDevice()->device);
     FrameBuffers::defaultFrameBuffer->changeResolution(window->getWidth()*player->getPlayerCameraSettings()->fboResolutionMultiplier, window->getHeight()*player->getPlayerCameraSettings()->fboResolutionMultiplier);
 
-    Pipelines::postProcessPipeline->updateDescriptorSet({}, {
-        {
-            .image = FrameBuffers::defaultFrameBuffer->getColorImageView(),
-            .sampler = FrameBuffers::defaultFrameBuffer->getColorSampler(),
-            .layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
-        }});
+    Pipelines::updatePostProcessPipelinesDescriptors(player->getPlayerCameraSettings()->MSAAsamples > 0);
+
 }
 void App::manageCameraRotation(SDL_MouseMotionEvent event) {
         if (!movedMouse) return;
