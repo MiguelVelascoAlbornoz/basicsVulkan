@@ -16,6 +16,8 @@ public:
     FrameBufferObject(VulkanDevice* device, uint32_t width, uint32_t height,
                        VkFormat colorFormat = VK_FORMAT_R8G8B8A8_UNORM,
                        bool useDepth = true, bool createDepthSampler = false, int multiSamplerPower = 0);
+    void createResources();
+    void destroyResources();
     ~FrameBufferObject();
 
     void beginRenderPass(VkCommandBuffer cmd);
@@ -38,7 +40,7 @@ public:
     void removeScene(SceneFunction scene);
     bool error = false;
     void renderScenes(VkCommandBuffer cmd);
-    void recreateFrameBuffer();
+    void recreateResources()  { destroyResources(); createResources(); };
 
     [[nodiscard]] VkSampler getDepthSampler() const { return depthSampler; }
     [[nodiscard]] VkImageView getDepthImageView() const { return depthImageView; }
@@ -60,8 +62,6 @@ private:
 
     void createColorResources();
     void createDepthResources();
-    void createResolveResources(); // nuevo
-    void destroyResolveResources(); // nuevo
     void createRenderPass();
     void createFramebuffer();
     VkFormat findDepthFormat() const;
@@ -78,10 +78,6 @@ private:
     VkDeviceMemory colorImageMemory = VK_NULL_HANDLE;
     VkImageView colorImageView = VK_NULL_HANDLE;
 
-    // Resolve attachment: solo existe cuando multiSamplerPower > 0
-    VkImage resolveColorImage = VK_NULL_HANDLE;
-    VkDeviceMemory resolveColorImageMemory = VK_NULL_HANDLE;
-    VkImageView resolveColorImageView = VK_NULL_HANDLE;
 
     VkImage depthImage = VK_NULL_HANDLE;
     VkDeviceMemory depthImageMemory = VK_NULL_HANDLE;
