@@ -47,9 +47,9 @@ void Scenes::renderTest(const VkCommandBuffer commandBuffer) {
 
 
     Model cubeModel;
-    cubeModel.mesh = Meshes::cubeMesh;
+    cubeModel.mesh = Meshes::meshes["plane_mesh"];
     cubeModel.setTranslation(vec3(0.0f,0.0f,0.0f));
-    cubeModel.setRotation(vec3(324,424,0.0f));
+    cubeModel.setRotation(vec3(0,0,0.0f));
     cubeModel.setScale(vec3(1.0f,1.0f,1.0f));
 
     Pipeline* testPipeline = Pipelines::getPipeline(TEST_PIPELINE_ID);

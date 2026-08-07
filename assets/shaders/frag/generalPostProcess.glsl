@@ -3,5 +3,5 @@ layout(location = 0) out vec4 outColor;
 
 
 void main() {
-    outColor = vec4(vec3(sampleTexture(uv,sceneDepth).r),1.0f);
+    outColor = vec4(vec3(sampleTexture(uv,sceneColor).xyz),1.0f);
 }

@@ -179,6 +179,12 @@ void Registry::initMeshes(const App* app)
         2, 3, 0
     };
     Meshes::quadMesh = Meshes::registerMesh(QUAD_MESH_ID, new Mesh(device,quadVertices.data(),sizeof(float)*8,4,quadIndices));
+
+    std::vector<float> planeMeshVertices;
+    std::vector<uint32_t> planeMeshIndices;
+    int resolution = 100;
+    Meshes::generatePlaneMesh(planeMeshVertices,planeMeshIndices,resolution);
+    Meshes::registerMesh("plane_mesh", new Mesh(device,planeMeshVertices.data(),sizeof(float)*6,resolution*resolution,planeMeshIndices));
 }
 
 void Registry::initMenus(const App* app)
