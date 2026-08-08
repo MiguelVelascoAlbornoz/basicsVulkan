@@ -21,6 +21,8 @@ layout(std140,push_constant) uniform ModelUBO {
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
+const uint FFT_N = 32u;
+const uint FFT_LOG2N = 5u; // log2(8) = 3
 
 uint bitReverse(uint x, uint log2n)
 {
@@ -47,65 +49,123 @@ vec2 complexMul(vec2 a, vec2 b)
 const float PI = 3.14159265358979323846;
 
 // Función iterativa para la FFT (Cooley-Tukey, in-place tras bit-reversal)
-void fft(vec2 a[100],out vec2 A[100], uint log2n)
+void ifftColumn(vec2 a[FFT_N][FFT_N], inout vec2 A[FFT_N][FFT_N], uint log2n, int column)
 {
-    uint n = 1u << log2n; // tamaño real de la FFT, derivado de log2n
+    uint n = 1u << log2n;
+    float invN = 1.0 / float(n);
 
-    // bit reversal of the given array
+    // bit reversal + normalización fusionadas en el mismo recorrido
     for (uint i = 0u; i < n; ++i) {
         uint rev = bitReverse(i, log2n);
-        A[i] = a[rev];
+        A[column][i] = a[column][rev] * invN;
     }
 
     for (uint s = 1u; s <= log2n; ++s)
     {
         uint m  = 1u << s;
         uint m2 = m >> 1u;
-
-        float angle = -2.0 * PI / float(m);
-        vec2 wm = complexExp(angle);
+        float angle = 2.0 * PI / float(m);
 
         for (uint j = 0u; j < m2; ++j)
         {
-            vec2 w = complexExp(angle * float(j)); // w = wm^j, evita acumular error
-
+            vec2 w = complexExp(angle * float(j));
             for (uint k = j; k < n; k += m)
             {
-                vec2 t = complexMul(w, A[k + m2]);
-                vec2 u = A[k];
-
-                A[k]      = u + t;
-                A[k + m2] = u - t;
+                vec2 t = complexMul(w, A[column][k + m2]);
+                vec2 u = A[column][k];
+                A[column][k]      = u + t;
+                A[column][k + m2] = u - t;
             }
         }
     }
 }
-const uint FFT_N = 8u;
-const uint FFT_LOG2N = 3u; // log2(8) = 3
+void ifftFila(vec2 a[FFT_N][FFT_N], inout vec2 A[FFT_N][FFT_N], uint log2n, int fila)
+{
+    uint n = 1u << log2n;
+    float invN = 1.0 / float(n);
+
+    // bit reversal + normalización fusionadas en el mismo recorrido
+    for (uint i = 0u; i < n; ++i) {
+        uint rev = bitReverse(i, log2n);
+        A[i][fila] = a[rev][fila] * invN;
+    }
+
+    for (uint s = 1u; s <= log2n; ++s)
+    {
+        uint m  = 1u << s;
+        uint m2 = m >> 1u;
+        float angle = 2.0 * PI / float(m);
+
+        for (uint j = 0u; j < m2; ++j)
+        {
+            vec2 w = complexExp(angle * float(j));
+            for (uint k = j; k < n; k += m)
+            {
+                vec2 t = complexMul(w, A[(k+m2)][fila]);
+                vec2 u = A[k][fila];
+                A[k][fila]      = u + t;
+                A[(k+m2)][fila] = u - t;
+            }
+        }
+    }
+}
+
+void setWave(inout vec2 a[FFT_N][FFT_N], float amp, ivec2 k, float phase)
+{
+    ivec2 i0 = k;
+    ivec2 i1;
+    i1.x = int((FFT_N - k.x) % FFT_N);
+    i1.y = int((FFT_N - k.y) % FFT_N);
+    a[i0.x][i0.y] = vec2(amp * cos(phase), amp*sin(phase));
+    a[i1.x][i1.y] = vec2(amp * cos(phase), -amp*sin(phase));
+
+    //float k1 = 2.0 * PI * float(k) / float(FFT_N);
+    //float k0 = -k1;
+
+    //da[i1] = complexMul(a[i1], vec2(0.0, k1));
+    //da[i0] = complexMul(a[i0], vec2(0.0, k0));
+}
 
 void main() {
-    vec2 a[100];
-    vec2 A[100];
+    vec2 a[FFT_N][FFT_N];
+    vec2 A[FFT_N][FFT_N];
+    //vec2 dA[FFT_N];
+    //vec2 da[FFT_N];
+    for (int i = 0; i < FFT_N; ++i){
+        for (int j = 0; j < FFT_N ; ++j){
+            a[i][j] = vec2(0.0f,0.0f);
+        }
 
-    a[0] = vec2(0.0, 0.0);
-    a[1] = vec2(1.0, 0.0);
-    a[2] = vec2(2.0, 0.0);
-    a[3] = vec2(3.0, 0.0);
-    a[4] = vec2(4.0, 0.0);
-    a[5] = vec2(5.0, 0.0);
-    a[6] = vec2(6.0, 0.0);
-    a[7] = vec2(7.0, 1.0);
+        //da[i] = vec2(0.0f,0.0f);
+    }
+    // Par conjugado: única forma de obtener un coseno puro real
+    setWave(a,2,ivec2(10,10),0);
 
-    fft(a, A, FFT_LOG2N);
+    for (int i = 0; i < FFT_N; ++i){
+        ifftColumn(a, A, FFT_LOG2N,i);
+    }
+    for (int i = 0; i < FFT_N; ++i){
+        ifftFila(A, a, FFT_LOG2N,i);
+    }
 
-    // Mapea vertexLocalPos.x en [-0.5, 0.5] a un índice en [0, N-1]
-    int index = int(round((vertexLocalPos.x + 0.5) * float(FFT_N - 1u)));
-    index = clamp(index, 0, int(FFT_N) - 1);
+    //ifft(da,dA,FFT_LOG2N);
 
-    float height = A[index].x; // parte real como altura
+    vec2 waveDir = normalize(vec2(1.0f,1.0f));
+    vec2 u = vec2(mod((vertexLocalPos.x)*FFT_N*1,FFT_N),mod((vertexLocalPos.z)*FFT_N*1,FFT_N));
+    ivec2 i0 = ivec2(u.x,u.y);
+    ivec2 i1;
+    i1.x = i0.x == FFT_N-1 ? 0 : i0.x+1;
+    i1.y = i0.y == FFT_N-1 ? 0 : i0.y+1;
+    vec2 t = fract(u);
+
+    float height = mix(a[i0.x][i0.y].x,a[i1.x][i1.y].x,t.x);
+
+    //float d = mix(dA[i0].x,dA[i1].x,t);
+
+    //vec3 fftNormal = normalize(cross(vec3(0.0f,0.0f,1.0f),(normalize(vec3(d,0.0f,0.0f)))));
 
     fragNormal = vec3(modelUBO.rotationMatrix * vec4(normal, 1.0f));
     vec3 worldPos = vec3(modelUBO.modelMatrix * vec4(vertexLocalPos * modelUBO.scale, 1.0f))
-    + fragNormal * height;
+    + normal * height;
     gl_Position = ubo.viewProjectionMatrix * vec4(worldPos, 1.0);
 }

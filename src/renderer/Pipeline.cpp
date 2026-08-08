@@ -72,7 +72,7 @@ bool Pipeline::loadShader(std::string shaderName, VkShaderModule &shaderModule, 
     #ifdef _DEBUG
     std::cout << "(VULKAN) Compilando shader: " << shaderPath << std::endl;
     #endif
-    std::string commandOut = execCommand(("glslc "+shaderPath+" -o "+shaderPathSPV).c_str());
+    std::string commandOut = execCommand(("glslc -O0 "+shaderPath+" -o "+shaderPathSPV).c_str());
     std::cout << commandOut << std::endl;
 
    // if (result) {

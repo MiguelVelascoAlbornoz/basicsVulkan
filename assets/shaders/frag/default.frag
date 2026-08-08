@@ -16,7 +16,7 @@ layout(std140,push_constant) uniform ModelUBO {
     mat4 rotationMatrix;
 } modelUBO;
 
-vec3 lightPos = vec3(0.0f,10.0f,2.0f);
+vec3 lightPos = vec3(0.1f,10.0f,0.0f);
 
 void main() {
     vec3 color = vec3(1.0f,0.0f,1.0f);
