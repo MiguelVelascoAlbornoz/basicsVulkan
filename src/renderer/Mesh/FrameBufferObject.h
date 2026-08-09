@@ -21,9 +21,9 @@ public:
     ~FrameBufferObject();
 
     void beginRenderPass(VkCommandBuffer cmd);
-    void endRenderPass(VkCommandBuffer cmd);
+    static void endRenderPass(VkCommandBuffer cmd);
 
-    void saveColorImageToPNG(const std::string& filename);
+    void saveColorImageToPNG(const std::string& filename) const;
 
     [[nodiscard]] VkRenderPass getRenderPass() const { return renderPass; }
     // Con MSAA activo, esta view apunta al resolve attachment (samples=1), sampleable normalmente.
@@ -64,7 +64,7 @@ private:
     void createDepthResources();
     void createRenderPass();
     void createFramebuffer();
-    VkFormat findDepthFormat() const;
+    [[nodiscard]] VkFormat findDepthFormat() const;
     VkSampler colorSampler = VK_NULL_HANDLE;
     VkSampler depthSampler = VK_NULL_HANDLE;
     VulkanDevice* device = nullptr;
