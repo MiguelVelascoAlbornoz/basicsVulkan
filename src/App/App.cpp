@@ -12,6 +12,7 @@
 #include "../Scene/Model.h"
 #include "../Renderer/VulkanDevice.h"
 #include "../Renderer/UniformBuffer.h"
+#include "../Registry/Images.h"
 
 
 App::App(const std::function<void(App*)>& registryCallback) {
@@ -57,6 +58,7 @@ App::~App()
     Meshes::freeMeshes();
     delete player;
     Uniforms::freeUniforms();
+    Images::freeImages();
     delete window;
     delete renderer;
     Menus::freeMenus();
