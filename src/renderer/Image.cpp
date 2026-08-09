@@ -115,10 +115,10 @@ void Image::transitionLayout(VkCommandBuffer cmd, VkImageLayout newLayout,
 }
 Image* Image::loadFromFile(VulkanDevice* device, const std::string& path, VkImageUsageFlags usage,VkImageLayout newLayout) {
     int w, h, channels;
-    stbi_uc* pixels = stbi_load(path.c_str(), &w, &h, &channels, 0);
+    stbi_uc* pixels = stbi_load(path.c_str(), &w, &h, &channels, 4);
 
     if (!pixels) { std::cerr << "(IMAGE) No se pudo cargar: " << path << std::endl; return nullptr; }
-
+    channels = channels == 3? 4 : channels;
     VkDeviceSize size = w * h * channels;
     VkBuffer staging; VkDeviceMemory stagingMem;
     device->createBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -140,7 +140,7 @@ Image* Image::loadFromFile(VulkanDevice* device, const std::string& path, VkImag
         format = VK_FORMAT_R8G8_UNORM;
         break;
     case 3:
-        format = VK_FORMAT_R8G8B8_UNORM;
+        format = VK_FORMAT_R8G8B8A8_UNORM;
         break;
     case 4:
         format = VK_FORMAT_R8G8B8A8_UNORM;

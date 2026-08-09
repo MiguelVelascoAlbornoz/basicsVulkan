@@ -219,5 +219,5 @@ void Registry::initImages(const App* app)
 {
 
     Images::missingImage = Images::registerImages(MISSING_IMAGE_ID,
-        Image::loadFromFile(app->renderer->getVulkanDevice(),"assets/Textures/missing_texture.png",VK_IMAGE_USAGE_SAMPLED_BIT));
+        Image::loadFromFile(app->renderer->getVulkanDevice(),"assets/Textures/missing_texture.png",VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT));
 }
