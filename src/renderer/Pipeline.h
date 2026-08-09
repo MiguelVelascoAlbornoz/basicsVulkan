@@ -5,24 +5,12 @@
 #include <string>
 #include "AttribType.h"
 #include <vector>
+#include "PipelineUtils.h"
 
 class UniformBuffer;
 class VulkanDevice;
 
-struct ImageBinding
-{
-    VkImageView image = VK_NULL_HANDLE;
-    VkSampler sampler = VK_NULL_HANDLE;
-    VkImageLayout layout;
-    VkDescriptorType type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    VkShaderStageFlags stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT;
-};
-struct UniformBinding
-{
-    UniformBuffer* uniformBuffer = nullptr;
-    VkDescriptorType type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    VkShaderStageFlags stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT;
-};
+
 struct PipelineConfig {
 
     int multisamplerSamples = 0;
@@ -48,12 +36,6 @@ class Pipeline {
 
     public:
 
-
-
-    VkShaderModule createShaderModule(const std::vector<char> &code);
-    bool loadShader(std::string shaderName, VkShaderModule &shaderModule, std::string shaderType);
-    int recreate();
-
     Pipeline(VulkanDevice* vulkanDevice, VkRenderPass renderPass, PipelineConfig& config,
              VkDescriptorPool descriptorPool);
 
@@ -72,7 +54,7 @@ class Pipeline {
         }
         VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
         VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
-        VkPipelineLayout getPipelineLayout() const { return pipelineLayout; }
+        [[nodiscard]] VkPipelineLayout getPipelineLayout() const { return pipelineLayout; }
         [[nodiscard]] const PipelineConfig& getConfig() const { return config; }
     void updateMSAASamples(int newValue);
     private:

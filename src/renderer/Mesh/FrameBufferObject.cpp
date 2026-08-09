@@ -10,8 +10,8 @@
 #include <cmath>
 
 FrameBufferObject::FrameBufferObject(VulkanDevice* device, uint32_t width, uint32_t height,
-                                     VkFormat colorFormat, bool useDepth, bool createDepthSampler, int multiSamplerPower)
-    : device(device), width(width), height(height), colorFormat(colorFormat), createDepthSampler(createDepthSampler), useDepth(useDepth), multiSamplerPower(multiSamplerPower)
+                                     VkFormat colorFormat, bool useDepth, bool depthSamplerEnabled, int multiSamplerPower)
+    : device(device), width(width), height(height), colorFormat(colorFormat), depthSamplerEnabled(depthSamplerEnabled), useDepth(useDepth), multiSamplerPower(multiSamplerPower)
 {
     createResources();
     if (error) return;
@@ -190,12 +190,12 @@ void FrameBufferObject::createDepthResources()
 {
     depthFormat = findDepthFormat();
     VkImageUsageFlags usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-    if (createDepthSampler)
+    if (depthSamplerEnabled)
     {
         usage |=VK_IMAGE_USAGE_SAMPLED_BIT;
     }
     createImage(device,width,height,depthFormat,usage,multiSamplerPower,VK_IMAGE_ASPECT_DEPTH_BIT,depthImage,depthImageMemory,depthImageView);
-    if (createDepthSampler && depthSampler == VK_NULL_HANDLE)
+    if (depthSamplerEnabled && depthSampler == VK_NULL_HANDLE)
     {
         createSampler(device->device,depthSampler,VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_BORDER_COLOR_INT_OPAQUE_WHITE);
     }
@@ -254,11 +254,11 @@ void FrameBufferObject::createRenderPass()
         depthAttachment.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
         // FIX: estaba invertido. Si vas a samplear el depth después (createDepthSampler=true),
         // hay que GUARDARLO (STORE), no descartarlo.
-        depthAttachment.storeOp = createDepthSampler ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        depthAttachment.storeOp = depthSamplerEnabled ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE;
         depthAttachment.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
         depthAttachment.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
-        depthAttachment.finalLayout    = createDepthSampler ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        depthAttachment.finalLayout    = depthSamplerEnabled ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
         attachments.push_back(depthAttachment);
 
         depthAttachmentRef.attachment = 1;

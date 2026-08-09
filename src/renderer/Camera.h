@@ -78,8 +78,6 @@ private:
     float pitch = 0; /**< @brief Pitch angle (in degrees) for the camera's orientation. */
     float roll = 0; /**< @brief Roll angle (in degrees) for the camera's orientation. */
     float yawToRoll = 0; /**< @brief Additional yaw to roll angle (in degrees) */
-    float movementSpeed = 0; /**< @brief Speed at which the camera moves through the scene. */
-    float mouseSensitivity = 0; /**< @brief Sensitivity of mouse movement for camera rotation. */
     glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), 0.0f, glm::vec3(1.0f, 0.0f, 0.0f))*
                                glm::rotate(glm::mat4(1.0f), 0.0f, glm::vec3(0.0f, 1.0f, 0.0f))*
                                glm::rotate(glm::mat4(1.0f), 0.0f, glm::vec3(0.0f, 1.0f, 0.0f))*
