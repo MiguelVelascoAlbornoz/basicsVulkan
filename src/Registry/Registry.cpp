@@ -12,13 +12,14 @@
 #include "../Renderer/Pipeline.h"
 #include "../Renderer/Camera.h"
 #include "../Renderer/UniformBuffer.h"
-#include "../Renderer/VulkanDevice.h"
+#include "Images.h"
+#include "../Renderer/Image.h"
 #include "../Renderer/Mesh/Mesh.h"
 #include "../Menu/EditorMenu.h"
 #include "../renderer/Window.h"
 
 void Registry::registryCallback(const App* app)
-{
+{   Registry::initImages(app);
     Registry::initFramebuffers(app);
     Registry::initUniforms(app);
     Registry::initPipelines(app);
@@ -53,6 +54,15 @@ void Registry::initPipelines(const App* app)
     pipelineConfigDefault.pushConstantsSize = sizeof(Model::ModelUBO);
     pipelineConfigDefault.uniformObjects = {
                 {Uniforms::cameraUniform, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT },
+    };
+    pipelineConfigDefault.images = {
+        {
+            .image = Images::missingImage->getView(),
+            .sampler = Images::missingImage->getSampler(),
+            .layout = Images::missingImage->getCurrentLayout(),
+            .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT
+        }
     };
     pipelineConfigDefault.multisamplerSamples = app->player->getPlayerCameraSettings()->MSAAsamples;
     pipelineConfigDefault.sampleShadding = app->player->getPlayerCameraSettings()->sampleShadding;
@@ -209,4 +219,11 @@ void Registry::initFramebuffers(const App* app)
     );
     FrameBuffers::defaultFrameBuffer->addScene(Scenes::renderTest);
 
+}
+
+void Registry::initImages(const App* app)
+{
+
+    Images::missingImage = Images::registerImages(MISSING_IMAGE_ID,
+        Image::loadFromFile(app->renderer->getVulkanDevice(),"assets/Textures/missing_texture.png",VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT));
 }

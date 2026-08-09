@@ -5,6 +5,8 @@ layout(location = 0) out vec4 outColor;
 layout (location = 1) in vec3 worldPos;
 layout (location = 0) in vec3 fragNormal;
 
+layout(binding = 1) uniform sampler2D image;
+
 layout(std140, binding = 0) uniform UniformBufferObject {
 
    mat4 viewProjectionMatrix;
@@ -19,7 +21,7 @@ layout(std140,push_constant) uniform ModelUBO {
 vec3 lightPos = vec3(0.1f,10.0f,0.0f);
 
 void main() {
-    vec3 color = vec3(1.0f,0.0f,1.0f);
+    vec3 color = texture(image,worldPos.xz).xyz;
 
     vec3 lightDir = normalize(lightPos-worldPos);
     float diffuse = min(max(0,dot(lightDir,fragNormal))+0.1,1);
