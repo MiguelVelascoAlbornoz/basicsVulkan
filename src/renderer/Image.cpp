@@ -4,7 +4,7 @@
 #include <iostream>
 #include <algorithm>
 #include "stbImage/stb_image_write.h"
-
+#include <glm/glm.hpp>
 struct FormatInfo {
     int bytesPerTexel;
     int channels;
@@ -144,40 +144,82 @@ void Image::saveColorImageToPNG(const std::string& filename) const
 
     FormatInfo info = getFormatInfo(format);
     if (info.bytesPerTexel == 0) return; // formato no soportado, ya logueado
-
-    VkDeviceSize imageSize = static_cast<VkDeviceSize>(width) * height * info.bytesPerTexel;
+    int pixelsCount = width * height;
+    int bufferSize = info.bytesPerTexel * pixelsCount;
+    VkDeviceSize imageSize = static_cast<VkDeviceSize>(bufferSize) ;
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingMemory;
-    device->createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+    device->createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingMemory);
+
+    VkCommandBuffer cmd = device->beginSingleTimeCommands();
+    VkBufferImageCopy region{};
+    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    region.imageSubresource.layerCount = 1;
+    region.imageExtent = { width, height, 1 };
+    vkCmdCopyImageToBuffer(cmd, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        stagingBuffer, 1, &region);
+    device->endSingleTimeCommands(cmd);
+
     void* data;
     vkMapMemory(dev, stagingMemory, 0, imageSize, 0, &data);
-    std::vector<unsigned char> rawPixels(imageSize);
-    memcpy(rawPixels.data(), data, imageSize);
-    vkUnmapMemory(dev, stagingMemory);
+    //std::vector<unsigned char> rawPixels(imageSize);
+    //memcpy(rawPixels.data(), data, imageSize);
+
 
     if (info.isFloat) {
+
         // stb_write_png no soporta float directo: hay que convertir a 8-bit,
         // normalmente clampeando/remapeando el rango que uses (ej. [0,1] o [-1,1])
-        std::vector<unsigned char> pixels8(width * height * info.channels);
-        const float* floatData = reinterpret_cast<const float*>(rawPixels.data());
-        for (size_t i = 0; i < pixels8.size(); i++) {
-            float v = std::clamp(floatData[i], 0.0f, 1.0f); // ajusta el rango según tu caso
-            pixels8[i] = static_cast<unsigned char>(v * 255.0f);
+
+        const auto floatData = static_cast<float*>(data);
+        auto minValue = glm::vec2(floatData[0],floatData[1]);
+        auto maxValue = glm::vec2(floatData[0],floatData[1]);
+
+        for (int i = 0; i < bufferSize ; i+=2)
+        {
+            const glm::vec2 dataF(floatData[i],floatData[i+1]);
+            if (dataF.x < minValue.x)
+            {
+                minValue.x = floatData[i];
+                continue;
+            }
+            if (dataF.y > maxValue.y)
+            {
+                maxValue.y = floatData[i+1];
+            }
+            if (dataF.y < minValue.y)
+            {
+                minValue.y = floatData[i+1];
+                continue;
+            }
+            if (dataF.x > maxValue.x)
+            {
+                maxValue.x = floatData[i];
+            }
         }
+        const glm::vec2 compression =255.0f/ (maxValue - minValue);
+
+        std::vector<unsigned char> pixels8(bufferSize);
+        for (int i = 0; i < pixelsCount ; i+=2)
+        {
+            glm::vec2 dataOrganized(floatData[i],floatData[i+1]);
+            dataOrganized = (dataOrganized -minValue)*compression;
+
+            pixels8[i] = static_cast<unsigned char>(dataOrganized.x);
+            pixels8[i+1] = static_cast<unsigned char>(dataOrganized.y);
+        }
+
         stbi_write_png(filename.c_str(), width, height, info.channels,
                         pixels8.data(), width * info.channels);
     } else {
-        if (format == VK_FORMAT_B8G8R8A8_UNORM || format == VK_FORMAT_B8G8R8A8_SRGB) {
-            for (size_t i = 0; i < rawPixels.size(); i += 4) {
-                std::swap(rawPixels[i], rawPixels[i + 2]);
-            }
-        }
-        stbi_write_png(filename.c_str(), width, height, info.channels,
-                        rawPixels.data(), width * info.channels);
-    }
+        unsigned char* dataChar = static_cast<unsigned char*>(data);
 
+        stbi_write_png(filename.c_str(), width, height, info.channels,
+                        dataChar, width * info.channels);
+    }
+    vkUnmapMemory(dev, stagingMemory);
     vkDestroyBuffer(dev, stagingBuffer, nullptr);
     vkFreeMemory(dev, stagingMemory, nullptr);
     std::cout << "Imagen guardada en: " << filename << std::endl;

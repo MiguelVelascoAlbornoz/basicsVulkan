@@ -11,5 +11,5 @@ void main() {
 
     vec4 value = imageLoad(fftData, coord);
 
-    imageStore(fftData, coord, vec4(1.0f,0.0f,0.0f,0.0f));
+    imageStore(fftData, coord, vec4(1.0f,1.0f,0.0f,0.0f));
 }

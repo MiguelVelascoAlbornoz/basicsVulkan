@@ -58,6 +58,7 @@ App::App(const std::function<void(App*)>& registryCallback) {
         1);
     Images::ifftImage->transitionLayout(cmd,VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
     VK_PIPELINE_STAGE_TRANSFER_BIT);
+    renderer->getVulkanDevice()->endSingleTimeCommands(cmd); // <-- faltaba esto
     Images::ifftImage->saveColorImageToPNG("out.png");
     //Finally execution loop
     executionLoop();
