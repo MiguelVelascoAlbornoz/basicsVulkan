@@ -4,6 +4,7 @@
 #include "../App/App.h"
 #include "Registry.h"
 
+#include "ComputePipelines.h"
 #include "Scenes.h"
 #include "../Menu/F3GUI.h"
 #include "../Renderer/Renderer.h"
@@ -17,13 +18,14 @@
 #include "../Renderer/Mesh/Mesh.h"
 #include "../Menu/EditorMenu.h"
 #include "../renderer/Window.h"
+#include "../Renderer/ComputePipeline.h"
 
 void Registry::registryCallback(const App* app)
 {   Registry::initImages(app);
     Registry::initFramebuffers(app);
     Registry::initUniforms(app);
     Registry::initPipelines(app);
-
+    Registry::initComputePipelines(app);
     Registry::initMeshes(app);
     Registry::initMenus(app);
 };
@@ -55,11 +57,12 @@ void Registry::initPipelines(const App* app)
     pipelineConfigDefault.uniformObjects = {
                 {Uniforms::cameraUniform, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT },
     };
+    Image* imageToPipeline = Images::images[GRASS_IMAGE_ID];
     pipelineConfigDefault.images = {
         {
-            .image = Images::missingImage->getView(),
-            .sampler = Images::missingImage->getSampler(),
-            .layout = Images::missingImage->getCurrentLayout(),
+            .image = imageToPipeline->getView(),
+            .sampler = imageToPipeline->getSampler(),
+            .layout = imageToPipeline->getCurrentLayout(),
             .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT
         }
@@ -226,4 +229,25 @@ void Registry::initImages(const App* app)
 
     Images::missingImage = Images::registerImages(MISSING_IMAGE_ID,
         Image::loadFromFile(app->renderer->getVulkanDevice(),"assets/Textures/missing_texture.png",VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT));
+    Images::ifftImage = Images::registerImages(IFFT_IMAGE_ID,new Image(
+        app->renderer->getVulkanDevice(),64,64,VK_FORMAT_R32G32_SFLOAT,VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,VK_IMAGE_ASPECT_COLOR_BIT,0));
+
+    Images::registerImages(GRASS_IMAGE_ID,Image::loadFromFile(app->renderer->getVulkanDevice(),"assets/Textures/grass.png",VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT));
+}
+
+void Registry::initComputePipelines(const App* app)
+{
+    ComputePipelineConfig ifftConfig;
+    ifftConfig.images = {
+        {
+            .image = Images::ifftImage->getView(),
+            .sampler = VK_NULL_HANDLE,
+            .layout =VK_IMAGE_LAYOUT_GENERAL,
+            .type =VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT
+        }
+    };
+    ifftConfig.shaderName = "ifft";
+    ComputePipelines::registerPipelines(IFFT_COMPUTE_PIPELINE_ID,new ComputePipeline(
+        app->renderer->getVulkanDevice(),app->renderer->descriptorPool,ifftConfig));
 }

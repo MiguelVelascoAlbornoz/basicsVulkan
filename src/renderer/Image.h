@@ -1,14 +1,17 @@
 #ifndef IMAGE_H
 #define IMAGE_H
 
-#include <vulkan/vulkan.h>
+
 #include <string>
 #include <unordered_map>
-
+#include <vulkan/vulkan.h>
 class VulkanDevice;
+
+
 
 class Image {
 public:
+
     /** @brief Crea una imagen vacía en VRAM (render target, storage image, etc). */
     Image(VulkanDevice* device, uint32_t width, uint32_t height, VkFormat format,
           VkImageUsageFlags usage, VkImageAspectFlags aspectMask, int samplesPower = 0);
@@ -24,6 +27,7 @@ public:
 
     /** @brief Carga una imagen desde disco (PNG/JPG vía stb_image) a VRAM. */
     static Image* loadFromFile(VulkanDevice* device, const std::string& path, VkImageUsageFlags usage, VkImageLayout newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    void saveColorImageToPNG(const std::string& filename) const;
 
     /** @brief Transiciona el layout y actualiza el estado interno, para que
      *  el caller no tenga que recordar el layout anterior. */

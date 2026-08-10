@@ -1,0 +1,15 @@
+#version 450
+layout(local_size_x = 32, local_size_y = 32) in;
+
+// binding = 0 debe coincidir con el índice en tu vector de images/uniformObjects
+layout(binding = 0, rg32f) uniform image2D fftData;
+
+void main() {
+    ivec2 coord = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 size = imageSize(fftData);
+    if (coord.x >= size.x || coord.y >= size.y) return;
+
+    vec4 value = imageLoad(fftData, coord);
+
+    imageStore(fftData, coord, vec4(1.0f,0.0f,0.0f,0.0f));
+}

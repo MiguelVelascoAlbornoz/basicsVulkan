@@ -21,7 +21,8 @@ VulkanDevice::~VulkanDevice()
     }
     // 12. Device (después de TODO lo que dependía de él)
     if (device != VK_NULL_HANDLE) {
-     vkDestroyDevice(device, nullptr);
+        try {vkDestroyDevice(device, nullptr);} catch (...) {}
+
     }
 }
 // Agregar a VulkanDevice

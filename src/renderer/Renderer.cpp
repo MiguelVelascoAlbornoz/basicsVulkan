@@ -13,7 +13,7 @@
 #include "../Registry/Pipelines.h"
 #include "../Registry/Scenes.h"
 #include "../Registry/FrameBuffers.h"
-
+#include "../Registry/ComputePipelines.h"
 
 #include "VulkanDevice.h"
 #include "Window.h"
@@ -119,9 +119,12 @@ void Renderer::initVulkan(Window* window)  {
         poolSize1.descriptorCount = 4;
         VkDescriptorPoolSize poolSize2{};
         poolSize2.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSize2.descriptorCount = 5;
+        poolSize2.descriptorCount = 7;
+        VkDescriptorPoolSize poolSize3{};
+        poolSize3.type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+        poolSize3.descriptorCount = 1;
 
-        std::vector poolSizes = {poolSize1,poolSize2};
+        std::vector poolSizes = {poolSize1,poolSize2,poolSize3};
 
     VkDescriptorPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -200,6 +203,7 @@ Renderer::~Renderer()
 
     
     Pipelines::freePipelines();
+    ComputePipelines::freePipelines();
 
     // 7. Render pass
     if (renderPass != VK_NULL_HANDLE) {

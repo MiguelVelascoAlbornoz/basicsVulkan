@@ -2,6 +2,31 @@
 #include "VulkanDevice.h"
 #include "stbImage/stb_image.h"
 #include <iostream>
+#include <algorithm>
+#include "stbImage/stb_image_write.h"
+
+struct FormatInfo {
+    int bytesPerTexel;
+    int channels;
+    bool isFloat;
+};
+
+static FormatInfo getFormatInfo(VkFormat format) {
+    switch (format) {
+    case VK_FORMAT_R8_UNORM:            return {1, 1, false};
+    case VK_FORMAT_R8G8_UNORM:          return {2, 2, false};
+    case VK_FORMAT_R8G8B8A8_UNORM:
+    case VK_FORMAT_R8G8B8A8_SRGB:
+    case VK_FORMAT_B8G8R8A8_UNORM:
+    case VK_FORMAT_B8G8R8A8_SRGB:       return {4, 4, false};
+    case VK_FORMAT_R32_SFLOAT:          return {4, 1, true};
+    case VK_FORMAT_R32G32_SFLOAT:       return {8, 2, true};
+    case VK_FORMAT_R32G32B32A32_SFLOAT: return {16, 4, true};
+    default:
+        std::cerr << "(IMAGE) Formato no soportado en saveColorImageToPNG" << std::endl;
+        return {0, 0, false};
+    }
+}
 
 Image::Image(VulkanDevice* device, uint32_t width, uint32_t height, VkFormat format,
              VkImageUsageFlags usage, VkImageAspectFlags aspectMask, int samplesPower)
@@ -30,9 +55,9 @@ void Image::createSampler( VkFilter magFilter, VkFilter minFilter,
     samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     samplerInfo.magFilter = magFilter;//VK_FILTER_LINEAR; // o NEAREST si prefieres depth sin filtrar
     samplerInfo.minFilter = minFilter;//VK_FILTER_LINEAR;
-    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
     samplerInfo.borderColor = borderColor;//VK_BORDER_COLOR_INT_OPAQUE_WHITE; // 1.0 = "infinitamente lejos" fuera de rango
     samplerInfo.unnormalizedCoordinates = VK_FALSE;
     vkCreateSampler(this->device->device, &samplerInfo, nullptr, &sampler);
@@ -94,7 +119,7 @@ bool Image::create()
         std::cerr << "(FBO) Error: no se pudo crear el image view de color." << std::endl;
         return false;
     }
-    createSampler(VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_BORDER_COLOR_INT_OPAQUE_WHITE);
+    createSampler(VK_FILTER_NEAREST,VK_FILTER_NEAREST,VK_BORDER_COLOR_INT_OPAQUE_WHITE);
     return true;
 }
 
@@ -112,6 +137,50 @@ void Image::transitionLayout(VkCommandBuffer cmd, VkImageLayout newLayout,
 
     vkCmdPipelineBarrier(cmd, srcStage, dstStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
     currentLayout = newLayout; // se actualiza el estado
+}
+void Image::saveColorImageToPNG(const std::string& filename) const
+{
+    VkDevice dev = device->device;
+
+    FormatInfo info = getFormatInfo(format);
+    if (info.bytesPerTexel == 0) return; // formato no soportado, ya logueado
+
+    VkDeviceSize imageSize = static_cast<VkDeviceSize>(width) * height * info.bytesPerTexel;
+
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingMemory;
+    device->createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingMemory);
+    void* data;
+    vkMapMemory(dev, stagingMemory, 0, imageSize, 0, &data);
+    std::vector<unsigned char> rawPixels(imageSize);
+    memcpy(rawPixels.data(), data, imageSize);
+    vkUnmapMemory(dev, stagingMemory);
+
+    if (info.isFloat) {
+        // stb_write_png no soporta float directo: hay que convertir a 8-bit,
+        // normalmente clampeando/remapeando el rango que uses (ej. [0,1] o [-1,1])
+        std::vector<unsigned char> pixels8(width * height * info.channels);
+        const float* floatData = reinterpret_cast<const float*>(rawPixels.data());
+        for (size_t i = 0; i < pixels8.size(); i++) {
+            float v = std::clamp(floatData[i], 0.0f, 1.0f); // ajusta el rango según tu caso
+            pixels8[i] = static_cast<unsigned char>(v * 255.0f);
+        }
+        stbi_write_png(filename.c_str(), width, height, info.channels,
+                        pixels8.data(), width * info.channels);
+    } else {
+        if (format == VK_FORMAT_B8G8R8A8_UNORM || format == VK_FORMAT_B8G8R8A8_SRGB) {
+            for (size_t i = 0; i < rawPixels.size(); i += 4) {
+                std::swap(rawPixels[i], rawPixels[i + 2]);
+            }
+        }
+        stbi_write_png(filename.c_str(), width, height, info.channels,
+                        rawPixels.data(), width * info.channels);
+    }
+
+    vkDestroyBuffer(dev, stagingBuffer, nullptr);
+    vkFreeMemory(dev, stagingMemory, nullptr);
+    std::cout << "Imagen guardada en: " << filename << std::endl;
 }
 Image* Image::loadFromFile(VulkanDevice* device, const std::string& path, VkImageUsageFlags usage,VkImageLayout newLayout) {
     int w, h, channels;

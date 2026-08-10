@@ -60,11 +60,11 @@ void Pipeline::buildPipeline()
 {
     VkShaderModule vertShaderModule;
     VkShaderModule fragShaderModule;
-    if (!loadShader(config.shaderName, vertShaderModule, "vert")) {
+    if (!PipelineUtils::loadShader(config.shaderName, vertShaderModule, "vert",vulkanDevice->device)) {
         error = true;
         return;
     }
-    if (!loadShader(config.shaderName, fragShaderModule, "frag")) {
+    if (!PipelineUtils::loadShader(config.shaderName, fragShaderModule, "frag",vulkanDevice->device)) {
         error = true;
         vkDestroyShaderModule(vulkanDevice->device, vertShaderModule, nullptr);
         return;

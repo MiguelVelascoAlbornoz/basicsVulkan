@@ -13,7 +13,9 @@
 #include "../Renderer/VulkanDevice.h"
 #include "../Renderer/UniformBuffer.h"
 #include "../Registry/Images.h"
-
+#include "../Registry/ComputePipelines.h"
+#include "../Renderer/ComputePipeline.h"
+#include "../renderer/Image.h"
 
 App::App(const std::function<void(App*)>& registryCallback) {
     //Initizialise window
@@ -44,6 +46,19 @@ App::App(const std::function<void(App*)>& registryCallback) {
     registryCallback(this);
 
     FrameBuffers::turnOnFBO(FrameBuffers::defaultFrameBuffer);
+
+    const VkCommandBuffer cmd =renderer->getVulkanDevice()->beginSingleTimeCommands();
+    Images::ifftImage->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+    ComputePipeline* computePipeline = ComputePipelines::getPipeline(IFFT_COMPUTE_PIPELINE_ID);
+    computePipeline->bind(cmd);
+    ComputePipeline::dispatch(cmd,
+        2,  // grupos en X, redondeando hacia arriba
+        2, // grupos en Y
+        1);
+    Images::ifftImage->transitionLayout(cmd,VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+    VK_PIPELINE_STAGE_TRANSFER_BIT);
+    Images::ifftImage->saveColorImageToPNG("out.png");
     //Finally execution loop
     executionLoop();
 

@@ -13,12 +13,13 @@
 #include "../App/Utilitys.h"
 
 class Image;
-#define MISSING_IMAGE_ID "missing_image_id"
-
+#define MISSING_IMAGE_ID "missing_image"
+#define IFFT_IMAGE_ID "ifft_image"
+#define GRASS_IMAGE_ID "grass"
 class Images {
 public:
     static Image* missingImage;
-
+    static Image* ifftImage;
 
     static std::unordered_map<std::string, Image*> images; /**< @brief Map to store menu rendering functions. */
 
