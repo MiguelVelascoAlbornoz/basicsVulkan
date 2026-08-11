@@ -120,6 +120,28 @@ bool VulkanDevice::pickPhysicalDevice(VkInstance instance)
     std::cout << "(VULKAN) Max push constants size: " << selectedProps.limits.maxPushConstantsSize << std::endl;
     std::cout << "(VULKAN) Max memory allocation count: " << selectedProps.limits.maxMemoryAllocationCount << std::endl;
     std::cout << "(VULKAN) Max sampler allocation count: " << selectedProps.limits.maxSamplerAllocationCount << std::endl;
+    std::cout << "Max dispatch X: " <<selectedProps. limits.maxComputeWorkGroupCount[0] << '\n';
+
+    std::cout << "Max dispatch Y: "
+              << selectedProps.limits.maxComputeWorkGroupCount[1] << '\n';
+
+    std::cout << "Max dispatch Z: "
+              << selectedProps.limits.maxComputeWorkGroupCount[2] << '\n';
+
+    std::cout << "Max invocations/workgroup: "
+              << selectedProps.limits.maxComputeWorkGroupInvocations << '\n';
+
+    std::cout << "Max local size X: "
+              << selectedProps.limits.maxComputeWorkGroupSize[0] << '\n';
+
+    std::cout << "Max local size Y: "
+              <<selectedProps. limits.maxComputeWorkGroupSize[1] << '\n';
+
+    std::cout << "Max local size Z: "
+              << selectedProps.limits.maxComputeWorkGroupSize[2] << '\n';
+
+    std::cout << "Max shared memory: "
+              << selectedProps.limits.maxComputeSharedMemorySize << " bytes\n";
     
     #endif
     return true; // Retorna true si se selecciona un dispositivo físico correctamente
