@@ -65,6 +65,13 @@ void Registry::initPipelines(const App* app)
             .layout = imageToPipeline->getCurrentLayout(),
             .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT
+        },
+            {
+            .image = Images::images[IFFT_OUT_IMAGE_ID]->getView(),
+            .sampler = Images::images[IFFT_OUT_IMAGE_ID]->getSampler(),
+            .layout = Images::images[IFFT_OUT_IMAGE_ID]->getCurrentLayout(),
+            .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT
         }
     };
     pipelineConfigDefault.multisamplerSamples = app->player->getPlayerCameraSettings()->MSAAsamples;
@@ -232,6 +239,10 @@ void Registry::initImages(const App* app)
     Images::registerImages(IFFT_OUT_IMAGE_ID,new Image(app->renderer->getVulkanDevice(),512,512,VK_FORMAT_R32_SFLOAT,VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,VK_IMAGE_ASPECT_COLOR_BIT,0));
 
     Images::registerImages(GRASS_IMAGE_ID,Image::loadFromFile(app->renderer->getVulkanDevice(),"assets/Textures/grass.png",VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT));
+
+    VkCommandBuffer cmd = app->renderer->getVulkanDevice()->beginSingleTimeCommands();
+    Images::images[IFFT_OUT_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
+    app->renderer->getVulkanDevice()->endSingleTimeCommands(cmd);
 }
 
 void Registry::initComputePipelines(const App* app)

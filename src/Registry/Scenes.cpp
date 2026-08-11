@@ -9,7 +9,8 @@
 #include "Uniforms.h"
 
 #include "../Scene/Model.h"
-#include "SDL3/SDL.h"
+#include "../Renderer/Image.h"
+#include "Images.h"
 #include "../Renderer/Mesh/Mesh.h"
 
 
@@ -44,6 +45,7 @@ void Scenes::renderAxis( const VkCommandBuffer commandBuffer)
 }
 
 void Scenes::renderTest(const VkCommandBuffer commandBuffer) {
+    //Images::images[IFFT_OUT_IMAGE_ID]->transitionLayout(commandBuffer,VK_IMAGE_LAYOUT,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,VK_PIPELINE_STAGE_TRANSFER_BIT);
 
 
     Model cubeModel;

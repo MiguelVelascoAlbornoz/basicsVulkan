@@ -14,7 +14,7 @@ public:
 
     /** @brief Crea una imagen vacía en VRAM (render target, storage image, etc). */
     Image(VulkanDevice* device, uint32_t width, uint32_t height, VkFormat format,
-          VkImageUsageFlags usage, VkImageAspectFlags aspectMask, int samplesPower = 0);
+          VkImageUsageFlags usage, VkImageAspectFlags aspectMask, int samplesPower = 0, VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED);
 
     ~Image(); // libera VRAM automáticamente (RAII, como ya hace Mesh/UniformBuffer)
     void createSampler(VkFilter magFilter , VkFilter minFilter, VkBorderColor borderColor);
@@ -47,7 +47,7 @@ private:
     VkImage image = VK_NULL_HANDLE;
     VkDeviceMemory memory = VK_NULL_HANDLE;
     VkImageView view = VK_NULL_HANDLE;
-    VkImageLayout currentLayout = VK_IMAGE_LAYOUT_UNDEFINED; // tracking automático
+
     VulkanDevice* device;
     uint32_t width;
     uint32_t height;
@@ -57,6 +57,8 @@ private:
     VkImageAspectFlags aspectMask;
     VkSampler sampler;
     int samples;
+    VkImageLayout currentLayout = VK_IMAGE_LAYOUT_UNDEFINED; // tracking automático
+
 
 };
 

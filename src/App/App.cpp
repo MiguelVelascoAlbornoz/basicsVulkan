@@ -47,7 +47,7 @@ App::App(const std::function<void(App*)>& registryCallback) {
 
     FrameBuffers::turnOnFBO(FrameBuffers::defaultFrameBuffer);
 
-    const VkCommandBuffer cmd =renderer->getVulkanDevice()->beginSingleTimeCommands();
+    VkCommandBuffer cmd =renderer->getVulkanDevice()->beginSingleTimeCommands();
 
     ComputePipeline* computePipeline = nullptr;
     //LIMPIAR LA IMAGEM
@@ -88,9 +88,16 @@ App::App(const std::function<void(App*)>& registryCallback) {
     Images::images[IFFT_OUT_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,VK_PIPELINE_STAGE_TRANSFER_BIT);
 
     renderer->getVulkanDevice()->endSingleTimeCommands(cmd);
+
     Images::images[IFFT_OUT_IMAGE_ID]->saveColorImageToPNG("out.png");
 
+    cmd =renderer->getVulkanDevice()->beginSingleTimeCommands();
 
+    Images::images[IFFT_OUT_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_PIPELINE_STAGE_TRANSFER_BIT,VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
+
+    renderer->getVulkanDevice()->endSingleTimeCommands(cmd);
+
+    Pipelines::defaultPipeline->updateDescriptorSet();
     //Finally execution loop
     executionLoop();
 

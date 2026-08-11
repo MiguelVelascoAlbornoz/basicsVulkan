@@ -232,6 +232,9 @@ void Pipeline::buildPipeline()
 
     updateDescriptorSet(config.uniformObjects, config.images);
 }
+void Pipeline::updateDescriptorSet() {
+    updateDescriptorSet(config.uniformObjects, config.images);
+}
 void Pipeline::updateDescriptorSet( std::vector<UniformBinding> uniformObjects,  std::vector<ImageBinding> images)
 {
 

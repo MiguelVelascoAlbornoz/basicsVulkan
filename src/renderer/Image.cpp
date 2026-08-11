@@ -29,9 +29,9 @@ static FormatInfo getFormatInfo(VkFormat format) {
 }
 
 Image::Image(VulkanDevice* device, uint32_t width, uint32_t height, VkFormat format,
-             VkImageUsageFlags usage, VkImageAspectFlags aspectMask, int samplesPower)
+             VkImageUsageFlags usage, VkImageAspectFlags aspectMask, int samplesPower, VkImageLayout initialLayout )
     : device(device),width(width), height(height), format(format), usage(usage), aspectMask(aspectMask),
-       samples(samplesPower)
+       samples(samplesPower), currentLayout(initialLayout)
 {
     create();
 
@@ -77,7 +77,7 @@ bool Image::create()
     imageInfo.arrayLayers   = 1;
     imageInfo.format        = format;
     imageInfo.tiling        = VK_IMAGE_TILING_OPTIMAL;
-    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    imageInfo.initialLayout = currentLayout;
 
     imageInfo.usage         = usage;//Color usageVK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
     imageInfo.samples       = VK_SAMPLE_COUNT_1_BIT;
