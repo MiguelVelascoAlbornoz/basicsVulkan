@@ -12,5 +12,5 @@ void Images::freeImages() {
 }
 
 Image* Images::missingImage;
-Image* Images::ifftImage;
+Image* Images::ifftInImage;
 

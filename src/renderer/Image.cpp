@@ -2,7 +2,7 @@
 #include "VulkanDevice.h"
 #include "stbImage/stb_image.h"
 #include <iostream>
-#include <algorithm>
+
 #include "stbImage/stb_image_write.h"
 #include <glm/glm.hpp>
 struct FormatInfo {
@@ -145,8 +145,8 @@ void Image::saveColorImageToPNG(const std::string& filename) const
     FormatInfo info = getFormatInfo(format);
     if (info.bytesPerTexel == 0) return; // formato no soportado, ya logueado
     int pixelsCount = width * height;
-    int bufferSize = info.bytesPerTexel * pixelsCount;
-    VkDeviceSize imageSize = static_cast<VkDeviceSize>(bufferSize) ;
+    int bufferSize = info.channels * pixelsCount;
+    VkDeviceSize imageSize = static_cast<VkDeviceSize>(bufferSize*info.bytesPerTexel) ;
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingMemory;
@@ -174,41 +174,51 @@ void Image::saveColorImageToPNG(const std::string& filename) const
         // normalmente clampeando/remapeando el rango que uses (ej. [0,1] o [-1,1])
 
         const auto floatData = static_cast<float*>(data);
-        auto minValue = glm::vec2(floatData[0],floatData[1]);
-        auto maxValue = glm::vec2(floatData[0],floatData[1]);
+        float minValue[info.channels];
+        float maxValue[info.channels];
+        for (int i = 0; i < info.channels; ++i) {
+           minValue[i] = floatData[i];maxValue[i] = floatData[i];
+        }
 
-        for (int i = 0; i < bufferSize ; i+=2)
+        for (int i = 0; i < bufferSize ; i+=info.channels)
         {
-            const glm::vec2 dataF(floatData[i],floatData[i+1]);
-            if (dataF.x < minValue.x)
-            {
-                minValue.x = floatData[i];
-                continue;
-            }
-            if (dataF.y > maxValue.y)
-            {
-                maxValue.y = floatData[i+1];
-            }
-            if (dataF.y < minValue.y)
-            {
-                minValue.y = floatData[i+1];
-                continue;
-            }
-            if (dataF.x > maxValue.x)
-            {
-                maxValue.x = floatData[i];
+            for (int j = 0; j < info.channels; ++j) {
+                if (floatData[i+j] > maxValue[j]) {
+                    maxValue[j] = floatData[i+j];
+                    continue;
+                }
+                if (floatData[i+j] < minValue[j]) {
+                    minValue[j] = floatData[i+j];
+                }
             }
         }
-        const glm::vec2 compression =255.0f/ (maxValue - minValue);
+        float compression[info.channels];
+        for (int i = 0; i < info.channels; ++i) {
+            if (maxValue[i] == minValue[i]) {
+                if (maxValue[i] < 0) maxValue[i] *=-1;
+                if (maxValue[i] > 0) {
+                    if (maxValue[i] <= 1) {
+                        compression[i] = 1;
+                    } else {
+                        compression[i] = 1.0f/maxValue[i];
+                    }
+                } else {
+                    compression[i] = 0;
+                }
+
+            } else {
+                compression[i] = 255.0f/ (maxValue[i] - minValue[i]);
+            }
+
+        }
 
         std::vector<unsigned char> pixels8(bufferSize);
-        for (int i = 0; i < pixelsCount ; i+=2)
+        for (int i = 0; i < pixelsCount ; i+=info.channels)
         {
-            glm::vec2 dataOrganized(floatData[i],floatData[i+1]);
-            dataOrganized = (dataOrganized -minValue)*compression;
+            for (int j = 0; j < info.channels; ++j) {
+                pixels8[i+j] = static_cast<unsigned char>((floatData[i+j]-minValue[j])*compression[j]);
+            }
 
-            pixels8[i] = static_cast<unsigned char>(dataOrganized.x);
-            pixels8[i+1] = static_cast<unsigned char>(dataOrganized.y);
         }
 
         stbi_write_png(filename.c_str(), width, height, info.channels,

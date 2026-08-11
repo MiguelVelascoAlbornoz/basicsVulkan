@@ -227,27 +227,44 @@ void Registry::initFramebuffers(const App* app)
 void Registry::initImages(const App* app)
 {
 
-    Images::missingImage = Images::registerImages(MISSING_IMAGE_ID,
-        Image::loadFromFile(app->renderer->getVulkanDevice(),"assets/Textures/missing_texture.png",VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT));
-    Images::ifftImage = Images::registerImages(IFFT_IMAGE_ID,new Image(
-        app->renderer->getVulkanDevice(),64,64,VK_FORMAT_R32G32_SFLOAT,VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,VK_IMAGE_ASPECT_COLOR_BIT,0));
+    Images::missingImage = Images::registerImages(MISSING_IMAGE_ID,Image::loadFromFile(app->renderer->getVulkanDevice(),"assets/Textures/missing_texture.png",VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT));
+    Images::ifftInImage = Images::registerImages(IFFT_IN_IMAGE_ID,new Image(app->renderer->getVulkanDevice(),512,512,VK_FORMAT_R32G32B32A32_SFLOAT,VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,VK_IMAGE_ASPECT_COLOR_BIT,0));
+    Images::registerImages(IFFT_OUT_IMAGE_ID,new Image(app->renderer->getVulkanDevice(),512,512,VK_FORMAT_R32_SFLOAT,VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,VK_IMAGE_ASPECT_COLOR_BIT,0));
 
     Images::registerImages(GRASS_IMAGE_ID,Image::loadFromFile(app->renderer->getVulkanDevice(),"assets/Textures/grass.png",VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT));
 }
 
 void Registry::initComputePipelines(const App* app)
 {
+    ImageBinding ifftInBinding =   {
+        .image = Images::ifftInImage->getView(),
+        .sampler = VK_NULL_HANDLE,
+        .layout =VK_IMAGE_LAYOUT_GENERAL,
+        .type =VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+        .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT
+    };
+
     ComputePipelineConfig ifftConfig;
     ifftConfig.images = {
-        {
-            .image = Images::ifftImage->getView(),
-            .sampler = VK_NULL_HANDLE,
-            .layout =VK_IMAGE_LAYOUT_GENERAL,
-            .type =VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-            .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT
-        }
+        ifftInBinding,
+{
+        .image = Images::images[IFFT_OUT_IMAGE_ID]->getView(),
+        .sampler = VK_NULL_HANDLE,
+        .layout =VK_IMAGE_LAYOUT_GENERAL,
+        .type =VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+        .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT
+}
     };
     ifftConfig.shaderName = "ifft";
-    ComputePipelines::registerPipelines(IFFT_COMPUTE_PIPELINE_ID,new ComputePipeline(
-        app->renderer->getVulkanDevice(),app->renderer->descriptorPool,ifftConfig));
+    ifftConfig.pushConstantsSize = sizeof(ComputePipelines::IfftComputePushConstants);
+    ComputePipelines::registerPipelines(IFFT_COMPUTE_PIPELINE_ID,new ComputePipeline(app->renderer->getVulkanDevice(),app->renderer->descriptorPool,ifftConfig));
+
+
+    ComputePipelineConfig setWavesPipelineConfig;
+    setWavesPipelineConfig.shaderName = "setWaves";
+    setWavesPipelineConfig.images = {
+        ifftInBinding};
+
+    ComputePipelines::registerPipelines(IFFT_SET_WAVES_COMPUTE_PIPELINE_ID,new ComputePipeline(
+        app->renderer->getVulkanDevice(),app->renderer->descriptorPool,setWavesPipelineConfig));
 }

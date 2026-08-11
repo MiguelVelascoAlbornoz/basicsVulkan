@@ -1,0 +1,59 @@
+#version 450
+
+layout(local_size_x = 1) in;
+layout(binding = 0, rgba32f) uniform image2D fftDataIn;
+float L = 1.0f;
+const float PI = 3.14159265358979323846;
+const uint FFT_N = 512;
+
+vec2 calculateK(uint fila, uint column){
+
+    int iiCol = (column <= FFT_N/2) ? int(column) : int(column - FFT_N);
+    int iiFil = (fila    <= FFT_N/2) ? int(fila)    : int(fila    - FFT_N);
+
+    float kx = 2.0 * PI * float(iiCol) / L;
+    float ky = 2.0 * PI * float(iiFil) / L;
+
+    return vec2(kx, ky); // AHORA sí, esto es tu vector de frecuencia 2D
+}
+
+
+ivec2 kToIndex(vec2 k) {
+    float dk = 2.0;
+    int col = int(round(k.x / dk));
+    int fil = int(round(k.y / dk));
+
+    // wraparound a [0, N-1]
+    col = (col + int(FFT_N)) % int(FFT_N);
+    fil = (fil + int(FFT_N)) % int(FFT_N);
+
+    return ivec2(col, fil);
+}
+void setWave(vec2 k, float amp, float phase) {
+    ivec2 idx = kToIndex(k);
+    ivec2 idxOp = kToIndex(-k); // índice de la frecuencia opuesta
+
+    vec2 valor = amp * vec2(cos(phase), sin(phase));
+    imageStore(fftDataIn,idx,vec4(valor,0.0f,0.0f));
+    imageStore(fftDataIn,idxOp,vec4(valor.x,-valor.y,0.0f,0.0f));
+
+}
+
+
+void main(){
+    // Olas "grandes" (k bajo = longitud de onda larga), amplitud alta
+    setWave(vec2( 4.0,  0.0), 8.0, 0.0);
+    setWave(vec2( 0.0,  4.0), 7.0, 1.2);
+    setWave(vec2(-4.0,  2.0), 6.5, 2.4);
+
+    // Olas medianas, direcciones variadas, amplitud media
+    setWave(vec2( 8.0,  6.0), 4.0, 0.5);
+    setWave(vec2(-6.0, -8.0), 3.5, 3.1);
+    setWave(vec2(10.0, -4.0), 3.0, 4.7);
+    setWave(vec2(-10.0, 6.0), 2.8, 1.9);
+
+    // Olas pequeñas/rápidas (k alto), amplitud baja — detalle fino
+    setWave(vec2(16.0, 12.0), 1.5, 0.8);
+    setWave(vec2(-14.0, -18.0), 1.2, 5.5);
+    setWave(vec2(20.0, -16.0), 1.0, 2.2);
+}

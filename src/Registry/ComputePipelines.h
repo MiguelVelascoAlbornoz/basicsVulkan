@@ -9,12 +9,17 @@
 #include "../App/Utilitys.h"
 
 #define IFFT_COMPUTE_PIPELINE_ID "ifft_compute_pipeline"
-
+#define IFFT_WAVES_SETUP_COMPUTE_PIPELINE_ID "ifft_waves_setup_compute_pipeline"
+#define IFFT_SET_WAVES_COMPUTE_PIPELINE_ID "ifft_set_waves_compute_pipeline"
 class ComputePipeline;
 
 class ComputePipelines
 {
 public:
+    struct IfftComputePushConstants {
+        int stage = 0;
+    };
+
     static std::unordered_map<std::string, ComputePipeline*> computePipelines; /**< @brief Map to store menu rendering functions. */
 
 
