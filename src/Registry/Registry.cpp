@@ -202,7 +202,7 @@ void Registry::initMeshes(const App* app)
 
     std::vector<float> planeMeshVertices;
     std::vector<uint32_t> planeMeshIndices;
-    int resolution = 100;
+    int resolution = 1000;
     Meshes::generatePlaneMesh(planeMeshVertices,planeMeshIndices,resolution);
     Meshes::registerMesh("plane_mesh", new Mesh(device,planeMeshVertices.data(),sizeof(float)*6,resolution*resolution,planeMeshIndices));
 }
@@ -236,7 +236,8 @@ void Registry::initImages(const App* app)
 
     Images::missingImage = Images::registerImages(MISSING_IMAGE_ID,Image::loadFromFile(app->renderer->getVulkanDevice(),"assets/Textures/missing_texture.png",VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT));
     Images::ifftInImage = Images::registerImages(IFFT_IN_IMAGE_ID,new Image(app->renderer->getVulkanDevice(),512,512,VK_FORMAT_R32G32B32A32_SFLOAT,VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,VK_IMAGE_ASPECT_COLOR_BIT,0));
-    Images::registerImages(IFFT_OUT_IMAGE_ID,new Image(app->renderer->getVulkanDevice(),512,512,VK_FORMAT_R32_SFLOAT,VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,VK_IMAGE_ASPECT_COLOR_BIT,0));
+    Images::registerImages(IFFT_OUT_IMAGE_ID,new Image(app->renderer->getVulkanDevice(),512,512,VK_FORMAT_R32G32B32A32_SFLOAT,VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,VK_IMAGE_ASPECT_COLOR_BIT,0));
+    Images::registerImages(IFFT_DERIVATES_TEMP_IMAGE_ID,new Image(app->renderer->getVulkanDevice(),512,512,VK_FORMAT_R32G32B32A32_SFLOAT,VK_IMAGE_USAGE_STORAGE_BIT,VK_IMAGE_ASPECT_COLOR_BIT,0));
 
     Images::registerImages(GRASS_IMAGE_ID,Image::loadFromFile(app->renderer->getVulkanDevice(),"assets/Textures/grass.png",VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT));
 
@@ -264,7 +265,12 @@ void Registry::initComputePipelines(const App* app)
         .layout =VK_IMAGE_LAYOUT_GENERAL,
         .type =VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
         .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT
-}
+},{
+    .image = Images::images[IFFT_DERIVATES_TEMP_IMAGE_ID]->getView(),
+            .sampler = VK_NULL_HANDLE,
+            .layout =VK_IMAGE_LAYOUT_GENERAL,
+            .type =VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT}
     };
     ifftConfig.shaderName = "ifft";
     ifftConfig.pushConstantsSize = sizeof(ComputePipelines::IfftComputePushConstants);

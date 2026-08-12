@@ -26,8 +26,15 @@ void main() {
     fragNormal = vec3(modelUBO.rotationMatrix*vec4(normal,1.0f));
     worldPos = vec3(modelUBO.modelMatrix*vec4(vertexLocalPos*modelUBO.scale,1.0f));
 
-    float height = texture(heightMap,vertexLocalPos.xz).x*1000;
+    vec4 mapValue = texture(heightMap,vertexLocalPos.xz);
+    float multiplier = 1.0f;
+    float height = mapValue.x*multiplier;
+
+    vec3 mapNormal = normalize(vec3(-mapValue.z, 1, -mapValue.y));
+
     worldPos += fragNormal*height;
+
+    fragNormal = mapNormal;
 
     gl_Position = ubo.viewProjectionMatrix*vec4(worldPos, 1.0);
 }

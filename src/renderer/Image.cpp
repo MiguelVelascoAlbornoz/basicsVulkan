@@ -218,6 +218,7 @@ void Image::saveColorImageToPNG(const std::string& filename) const
             for (int j = 0; j < info.channels; ++j) {
                 pixels8[i+j] = static_cast<unsigned char>((floatData[i+j]-minValue[j])*compression[j]);
             }
+            if (info.channels ==4) pixels8[i+3] = 255;
 
         }
 

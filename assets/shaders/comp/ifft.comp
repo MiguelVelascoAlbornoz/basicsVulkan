@@ -6,7 +6,8 @@ layout(local_size_x = FFT_N) in;
 
 // binding = 0 debe coincidir con el índice en tu vector de images/uniformObjects
 layout(binding = 0, rgba32f) uniform image2D fftDataIn;
-layout(binding = 1, r32f) uniform image2D fftDataOut;
+layout(binding = 1, rgba32f) uniform image2D fftDataOut;
+layout(binding = 2, rgba32f) uniform image2D fftDerivatesTemp;
 
 layout(std140,push_constant)uniform  Push {
     int stage;
@@ -34,6 +35,14 @@ uint bitReverse(uint x, uint log2n)
 }
 
 shared vec2 A[FFT_N];
+vec2 calculateK(uint fila, uint column){
+
+    int iiCol = (column <= FFT_N/2) ? int(column) : int(column - FFT_N);
+    int iiFil = (fila    <= FFT_N/2) ? int(fila)    : int(fila    - FFT_N);
+
+
+    return vec2(iiCol, iiFil); // AHORA sí, esto es tu vector de frecuencia 2D
+}
 
 void main() {
     if (push.stage == 0){
@@ -43,7 +52,14 @@ void main() {
 
         uint rev = bitReverse(column, log2n);
         vec2 valueIn = imageLoad(fftDataIn, ivec2(rev, fila)).xy;
-        A[column] = valueIn / float(FFT_N); //Cada hilo carga su columna
+        if (gl_WorkGroupID.y == 1){
+           vec2 k = calculateK(rev,fila);
+        valueIn = complexMul(valueIn,vec2(0,k.x));
+        } else if (gl_WorkGroupID.y == 2){
+            vec2 k = calculateK(rev,fila);
+            valueIn = complexMul(valueIn,vec2(0,k.y));
+        }
+        A[column] = valueIn ; //Cada hilo carga su columna
         barrier(); //Esperar a que la fila  se quede lista
 
         uint h = FFT_N >> 1u; //Emprezar la IFFT en la FILA (la columna es la que varia)
@@ -67,16 +83,32 @@ void main() {
             barrier();
         }
         //Escribir
-        vec4 initialValue = imageLoad(fftDataIn,ivec2(column,fila));
-        imageStore(fftDataIn, ivec2(column, fila), vec4(initialValue.xy,A[column]));
+        if (gl_WorkGroupID.y == 0){
+            vec4 initialValue = imageLoad(fftDataIn,ivec2(column,fila));
+            imageStore(fftDataIn, ivec2(column, fila), vec4(initialValue.xy,A[column]));
+        } else if (gl_WorkGroupID.y== 1) {
+            vec4 initialValue = imageLoad(fftDerivatesTemp,ivec2(column,fila));
+            imageStore(fftDerivatesTemp, ivec2(column, fila), vec4(A[column],initialValue.zw));
+        } else {
+            vec4 initialValue = imageLoad(fftDerivatesTemp,ivec2(column,fila));
+            imageStore(fftDerivatesTemp, ivec2(column, fila), vec4(initialValue.xy,A[column]));
+        }
+
     } else {
         uint column = gl_WorkGroupID.x;
         uint fila = gl_LocalInvocationID.x; //Numero de invocacion, las que comparten memoria
         uint log2n = uint(log2(float(FFT_N)));
 
         uint rev = bitReverse(fila, log2n);
-        vec2 valueIn = imageLoad(fftDataIn, ivec2(column,rev)).zw;
-        A[fila] = valueIn / float(FFT_N); //Cada hilo carga su columna
+        vec2 valueIn;
+        if (gl_WorkGroupID.y == 0){
+            valueIn = imageLoad(fftDataIn, ivec2(column,rev)).zw;
+        } else if (gl_WorkGroupID.y== 1) {
+            valueIn = imageLoad(fftDerivatesTemp, ivec2(column,rev)).xy;
+        } else {
+            valueIn = imageLoad(fftDerivatesTemp, ivec2(column,rev)).zw;
+        }
+        A[fila] = valueIn; //Cada hilo carga su columna
         barrier(); //Esperar a que la fila  se quede lista
 
         uint h = FFT_N >> 1u; //Emprezar la IFFT en la FILA (la columna es la que varia)
@@ -99,7 +131,14 @@ void main() {
             }
             barrier();
         }
+        vec4 initialValue = imageLoad(fftDataOut,ivec2(column,fila));
 
-        imageStore(fftDataOut, ivec2(column, fila), vec4(A[fila].x));
+        if (gl_WorkGroupID.y == 0){
+            imageStore(fftDataOut, ivec2(column, fila), vec4(A[fila].x,initialValue.yzw));
+        } else if (gl_WorkGroupID.y== 1) {
+            imageStore(fftDataOut, ivec2(column, fila), vec4(initialValue.x,A[fila].x,initialValue.zw));
+        } else {
+            imageStore(fftDataOut, ivec2(column, fila), vec4(initialValue.xy,A[fila].x,initialValue.w));
+        }
     }
 }

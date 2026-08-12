@@ -122,7 +122,7 @@ void Renderer::initVulkan(Window* window)  {
         poolSize2.descriptorCount = 6;
         VkDescriptorPoolSize poolSize3{};
         poolSize3.type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-        poolSize3.descriptorCount = 3;
+        poolSize3.descriptorCount = 4;
 
         std::vector poolSizes = {poolSize1,poolSize2,poolSize3};
 

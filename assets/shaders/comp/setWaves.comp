@@ -6,22 +6,12 @@ float L = 1.0f;
 const float PI = 3.14159265358979323846;
 const uint FFT_N = 512;
 
-vec2 calculateK(uint fila, uint column){
-
-    int iiCol = (column <= FFT_N/2) ? int(column) : int(column - FFT_N);
-    int iiFil = (fila    <= FFT_N/2) ? int(fila)    : int(fila    - FFT_N);
-
-    float kx = 2.0 * PI * float(iiCol) / L;
-    float ky = 2.0 * PI * float(iiFil) / L;
-
-    return vec2(kx, ky); // AHORA sí, esto es tu vector de frecuencia 2D
-}
 
 
 ivec2 kToIndex(vec2 k) {
-    float dk = 2.0;
-    int col = int(round(k.x / dk));
-    int fil = int(round(k.y / dk));
+
+    int col = int(round(k.x));
+    int fil = int(round(k.y));
 
     // wraparound a [0, N-1]
     col = (col + int(FFT_N)) % int(FFT_N);
@@ -41,19 +31,22 @@ void setWave(vec2 k, float amp, float phase) {
 
 
 void main(){
-    // Olas "grandes" (k bajo = longitud de onda larga), amplitud alta
-    setWave(vec2( 4.0,  0.0), 8.0, 0.0);
-    setWave(vec2( 0.0,  4.0), 7.0, 1.2);
-    setWave(vec2(-4.0,  2.0), 6.5, 2.4);
+    // --- Olas grandes (k bajo, longitud de onda larga), amplitud alta ---
+    setWave(vec2( 6.283,  0.0),    0.0035, 0.0);
+    setWave(vec2( 0.0,    6.283),  0.0030, 1.1);
+    setWave(vec2(-6.283,  6.283),  0.0028, 2.3);
+    setWave(vec2( 6.283, -6.283),  0.0025, 0.6);
+    setWave(vec2(-6.283, -6.283),  0.0022, 3.4);
 
-    // Olas medianas, direcciones variadas, amplitud media
-    setWave(vec2( 8.0,  6.0), 4.0, 0.5);
-    setWave(vec2(-6.0, -8.0), 3.5, 3.1);
-    setWave(vec2(10.0, -4.0), 3.0, 4.7);
-    setWave(vec2(-10.0, 6.0), 2.8, 1.9);
+    // --- Olas medianas, direcciones variadas, amplitud media ---
+    setWave(vec2( 12.566,  6.283), 0.0015, 0.9);
+    setWave(vec2(-12.566,  6.283), 0.0014, 2.7);
+    setWave(vec2( 6.283,  12.566), 0.0013, 4.1);
+    setWave(vec2(-6.283, -12.566), 0.0012, 1.5);
+    setWave(vec2( 18.850,  0.0),   0.0011, 5.0);
+    setWave(vec2( 0.0,   -18.850), 0.0010, 0.3);
+    setWave(vec2( 12.566, -12.566),0.0010, 3.9);
+    setWave(vec2(-12.566, -6.283), 0.0009, 2.0);
 
-    // Olas pequeñas/rápidas (k alto), amplitud baja — detalle fino
-    setWave(vec2(16.0, 12.0), 1.5, 0.8);
-    setWave(vec2(-14.0, -18.0), 1.2, 5.5);
-    setWave(vec2(20.0, -16.0), 1.0, 2.2);
+
 }

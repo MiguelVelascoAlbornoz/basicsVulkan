@@ -16,6 +16,8 @@ class Image;
 #define MISSING_IMAGE_ID "missing_image"
 #define IFFT_IN_IMAGE_ID "ifft_in_image"
 #define IFFT_OUT_IMAGE_ID "ifft_out_image"
+
+#define IFFT_DERIVATES_TEMP_IMAGE_ID "ifft_derivates_temp_image"
 #define GRASS_IMAGE_ID "grass"
 class Images {
 public:
