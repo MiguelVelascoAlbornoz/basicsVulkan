@@ -18,6 +18,7 @@
 #include "../renderer/Image.h"
 
 App::App(const std::function<void(App*)>& registryCallback) {
+    FFT_N = 512;
     //Initizialise window
     window = new Window();
     if (window->isError()) {

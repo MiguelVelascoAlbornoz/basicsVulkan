@@ -65,7 +65,7 @@ private:
     VkImageUsageFlags usage;
     VkImageAspectFlags aspectMask;
     SampleConfig sampleConfig;
-    VkSampler sampler;
+    VkSampler sampler = VK_NULL_HANDLE;
     int samples;
     VkImageLayout currentLayout = VK_IMAGE_LAYOUT_UNDEFINED; // tracking automático
 

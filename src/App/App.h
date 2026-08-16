@@ -26,7 +26,7 @@ public:
     Window* window = nullptr; /**< window pointer, must be deleted must be deleted and end*/
     Renderer* renderer = nullptr; /**< renderer pointer, must be deleted at end */
 
-    int FFT_N = 64;
+    int FFT_N;
     App(const std::function<void(App*)>& registryCallback);
     ~App();
     Player* player;
