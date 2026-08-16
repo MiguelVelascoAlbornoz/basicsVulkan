@@ -78,8 +78,12 @@ bool PipelineUtils::loadShader(std::string shaderName, VkShaderModule &shaderMod
     for (size_t i = 0; i < macros.size(); i+=2) {
         cmd = cmd +" -D"+macros[i]+"="+macros[i+1];
     }
-    cmd = cmd + shaderPath + "-o " + shaderPathSPV;
+    cmd = cmd + " " + shaderPath + " -o " + shaderPathSPV;
+    #ifdef _DEBUG
+    std::cout << "(SHADER) Comando: " << cmd << std::endl;
+    #endif
     const std::string commandOut = PipelineUtils::execCommand(cmd);
+
     std::cout << commandOut << std::endl;
 
     // if (result) {

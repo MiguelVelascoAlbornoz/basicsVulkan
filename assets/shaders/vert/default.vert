@@ -26,7 +26,7 @@ void main() {
     fragNormal = vec3(modelUBO.rotationMatrix*vec4(normal,1.0f));
     worldPos = vec3(modelUBO.modelMatrix*vec4(vertexLocalPos*modelUBO.scale,1.0f));
 
-    vec4 mapValue = texture(heightMap,vertexLocalPos.xz);
+    vec4 mapValue = texture(heightMap,vertexLocalPos.xz*1);
     float multiplier = 1.0f;
     float height = mapValue.x*multiplier;
 

@@ -16,14 +16,18 @@ struct SampleConfig {
 
 class Image {
 public:
-
+    /** @brief Destruye la imagen/view/memoria actuales y las recrea con la nueva resolución.
+         *  El sampler NO se toca (no depende del tamaño). El layout vuelve a UNDEFINED,
+         *  el caller es responsable de transicionarlo de nuevo antes de usarla. */
+    void resize(uint32_t newWidth, uint32_t newHeight);
     /** @brief Crea una imagen vacía en VRAM (render target, storage image, etc). */
     Image(VulkanDevice* device, uint32_t width, uint32_t height, VkFormat format,
           VkImageUsageFlags usage, VkImageAspectFlags aspectMask,SampleConfig sampleConfig, int samplesPower = 0, VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED);
 
     ~Image(); // libera VRAM automáticamente (RAII, como ya hace Mesh/UniformBuffer)
-    void createSampler(VkFilter magFilter , VkFilter minFilter, VkBorderColor borderColor);
+    void createSampler(VkFilter magFilter, VkFilter minFilter, VkBorderColor borderColor, VkSamplerAddressMode adressMode);
     bool create();
+    void destroyImageResources();
     [[nodiscard]] VkImage getImage() const { return image; }
     [[nodiscard]] VkSampler getSampler() const { return sampler; }
     // No copiable (mismo motivo que ComputePipeline)

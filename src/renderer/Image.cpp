@@ -39,17 +39,12 @@ Image::Image(VulkanDevice* device, uint32_t width, uint32_t height, VkFormat for
 
 Image::~Image()
 {
-    if (!device) return; // por si loadFromFile fallo antes de asignar device (ver nota abajo)
-    VkDevice dev = device->device;
-
-    if (view != VK_NULL_HANDLE)   vkDestroyImageView(dev, view, nullptr);
-    if (image != VK_NULL_HANDLE)  vkDestroyImage(dev, image, nullptr);
-    if (memory != VK_NULL_HANDLE) vkFreeMemory(dev, memory, nullptr);
-    if (sampler != VK_NULL_HANDLE) vkDestroySampler(dev, sampler, nullptr);
+    if (!device) return;
+    destroyImageResources();
+    if (sampler != VK_NULL_HANDLE) vkDestroySampler(device->device, sampler, nullptr);
 }
-
 void Image::createSampler( VkFilter magFilter, VkFilter minFilter,
-    VkBorderColor borderColor)
+                           VkBorderColor borderColor, VkSamplerAddressMode adressMode)
 {
     VkSamplerCreateInfo samplerInfo{};
     samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -78,13 +73,12 @@ bool Image::create()
     imageInfo.format        = format;
     imageInfo.tiling        = VK_IMAGE_TILING_OPTIMAL;
     imageInfo.initialLayout = currentLayout;
-
-    imageInfo.usage         = usage;//Color usageVK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    imageInfo.usage         = usage;
     imageInfo.samples       = VK_SAMPLE_COUNT_1_BIT;
     imageInfo.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
 
     if (vkCreateImage(dev, &imageInfo, nullptr, &image) != VK_SUCCESS) {
-        std::cerr << "(FBO) Error: no se pudo crear la imagen de color." << std::endl;
+        std::cerr << "(IMAGE) Error: no se pudo crear la imagen." << std::endl;
         return false;
     }
 
@@ -97,7 +91,7 @@ bool Image::create()
     allocInfo.memoryTypeIndex = device->findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     if (vkAllocateMemory(dev, &allocInfo, nullptr, &memory) != VK_SUCCESS) {
-        std::cerr << "(FBO) Error: no se pudo alocar memoria para la imagen de color." << std::endl;
+        std::cerr << "(IMAGE) Error: no se pudo alocar memoria para la imagen." << std::endl;
         return false;
     }
     vkBindImageMemory(dev, image, memory, 0);
@@ -116,13 +110,45 @@ bool Image::create()
     viewInfo.subresourceRange.layerCount     = 1;
 
     if (vkCreateImageView(dev, &viewInfo, nullptr, &view) != VK_SUCCESS) {
-        std::cerr << "(FBO) Error: no se pudo crear el image view de color." << std::endl;
+        std::cerr << "(IMAGE) Error: no se pudo crear el image view." << std::endl;
         return false;
     }
-    createSampler(VK_FILTER_NEAREST,VK_FILTER_NEAREST,VK_BORDER_COLOR_INT_OPAQUE_WHITE);
+
+    // El sampler no depende de width/height: solo se crea si todavía no existe.
+    if (sampler == VK_NULL_HANDLE) {
+        createSampler(sampleConfig.magFilter, sampleConfig.minFilter,
+                      sampleConfig.borderColor, sampleConfig.adressMode);
+    }
     return true;
 }
 
+void Image::destroyImageResources()
+{
+    if (!device) return;
+    VkDevice dev = device->device;
+
+    if (view != VK_NULL_HANDLE)   { vkDestroyImageView(dev, view, nullptr);   view = VK_NULL_HANDLE; }
+    if (image != VK_NULL_HANDLE)  { vkDestroyImage(dev, image, nullptr);      image = VK_NULL_HANDLE; }
+    if (memory != VK_NULL_HANDLE) { vkFreeMemory(dev, memory, nullptr);       memory = VK_NULL_HANDLE; }
+}
+
+void Image::resize(uint32_t newWidth, uint32_t newHeight)
+{
+    if (newWidth == width && newHeight == height) return;
+
+    vkDeviceWaitIdle(device->device); // por si la imagen está en uso en un command buffer en vuelo
+
+    destroyImageResources();
+
+    width  = newWidth;
+    height = newHeight;
+    currentLayout = VK_IMAGE_LAYOUT_UNDEFINED; // la imagen es nueva, no hereda el layout viejo
+
+    if (!create()) {
+        error = true;
+        std::cerr << "(IMAGE) Error: fallo al recrear la imagen en resize()." << std::endl;
+    }
+}
 void Image::transitionLayout(VkCommandBuffer cmd, VkImageLayout newLayout,
                              VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage)
 {
