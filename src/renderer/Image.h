@@ -7,14 +7,19 @@
 #include <vulkan/vulkan.h>
 class VulkanDevice;
 
-
+struct SampleConfig {
+    VkFilter magFilter = VK_FILTER_NEAREST;
+    VkFilter minFilter = VK_FILTER_NEAREST;
+    VkBorderColor borderColor = VK_BORDER_COLOR_INT_OPAQUE_WHITE;
+    VkSamplerAddressMode adressMode = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+};
 
 class Image {
 public:
 
     /** @brief Crea una imagen vacía en VRAM (render target, storage image, etc). */
     Image(VulkanDevice* device, uint32_t width, uint32_t height, VkFormat format,
-          VkImageUsageFlags usage, VkImageAspectFlags aspectMask, int samplesPower = 0, VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED);
+          VkImageUsageFlags usage, VkImageAspectFlags aspectMask,SampleConfig sampleConfig, int samplesPower = 0, VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED);
 
     ~Image(); // libera VRAM automáticamente (RAII, como ya hace Mesh/UniformBuffer)
     void createSampler(VkFilter magFilter , VkFilter minFilter, VkBorderColor borderColor);
@@ -26,7 +31,7 @@ public:
     Image& operator=(const Image&) = delete;
 
     /** @brief Carga una imagen desde disco (PNG/JPG vía stb_image) a VRAM. */
-    static Image* loadFromFile(VulkanDevice* device, const std::string& path, VkImageUsageFlags usage, VkImageLayout newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    static Image* loadFromFile(VulkanDevice* device, const std::string& path, VkImageUsageFlags usage, VkImageLayout newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, SampleConfig config = {});
     void saveColorImageToPNG(const std::string& filename) const;
 
     /** @brief Transiciona el layout y actualiza el estado interno, para que
@@ -55,6 +60,7 @@ private:
 
     VkImageUsageFlags usage;
     VkImageAspectFlags aspectMask;
+    SampleConfig sampleConfig;
     VkSampler sampler;
     int samples;
     VkImageLayout currentLayout = VK_IMAGE_LAYOUT_UNDEFINED; // tracking automático

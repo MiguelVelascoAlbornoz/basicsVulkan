@@ -1,7 +1,9 @@
 #version 450
+#define FFT_N 512
 
 const float PI = 3.14159265358979323846;
-const uint FFT_N = 512;
+
+
 layout(local_size_x = FFT_N) in;
 
 // binding = 0 debe coincidir con el índice en tu vector de images/uniformObjects

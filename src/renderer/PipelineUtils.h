@@ -31,7 +31,12 @@ class PipelineUtils
 {
 public:
     static VkShaderModule createShaderModule(const std::vector<char> &code, VkDevice device);
-    static bool loadShader(std::string shaderName, VkShaderModule& shaderModule, const std::string& shaderType,VkDevice device);
+
+    /**
+     * @param macros Deve ser un vector de string pero tiene que seguir el siguiente orden string[i] = nombre de la macro, string[i+1] = Valor de la macro, siendo i par.
+     */
+    static bool loadShader(std::string shaderName, VkShaderModule &shaderModule, const std::string &shaderType, VkDevice device, std::vector<std::
+                               string> &macros);
     static bool createImage(VulkanDevice* device, int width, int height, VkFormat format, VkImageUsageFlags usage, int samples,
                      VkImageAspectFlags aspectMask, VkImage& image, VkDeviceMemory& memory, VkImageView& imageView);
     static void createSampler(VkDevice device, VkSampler& sampler, VkFilter magFilter, VkFilter minFilter,

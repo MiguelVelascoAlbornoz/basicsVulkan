@@ -29,9 +29,9 @@ static FormatInfo getFormatInfo(VkFormat format) {
 }
 
 Image::Image(VulkanDevice* device, uint32_t width, uint32_t height, VkFormat format,
-             VkImageUsageFlags usage, VkImageAspectFlags aspectMask, int samplesPower, VkImageLayout initialLayout )
+             VkImageUsageFlags usage, VkImageAspectFlags aspectMask,SampleConfig sampleConfig, int samplesPower, VkImageLayout initialLayout )
     : device(device),width(width), height(height), format(format), usage(usage), aspectMask(aspectMask),
-       samples(samplesPower), currentLayout(initialLayout)
+       sampleConfig(sampleConfig),samples(samplesPower), currentLayout(initialLayout)
 {
     create();
 
@@ -235,7 +235,7 @@ void Image::saveColorImageToPNG(const std::string& filename) const
     vkFreeMemory(dev, stagingMemory, nullptr);
     std::cout << "Imagen guardada en: " << filename << std::endl;
 }
-Image* Image::loadFromFile(VulkanDevice* device, const std::string& path, VkImageUsageFlags usage,VkImageLayout newLayout) {
+Image* Image::loadFromFile(VulkanDevice* device, const std::string& path, VkImageUsageFlags usage,VkImageLayout newLayout, SampleConfig config) {
     int w, h, channels;
     stbi_uc* pixels = stbi_load(path.c_str(), &w, &h, &channels, 4);
 
@@ -271,7 +271,7 @@ Image* Image::loadFromFile(VulkanDevice* device, const std::string& path, VkImag
         std::cout << "Error finding image format: " << path << std::endl;
         return nullptr;
     }
-    auto* img = new Image(device, w, h, format,usage,VK_IMAGE_ASPECT_COLOR_BIT,0);
+    auto* img = new Image(device, w, h, format,usage,VK_IMAGE_ASPECT_COLOR_BIT,config,0);
 
     VkCommandBuffer cmd = device->beginSingleTimeCommands();
     img->transitionLayout(cmd, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,

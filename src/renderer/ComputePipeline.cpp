@@ -99,7 +99,7 @@ void ComputePipeline::buildPipeline()
     //STAGING SHADER
     VkShaderModule shaderModule;
 
-    if (!PipelineUtils::loadShader(config.shaderName, shaderModule, "comp", vulkanDevice->device)) {
+    if (!PipelineUtils::loadShader(config.shaderName, shaderModule, "comp", vulkanDevice->device, config.shaderMacros)) {
         error = true;
         return;
     }
