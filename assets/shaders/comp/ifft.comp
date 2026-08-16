@@ -1,7 +1,5 @@
 #version 450
-#define FFT_N 512
 
-const float PI = 3.14159265358979323846;
 
 
 layout(local_size_x = FFT_N) in;
@@ -15,6 +13,9 @@ layout(std140,push_constant)uniform  Push {
     int stage;
 } push;
 
+
+
+const float PI = 3.14159265358979323846;
 vec2 complexExp(float angle)
 {
     return vec2(cos(angle), sin(angle));

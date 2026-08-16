@@ -50,9 +50,9 @@ void Image::createSampler( VkFilter magFilter, VkFilter minFilter,
     samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     samplerInfo.magFilter = magFilter;//VK_FILTER_LINEAR; // o NEAREST si prefieres depth sin filtrar
     samplerInfo.minFilter = minFilter;//VK_FILTER_LINEAR;
-    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeU = adressMode;
+    samplerInfo.addressModeV = adressMode;
+    samplerInfo.addressModeW = adressMode;
     samplerInfo.borderColor = borderColor;//VK_BORDER_COLOR_INT_OPAQUE_WHITE; // 1.0 = "infinitamente lejos" fuera de rango
     samplerInfo.unnormalizedCoordinates = VK_FALSE;
     vkCreateSampler(this->device->device, &samplerInfo, nullptr, &sampler);
