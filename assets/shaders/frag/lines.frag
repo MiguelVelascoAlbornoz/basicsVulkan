@@ -1,5 +1,5 @@
 #version 450
-#include "random.glsl"
+#include "../glsl/random.glsl"
 layout(location = 0) out vec4 outColor;
 
 

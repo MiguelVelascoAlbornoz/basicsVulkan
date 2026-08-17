@@ -7,5 +7,5 @@ vec4 sampleTexture(vec2 uv, sampler2D samp){
     return texture(samp,uv);
 }
 
-#include "generalPostProcess.glsl"
+#include "../glsl/generalPostProcessFrag.glsl"
 
