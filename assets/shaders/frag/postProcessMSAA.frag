@@ -23,6 +23,6 @@ vec4 sampleTexture(vec2 uv, sampler2DMS samp)
 
     return color / float(samples);
 }
-#include "generalPostProcess.glsl"
+#include "../glsl/generalPostProcessFrag.glsl"
 
 

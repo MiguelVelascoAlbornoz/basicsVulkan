@@ -29,7 +29,7 @@ public:
     int FFT_N;
     App(const std::function<void(App*)>& registryCallback);
     ~App();
-    Player* player;
+    Player* player = nullptr;
     bool editorMode = false;
     bool F3Mode = false;
     Uint64 cycleStartTimeNS = 0; /**< Exact time of start of the current cycle **/
