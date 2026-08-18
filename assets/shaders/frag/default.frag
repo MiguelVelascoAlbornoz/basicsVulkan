@@ -21,7 +21,7 @@ layout(std140,push_constant) uniform ModelUBO {
 vec3 lightPos = vec3(0.0f,15.0f,15.0f);
 
 void main() {
-    vec3 color = texture(image,worldPos.xz).xyz;
+    vec3 color = vec3(0.0f,0.2f,1.0f);//texture(image,worldPos.xz).xyz;
 
     vec3 lightDir = normalize(lightPos-worldPos);
     float diffuse = min(max(0,dot(lightDir,fragNormal))+0.1,1);

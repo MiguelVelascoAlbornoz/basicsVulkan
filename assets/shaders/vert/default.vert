@@ -8,6 +8,7 @@ layout (location=1) out vec3 worldPos;
 
 
 layout(binding = 2) uniform sampler2D heightMap;
+layout(binding = 3) uniform sampler2D displacementMap;
 
 layout(std140, binding = 0) uniform UniformBufferObject {
 
@@ -24,11 +25,15 @@ layout(std140,push_constant) uniform ModelUBO {
 
 void main() {
     fragNormal = vec3(modelUBO.rotationMatrix*vec4(normal,1.0f));
+
+    vec2 displacementValue = texture(displacementMap,vertexLocalPos.xz).xy*0.00000001;
+
     worldPos = vec3(modelUBO.modelMatrix*vec4(vertexLocalPos*modelUBO.scale,1.0f));
+    worldPos = worldPos + vec3(displacementValue.x,0.0f,displacementValue.y);
 
     vec4 mapValue = texture(heightMap,vertexLocalPos.xz*1);
     float multiplier = 1.0f;
-    float height = mapValue.x*multiplier;
+    float height = (mapValue.x*multiplier);
 
     vec3 mapNormal = normalize(vec3(-mapValue.z, 1, -mapValue.y));
 

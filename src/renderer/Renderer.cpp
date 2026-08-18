@@ -119,10 +119,10 @@ void Renderer::initVulkan(Window* window)  {
         poolSize1.descriptorCount = 2;
         VkDescriptorPoolSize poolSize2{};
         poolSize2.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSize2.descriptorCount = 6;
+        poolSize2.descriptorCount = 8;
         VkDescriptorPoolSize poolSize3{};
         poolSize3.type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-        poolSize3.descriptorCount = 4;
+        poolSize3.descriptorCount = 6;
 
         std::vector poolSizes = {poolSize1,poolSize2,poolSize3};
 

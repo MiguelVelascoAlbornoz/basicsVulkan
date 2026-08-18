@@ -60,25 +60,30 @@ App::App(const std::function<void(App*)>& registryCallback) {
         1);
 
     //stage 0 -> FFT en columnas
-    Images::images[IFFT_OUT_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-    computePipeline= ComputePipelines::getPipeline(IFFT_COMPUTE_PIPELINE_ID);
+    Images::images[IFFT_DISPLACEMENT_TEMP_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT  ,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+    Images::images[IFFT_DISPLACEMENT_OUT_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT  ,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+    Images::images[IFFT_DERIVATES_TEMP_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT  ,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
     Images::ifftInImage->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT  ,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-    Images::images[IFFT_DERIVATES_TEMP_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT  ,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+    Images::images[IFFT_OUT_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+
+    computePipeline= ComputePipelines::getPipeline(IFFT_COMPUTE_PIPELINE_ID);
     computePipeline->bind(cmd);
     ComputePipelines::IfftComputePushConstants push= {0};
     vkCmdPushConstants(cmd, computePipeline->getPipelineLayout(),VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(push), &push);
-    ComputePipeline::dispatch(cmd,FFT_N, 3,1);
+    ComputePipeline::dispatch(cmd,FFT_N, 5,1);
 
 
     //STAGE 1 -> FFT en filas
     computePipeline= ComputePipelines::getPipeline(IFFT_COMPUTE_PIPELINE_ID);
+    Images::images[IFFT_DISPLACEMENT_TEMP_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT  ,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+    Images::images[IFFT_DISPLACEMENT_OUT_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT  ,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
     Images::images[IFFT_DERIVATES_TEMP_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT  ,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
     Images::ifftInImage->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
     Images::images[IFFT_OUT_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
     computePipeline->bind(cmd);
     push= {1};
     vkCmdPushConstants(cmd, computePipeline->getPipelineLayout(),VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(push), &push);
-    ComputePipeline::dispatch(cmd,FFT_N,  3, 1);
+    ComputePipeline::dispatch(cmd,FFT_N,  5, 1);
 
     //CREAR EL PNG
     Images::images[IFFT_OUT_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,VK_PIPELINE_STAGE_TRANSFER_BIT);
@@ -90,6 +95,8 @@ App::App(const std::function<void(App*)>& registryCallback) {
     cmd =renderer->getVulkanDevice()->beginSingleTimeCommands();
 
     Images::images[IFFT_OUT_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_PIPELINE_STAGE_TRANSFER_BIT,VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
+    Images::images[IFFT_DISPLACEMENT_OUT_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_PIPELINE_STAGE_TRANSFER_BIT,VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
+
 
     renderer->getVulkanDevice()->endSingleTimeCommands(cmd);
 

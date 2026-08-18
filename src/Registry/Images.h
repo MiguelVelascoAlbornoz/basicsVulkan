@@ -19,6 +19,10 @@ class Image;
 
 #define IFFT_DERIVATES_TEMP_IMAGE_ID "ifft_derivates_temp_image"
 #define GRASS_IMAGE_ID "grass"
+#define IFFT_DISPLACEMENT_TEMP_IMAGE_ID "ifft_displacement_temp_image"
+#define IFFT_DISPLACEMENT_OUT_IMAGE_ID "ifft_displacement_out_image"
+
+
 class Images {
 public:
     static Image* missingImage;

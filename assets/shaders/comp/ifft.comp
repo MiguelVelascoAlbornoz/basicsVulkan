@@ -8,6 +8,8 @@ layout(local_size_x = FFT_N) in;
 layout(binding = 0, rgba32f) uniform image2D fftDataIn;
 layout(binding = 1, rgba32f) uniform image2D fftDataOut;
 layout(binding = 2, rgba32f) uniform image2D fftDerivatesTemp;
+layout(binding = 3, rgba32f) uniform image2D fftDisplacementsTemp;
+layout(binding = 4, rg32f) uniform image2D fftDisplacementsOut;
 
 layout(std140,push_constant)uniform  Push {
     int stage;
@@ -61,6 +63,14 @@ void main() {
         } else if (gl_WorkGroupID.y == 2){
             vec2 k = calculateK(rev,fila);
             valueIn = complexMul(valueIn,vec2(0,k.y));
+        } else if (gl_WorkGroupID.y == 3){
+            vec2 k = calculateK(rev,fila);
+            float klength = length(k);
+            valueIn = complexMul(valueIn*(k.x/klength),vec2(0.0f,-1.0f));
+        } else if (gl_WorkGroupID.y == 4){
+            vec2 k = calculateK(rev,fila);
+            float klength = length(k);
+            valueIn = complexMul(valueIn*(k.y/klength),vec2(0.0f,-1.0f));
         }
         A[column] = valueIn ; //Cada hilo carga su columna
         barrier(); //Esperar a que la fila  se quede lista
@@ -92,9 +102,15 @@ void main() {
         } else if (gl_WorkGroupID.y== 1) {
             vec4 initialValue = imageLoad(fftDerivatesTemp,ivec2(column,fila));
             imageStore(fftDerivatesTemp, ivec2(column, fila), vec4(A[column],initialValue.zw));
-        } else {
+        } else if (gl_WorkGroupID.y == 2){
             vec4 initialValue = imageLoad(fftDerivatesTemp,ivec2(column,fila));
             imageStore(fftDerivatesTemp, ivec2(column, fila), vec4(initialValue.xy,A[column]));
+        } else if (gl_WorkGroupID.y == 4){
+            vec4 initialValue = imageLoad(fftDisplacementsTemp,ivec2(column,fila));
+            imageStore(fftDisplacementsTemp, ivec2(column, fila), vec4(initialValue.xy,A[column]));
+        } else {
+            vec4 initialValue = imageLoad(fftDisplacementsTemp,ivec2(column,fila));
+            imageStore(fftDisplacementsTemp, ivec2(column, fila), vec4(A[column],initialValue.zw));
         }
 
     } else {
@@ -108,8 +124,12 @@ void main() {
             valueIn = imageLoad(fftDataIn, ivec2(column,rev)).zw;
         } else if (gl_WorkGroupID.y== 1) {
             valueIn = imageLoad(fftDerivatesTemp, ivec2(column,rev)).xy;
-        } else {
+        } else if (gl_WorkGroupID.y == 2){
             valueIn = imageLoad(fftDerivatesTemp, ivec2(column,rev)).zw;
+        } else if (gl_WorkGroupID.y == 3){
+            valueIn = imageLoad(fftDisplacementsTemp, ivec2(column,rev)).xy;
+        } else if (gl_WorkGroupID.y == 4){
+            valueIn = imageLoad(fftDisplacementsTemp, ivec2(column,rev)).zw;
         }
         A[fila] = valueIn; //Cada hilo carga su columna
         barrier(); //Esperar a que la fila  se quede lista
@@ -134,14 +154,23 @@ void main() {
             }
             barrier();
         }
-        vec4 initialValue = imageLoad(fftDataOut,ivec2(column,fila));
+
 
         if (gl_WorkGroupID.y == 0){
+            vec4 initialValue = imageLoad(fftDataOut,ivec2(column,fila));
             imageStore(fftDataOut, ivec2(column, fila), vec4(A[fila].x,initialValue.yzw));
         } else if (gl_WorkGroupID.y== 1) {
+            vec4 initialValue = imageLoad(fftDataOut,ivec2(column,fila));
             imageStore(fftDataOut, ivec2(column, fila), vec4(initialValue.x,A[fila].x,initialValue.zw));
-        } else {
+        } else if (gl_WorkGroupID.y == 2){
+            vec4 initialValue = imageLoad(fftDataOut,ivec2(column,fila));
             imageStore(fftDataOut, ivec2(column, fila), vec4(initialValue.xy,A[fila].x,initialValue.w));
+        } else if (gl_WorkGroupID.y == 3){
+            vec4 initialValue = imageLoad(fftDisplacementsOut,ivec2(column,fila));
+            imageStore(fftDisplacementsOut, ivec2(column, fila), vec4(A[fila].x,initialValue.yzw));
+        } else if (gl_WorkGroupID.y == 4){
+            vec4 initialValue = imageLoad(fftDisplacementsOut,ivec2(column,fila));
+            imageStore(fftDisplacementsOut, ivec2(column, fila), vec4(initialValue.x,A[fila].x,initialValue.zw));
         }
     }
 }
