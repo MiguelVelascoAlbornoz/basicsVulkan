@@ -32,14 +32,7 @@ App::App(const std::function<void(App*)>& registryCallback) {
     std::cout << "Renderer initialized successfully." << std::endl;
     #endif
 
-
-
-
     player = new Player(0);
-
-
-
-
 
     registryCallback(this);
 
@@ -70,7 +63,7 @@ void App::executionLoop()
 {
 
     Uint64 timeAcc = 0;
-    Uint64 lastCycleTimeNS = SDL_GetTicks(); // Tiempo del último frame en segundos
+    Uint64 lastCycleTimeNS = SDL_GetTicksNS(); // Tiempo del último frame en segundos
 
 
 
@@ -139,7 +132,7 @@ void App::executionLoop()
         cyclesCounter++;
 
         //Garantir um maximo de ciclos por segundo
-        Uint64  cycleMissingTime = minNsPerCycle-(cycleStartTimeNS - SDL_GetTicksNS());
+        int  cycleMissingTime = static_cast<int>(minNsPerCycle-(SDL_GetTicksNS() - cycleStartTimeNS));
         if (0 <  cycleMissingTime)
         {
             SDL_DelayNS(cycleMissingTime);

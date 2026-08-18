@@ -61,7 +61,7 @@ VkShaderModule PipelineUtils::createShaderModule(const std::vector<char> &code, 
     return shaderModule;
 }
 
-bool PipelineUtils::loadShader(std::string shaderName, VkShaderModule &shaderModule, const std::string& shaderType,VkDevice device) {
+bool PipelineUtils::loadShader(std::string shaderName, VkShaderModule &shaderModule, const std::string& shaderType,VkDevice device, std::vector<std::string>& macros) {
 
     const std::string shaderPath = std::string("assets/shaders/"+shaderType+"/") + shaderName + "."+shaderType;
 
@@ -71,7 +71,19 @@ bool PipelineUtils::loadShader(std::string shaderName, VkShaderModule &shaderMod
 #ifdef _DEBUG
     std::cout << "(VULKAN) Compilando shader: " << shaderPath << std::endl;
 #endif
-    const std::string commandOut = PipelineUtils::execCommand(("glslc "+shaderPath+" -o "+shaderPathSPV).c_str());
+    std::string cmd = "glslc ";
+    if (macros.size() % 2 != 0 || macros.size() == 1) {
+        std::cout << "Formato del string de macros no respetado." << std::endl;
+    }
+    for (size_t i = 0; i < macros.size(); i+=2) {
+        cmd = cmd +" -D"+macros[i]+"="+macros[i+1];
+    }
+    cmd = cmd + " " + shaderPath + " -o " + shaderPathSPV;
+    #ifdef _DEBUG
+    std::cout << "(SHADER) Comando: " << cmd << std::endl;
+    #endif
+    const std::string commandOut = PipelineUtils::execCommand(cmd);
+
     std::cout << commandOut << std::endl;
 
     // if (result) {

@@ -45,6 +45,9 @@ class Pipeline {
     void recreate(std::optional<PipelineConfig> newConfig = std::nullopt, VkRenderPass newRenderPass = VK_NULL_HANDLE);
     void destroyPipelineObjects();
     void buildPipeline();
+
+    void updateDescriptorSet();
+
     void updateDescriptorSet(std::vector<UniformBinding> uniformObjects, std::vector<ImageBinding> images);
     void updateShaders();
     ~Pipeline();

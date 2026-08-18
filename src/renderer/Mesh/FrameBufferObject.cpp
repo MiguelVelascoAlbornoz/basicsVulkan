@@ -277,53 +277,6 @@ void FrameBufferObject::endRenderPass(VkCommandBuffer cmd)
     vkCmdEndRenderPass(cmd);
 }
 
-void FrameBufferObject::saveColorImageToPNG(const std::string& filename) const
-{
-    VkDevice dev = device->device;
-
-    // El render pass ya deja la imagen en TRANSFER_SRC_OPTIMAL (finalLayout),
-    // asi que podemos copiarla directo a un buffer de staging sin barrier manual.
-    VkDeviceSize imageSize = static_cast<VkDeviceSize>(width) * height * 4; // RGBA8 = 4 bytes/pixel
-
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingMemory;
-    device->createBuffer(imageSize,
-        VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-        stagingBuffer, stagingMemory);
-
-    VkCommandBuffer cmd = device->beginSingleTimeCommands();
-
-    VkBufferImageCopy region{};
-    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    region.imageSubresource.layerCount = 1;
-    region.imageExtent = { width, height, 1 };
-
-    vkCmdCopyImageToBuffer(cmd, colorImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, stagingBuffer, 1, &region);
-
-    device->endSingleTimeCommands(cmd); // hace submit + vkQueueWaitIdle, asi que al volver ya termino
-
-    void* data;
-    vkMapMemory(dev, stagingMemory, 0, imageSize, 0, &data);
-    std::vector<unsigned char> pixels(imageSize);
-    memcpy(pixels.data(), data, imageSize);
-    vkUnmapMemory(dev, stagingMemory);
-
-    // Si usaras un formato BGRA (comun en swapchains) habria que invertir R y B aqui:
-    if (colorFormat == VK_FORMAT_B8G8R8A8_UNORM || colorFormat == VK_FORMAT_B8G8R8A8_SRGB) {
-        for (size_t i = 0; i < pixels.size(); i += 4) {
-            std::swap(pixels[i], pixels[i + 2]);
-        }
-    }
-
-    stbi_write_png(filename.c_str(), static_cast<int>(width), static_cast<int>(height),
-                    4, pixels.data(), static_cast<int>(width) * 4);
-
-    vkDestroyBuffer(dev, stagingBuffer, nullptr);
-    vkFreeMemory(dev, stagingMemory, nullptr);
-
-    std::cout << "(FBO) Imagen guardada en: " << filename << std::endl;
-}
 
 void FrameBufferObject::addScene(SceneFunction scene)
 {

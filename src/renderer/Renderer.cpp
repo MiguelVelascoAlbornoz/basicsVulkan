@@ -13,7 +13,7 @@
 #include "../Registry/Pipelines.h"
 #include "../Registry/Scenes.h"
 #include "../Registry/FrameBuffers.h"
-
+#include "../Registry/ComputePipelines.h"
 
 #include "VulkanDevice.h"
 #include "Window.h"
@@ -200,6 +200,7 @@ Renderer::~Renderer()
 
     
     Pipelines::freePipelines();
+    ComputePipelines::freePipelines();
 
     // 7. Render pass
     if (renderPass != VK_NULL_HANDLE) {

@@ -60,11 +60,12 @@ void Pipeline::buildPipeline()
 {
     VkShaderModule vertShaderModule;
     VkShaderModule fragShaderModule;
-    if (!PipelineUtils::loadShader(config.shaderName, vertShaderModule, "vert",vulkanDevice->device)) {
+    std::vector<std::string> macros = {};
+    if (!PipelineUtils::loadShader(config.shaderName, vertShaderModule, "vert",vulkanDevice->device, macros)) {
         error = true;
         return;
     }
-    if (!PipelineUtils::loadShader(config.shaderName, fragShaderModule, "frag",vulkanDevice->device)) {
+    if (!PipelineUtils::loadShader(config.shaderName, fragShaderModule, "frag",vulkanDevice->device, macros)) {
         error = true;
         vkDestroyShaderModule(vulkanDevice->device, vertShaderModule, nullptr);
         return;
@@ -231,6 +232,9 @@ void Pipeline::buildPipeline()
     std::cout << "(VULKAN) Pipeline gráfico creado correctamente." << std::endl;
     #endif
 
+    updateDescriptorSet(config.uniformObjects, config.images);
+}
+void Pipeline::updateDescriptorSet() {
     updateDescriptorSet(config.uniformObjects, config.images);
 }
 void Pipeline::updateDescriptorSet( std::vector<UniformBinding> uniformObjects,  std::vector<ImageBinding> images)

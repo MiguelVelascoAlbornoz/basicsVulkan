@@ -99,7 +99,7 @@ void ComputePipeline::buildPipeline()
     //STAGING SHADER
     VkShaderModule shaderModule;
 
-    if (!PipelineUtils::loadShader(config.shaderName, shaderModule, "comp", vulkanDevice->device)) {
+    if (!PipelineUtils::loadShader(config.shaderName, shaderModule, "comp", vulkanDevice->device, config.shaderMacros)) {
         error = true;
         return;
     }
@@ -172,7 +172,7 @@ void ComputePipeline::updateDescriptorSet()
     }
 
     for (size_t i = 0; i < images.size(); i++, ++bindingCount) {
-        if (images[i].image == VK_NULL_HANDLE || images[i].sampler == VK_NULL_HANDLE) continue;
+        if (images[i].image == VK_NULL_HANDLE) continue;
         imageInfos[i].imageLayout = images[i].layout;
         imageInfos[i].imageView   = images[i].image;
         imageInfos[i].sampler     = images[i].sampler;

@@ -16,6 +16,7 @@ struct ComputePipelineConfig {
 
     std::string shaderName = "compute";
     int pushConstantsSize = 0;
+    std::vector<std::string> shaderMacros = {};
 };
 
 class ComputePipeline{

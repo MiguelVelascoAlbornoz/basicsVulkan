@@ -3,10 +3,35 @@
 #include "stbImage/stb_image.h"
 #include <iostream>
 
+#include "stbImage/stb_image_write.h"
+#include <glm/glm.hpp>
+struct FormatInfo {
+    int bytesPerTexel;
+    int channels;
+    bool isFloat;
+};
+
+static FormatInfo getFormatInfo(VkFormat format) {
+    switch (format) {
+    case VK_FORMAT_R8_UNORM:            return {1, 1, false};
+    case VK_FORMAT_R8G8_UNORM:          return {2, 2, false};
+    case VK_FORMAT_R8G8B8A8_UNORM:
+    case VK_FORMAT_R8G8B8A8_SRGB:
+    case VK_FORMAT_B8G8R8A8_UNORM:
+    case VK_FORMAT_B8G8R8A8_SRGB:       return {4, 4, false};
+    case VK_FORMAT_R32_SFLOAT:          return {4, 1, true};
+    case VK_FORMAT_R32G32_SFLOAT:       return {8, 2, true};
+    case VK_FORMAT_R32G32B32A32_SFLOAT: return {16, 4, true};
+    default:
+        std::cerr << "(IMAGE) Formato no soportado en saveColorImageToPNG" << std::endl;
+        return {0, 0, false};
+    }
+}
+
 Image::Image(VulkanDevice* device, uint32_t width, uint32_t height, VkFormat format,
-             VkImageUsageFlags usage, VkImageAspectFlags aspectMask, int samplesPower)
+             VkImageUsageFlags usage, VkImageAspectFlags aspectMask,SampleConfig sampleConfig, int samplesPower, VkImageLayout initialLayout )
     : device(device),width(width), height(height), format(format), usage(usage), aspectMask(aspectMask),
-       samples(samplesPower)
+       sampleConfig(sampleConfig),samples(samplesPower), currentLayout(initialLayout)
 {
     create();
 
@@ -14,25 +39,20 @@ Image::Image(VulkanDevice* device, uint32_t width, uint32_t height, VkFormat for
 
 Image::~Image()
 {
-    if (!device) return; // por si loadFromFile fallo antes de asignar device (ver nota abajo)
-    VkDevice dev = device->device;
-
-    if (view != VK_NULL_HANDLE)   vkDestroyImageView(dev, view, nullptr);
-    if (image != VK_NULL_HANDLE)  vkDestroyImage(dev, image, nullptr);
-    if (memory != VK_NULL_HANDLE) vkFreeMemory(dev, memory, nullptr);
-    if (sampler != VK_NULL_HANDLE) vkDestroySampler(dev, sampler, nullptr);
+    if (!device) return;
+    destroyImageResources();
+    if (sampler != VK_NULL_HANDLE) vkDestroySampler(device->device, sampler, nullptr);
 }
-
 void Image::createSampler( VkFilter magFilter, VkFilter minFilter,
-    VkBorderColor borderColor)
+                           VkBorderColor borderColor, VkSamplerAddressMode adressMode)
 {
     VkSamplerCreateInfo samplerInfo{};
     samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     samplerInfo.magFilter = magFilter;//VK_FILTER_LINEAR; // o NEAREST si prefieres depth sin filtrar
     samplerInfo.minFilter = minFilter;//VK_FILTER_LINEAR;
-    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    samplerInfo.addressModeU = adressMode;
+    samplerInfo.addressModeV = adressMode;
+    samplerInfo.addressModeW = adressMode;
     samplerInfo.borderColor = borderColor;//VK_BORDER_COLOR_INT_OPAQUE_WHITE; // 1.0 = "infinitamente lejos" fuera de rango
     samplerInfo.unnormalizedCoordinates = VK_FALSE;
     vkCreateSampler(this->device->device, &samplerInfo, nullptr, &sampler);
@@ -52,14 +72,13 @@ bool Image::create()
     imageInfo.arrayLayers   = 1;
     imageInfo.format        = format;
     imageInfo.tiling        = VK_IMAGE_TILING_OPTIMAL;
-    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-
-    imageInfo.usage         = usage;//Color usageVK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    imageInfo.initialLayout = currentLayout;
+    imageInfo.usage         = usage;
     imageInfo.samples       = VK_SAMPLE_COUNT_1_BIT;
     imageInfo.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
 
     if (vkCreateImage(dev, &imageInfo, nullptr, &image) != VK_SUCCESS) {
-        std::cerr << "(FBO) Error: no se pudo crear la imagen de color." << std::endl;
+        std::cerr << "(IMAGE) Error: no se pudo crear la imagen." << std::endl;
         return false;
     }
 
@@ -72,7 +91,7 @@ bool Image::create()
     allocInfo.memoryTypeIndex = device->findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     if (vkAllocateMemory(dev, &allocInfo, nullptr, &memory) != VK_SUCCESS) {
-        std::cerr << "(FBO) Error: no se pudo alocar memoria para la imagen de color." << std::endl;
+        std::cerr << "(IMAGE) Error: no se pudo alocar memoria para la imagen." << std::endl;
         return false;
     }
     vkBindImageMemory(dev, image, memory, 0);
@@ -91,13 +110,45 @@ bool Image::create()
     viewInfo.subresourceRange.layerCount     = 1;
 
     if (vkCreateImageView(dev, &viewInfo, nullptr, &view) != VK_SUCCESS) {
-        std::cerr << "(FBO) Error: no se pudo crear el image view de color." << std::endl;
+        std::cerr << "(IMAGE) Error: no se pudo crear el image view." << std::endl;
         return false;
     }
-    createSampler(VK_FILTER_LINEAR,VK_FILTER_LINEAR,VK_BORDER_COLOR_INT_OPAQUE_WHITE);
+
+    // El sampler no depende de width/height: solo se crea si todavía no existe.
+    if (sampler == VK_NULL_HANDLE) {
+        createSampler(sampleConfig.magFilter, sampleConfig.minFilter,
+                      sampleConfig.borderColor, sampleConfig.adressMode);
+    }
     return true;
 }
 
+void Image::destroyImageResources()
+{
+    if (!device) return;
+    VkDevice dev = device->device;
+
+    if (view != VK_NULL_HANDLE)   { vkDestroyImageView(dev, view, nullptr);   view = VK_NULL_HANDLE; }
+    if (image != VK_NULL_HANDLE)  { vkDestroyImage(dev, image, nullptr);      image = VK_NULL_HANDLE; }
+    if (memory != VK_NULL_HANDLE) { vkFreeMemory(dev, memory, nullptr);       memory = VK_NULL_HANDLE; }
+}
+
+void Image::resize(uint32_t newWidth, uint32_t newHeight)
+{
+    if (newWidth == width && newHeight == height) return;
+
+    vkDeviceWaitIdle(device->device); // por si la imagen está en uso en un command buffer en vuelo
+
+    destroyImageResources();
+
+    width  = newWidth;
+    height = newHeight;
+    currentLayout = VK_IMAGE_LAYOUT_UNDEFINED; // la imagen es nueva, no hereda el layout viejo
+
+    if (!create()) {
+        error = true;
+        std::cerr << "(IMAGE) Error: fallo al recrear la imagen en resize()." << std::endl;
+    }
+}
 void Image::transitionLayout(VkCommandBuffer cmd, VkImageLayout newLayout,
                              VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage)
 {
@@ -113,7 +164,104 @@ void Image::transitionLayout(VkCommandBuffer cmd, VkImageLayout newLayout,
     vkCmdPipelineBarrier(cmd, srcStage, dstStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
     currentLayout = newLayout; // se actualiza el estado
 }
-Image* Image::loadFromFile(VulkanDevice* device, const std::string& path, VkImageUsageFlags usage,VkImageLayout newLayout) {
+void Image::saveColorImageToPNG(const std::string& filename) const
+{
+    VkDevice dev = device->device;
+
+    FormatInfo info = getFormatInfo(format);
+    if (info.bytesPerTexel == 0) return; // formato no soportado, ya logueado
+    int pixelsCount = width * height;
+    int bufferSize = info.channels * pixelsCount;
+    VkDeviceSize imageSize = static_cast<VkDeviceSize>(bufferSize*info.bytesPerTexel) ;
+
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingMemory;
+    device->createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingMemory);
+
+    VkCommandBuffer cmd = device->beginSingleTimeCommands();
+    VkBufferImageCopy region{};
+    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    region.imageSubresource.layerCount = 1;
+    region.imageExtent = { width, height, 1 };
+    vkCmdCopyImageToBuffer(cmd, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        stagingBuffer, 1, &region);
+    device->endSingleTimeCommands(cmd);
+
+    void* data;
+    vkMapMemory(dev, stagingMemory, 0, imageSize, 0, &data);
+    //std::vector<unsigned char> rawPixels(imageSize);
+    //memcpy(rawPixels.data(), data, imageSize);
+
+
+    if (info.isFloat) {
+
+        // stb_write_png no soporta float directo: hay que convertir a 8-bit,
+        // normalmente clampeando/remapeando el rango que uses (ej. [0,1] o [-1,1])
+
+        const auto floatData = static_cast<float*>(data);
+        float minValue[info.channels];
+        float maxValue[info.channels];
+        for (int i = 0; i < info.channels; ++i) {
+           minValue[i] = floatData[i];maxValue[i] = floatData[i];
+        }
+
+        for (int i = 0; i < bufferSize ; i+=info.channels)
+        {
+            for (int j = 0; j < info.channels; ++j) {
+                if (floatData[i+j] > maxValue[j]) {
+                    maxValue[j] = floatData[i+j];
+                    continue;
+                }
+                if (floatData[i+j] < minValue[j]) {
+                    minValue[j] = floatData[i+j];
+                }
+            }
+        }
+        float compression[info.channels];
+        for (int i = 0; i < info.channels; ++i) {
+            if (maxValue[i] == minValue[i]) {
+                if (maxValue[i] < 0) maxValue[i] *=-1;
+                if (maxValue[i] > 0) {
+                    if (maxValue[i] <= 1) {
+                        compression[i] = 1;
+                    } else {
+                        compression[i] = 1.0f/maxValue[i];
+                    }
+                } else {
+                    compression[i] = 0;
+                }
+
+            } else {
+                compression[i] = 255.0f/ (maxValue[i] - minValue[i]);
+            }
+
+        }
+
+        std::vector<unsigned char> pixels8(bufferSize);
+        for (int i = 0; i < pixelsCount ; i+=info.channels)
+        {
+            for (int j = 0; j < info.channels; ++j) {
+                pixels8[i+j] = static_cast<unsigned char>((floatData[i+j]-minValue[j])*compression[j]);
+            }
+            if (info.channels ==4) pixels8[i+3] = 255;
+
+        }
+
+        stbi_write_png(filename.c_str(), width, height, info.channels,
+                        pixels8.data(), width * info.channels);
+    } else {
+        unsigned char* dataChar = static_cast<unsigned char*>(data);
+
+        stbi_write_png(filename.c_str(), width, height, info.channels,
+                        dataChar, width * info.channels);
+    }
+    vkUnmapMemory(dev, stagingMemory);
+    vkDestroyBuffer(dev, stagingBuffer, nullptr);
+    vkFreeMemory(dev, stagingMemory, nullptr);
+    std::cout << "Imagen guardada en: " << filename << std::endl;
+}
+Image* Image::loadFromFile(VulkanDevice* device, const std::string& path, VkImageUsageFlags usage,VkImageLayout newLayout, SampleConfig config) {
     int w, h, channels;
     stbi_uc* pixels = stbi_load(path.c_str(), &w, &h, &channels, 4);
 
@@ -149,7 +297,7 @@ Image* Image::loadFromFile(VulkanDevice* device, const std::string& path, VkImag
         std::cout << "Error finding image format: " << path << std::endl;
         return nullptr;
     }
-    auto* img = new Image(device, w, h, format,usage,VK_IMAGE_ASPECT_COLOR_BIT,0);
+    auto* img = new Image(device, w, h, format,usage,VK_IMAGE_ASPECT_COLOR_BIT,config,0);
 
     VkCommandBuffer cmd = device->beginSingleTimeCommands();
     img->transitionLayout(cmd, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,

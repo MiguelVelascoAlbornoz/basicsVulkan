@@ -9,7 +9,9 @@
 #include "Uniforms.h"
 
 #include "../Scene/Model.h"
-#include "SDL3/SDL.h"
+#include "../Renderer/Image.h"
+
+
 #include "../Renderer/Mesh/Mesh.h"
 
 
