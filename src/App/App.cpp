@@ -95,7 +95,7 @@ App::App(const std::function<void(App*)>& registryCallback) {
     cmd =renderer->getVulkanDevice()->beginSingleTimeCommands();
 
     Images::images[IFFT_OUT_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_PIPELINE_STAGE_TRANSFER_BIT,VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
-    Images::images[IFFT_DISPLACEMENT_OUT_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_PIPELINE_STAGE_TRANSFER_BIT,VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
+    Images::images[IFFT_DISPLACEMENT_OUT_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
 
 
     renderer->getVulkanDevice()->endSingleTimeCommands(cmd);

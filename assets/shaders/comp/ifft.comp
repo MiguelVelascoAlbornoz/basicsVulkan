@@ -66,11 +66,11 @@ void main() {
         } else if (gl_WorkGroupID.y == 3){
             vec2 k = calculateK(rev,fila);
             float klength = length(k);
-            valueIn = complexMul(valueIn*(k.x/klength),vec2(0.0f,-1.0f));
+            valueIn = (klength > 0.00001) ? complexMul(valueIn*(k.x/klength),vec2(0.0f,-1.0f)) : vec2(0.0f);
         } else if (gl_WorkGroupID.y == 4){
             vec2 k = calculateK(rev,fila);
             float klength = length(k);
-            valueIn = complexMul(valueIn*(k.y/klength),vec2(0.0f,-1.0f));
+            valueIn = (klength > 0.00001) ? complexMul(valueIn*(k.y/klength),vec2(0.0f,-1.0f)) : vec2(0.0f);
         }
         A[column] = valueIn ; //Cada hilo carga su columna
         barrier(); //Esperar a que la fila  se quede lista

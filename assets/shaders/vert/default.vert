@@ -26,7 +26,7 @@ layout(std140,push_constant) uniform ModelUBO {
 void main() {
     fragNormal = vec3(modelUBO.rotationMatrix*vec4(normal,1.0f));
 
-    vec2 displacementValue = texture(displacementMap,vertexLocalPos.xz).xy*0.00000001;
+    vec2 displacementValue = texture(displacementMap,vertexLocalPos.xz).xy*1;
 
     worldPos = vec3(modelUBO.modelMatrix*vec4(vertexLocalPos*modelUBO.scale,1.0f));
     worldPos = worldPos + vec3(displacementValue.x,0.0f,displacementValue.y);
