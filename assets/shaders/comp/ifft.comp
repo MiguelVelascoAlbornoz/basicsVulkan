@@ -1,5 +1,5 @@
 #version 450
-
+#include "../glsl/fftGeral.glsl"
 
 
 layout(local_size_x = FFT_N) in;
@@ -17,37 +17,7 @@ layout(std140,push_constant)uniform  Push {
 
 
 
-const float PI = 3.14159265358979323846;
-vec2 complexExp(float angle)
-{
-    return vec2(cos(angle), sin(angle));
-}
-
-vec2 complexMul(vec2 a, vec2 b)
-{
-    return vec2(a.x * b.x - a.y * b.y,
-            a.x * b.y + a.y * b.x);
-}
-uint bitReverse(uint x, uint log2n)
-{
-    uint n = 0u;
-    for (uint i = 0u; i < log2n; ++i) {
-        n <<= 1u;
-        n |= (x & 1u);
-        x >>= 1u;
-    }
-    return n;
-}
-
 shared vec2 A[FFT_N];
-vec2 calculateK(uint fila, uint column){
-
-    int iiCol = (column <= FFT_N/2) ? int(column) : int(column - FFT_N);
-    int iiFil = (fila    <= FFT_N/2) ? int(fila)    : int(fila    - FFT_N);
-
-
-    return vec2(iiCol, iiFil); // AHORA sí, esto es tu vector de frecuencia 2D
-}
 
 void main() {
     if (push.stage == 0){

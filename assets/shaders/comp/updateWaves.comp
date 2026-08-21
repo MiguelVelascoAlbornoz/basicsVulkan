@@ -1,0 +1,24 @@
+#version 450
+#include "../glsl/fftGeral.glsl"
+layout(local_size_x = 16, local_size_y = 16) in;
+
+layout(binding = 1, rg32f) uniform readonly image2D h0Data; // .xy = h0(k), .zw = conj(h0(-k))
+layout(binding = 0, rgba32f) uniform image2D fftDataIn;       // h(k,t) -> entrada del ifft.comp
+
+layout(std140, push_constant) uniform Push {
+    float time;
+} push;
+const float G  = 9.81;
+
+void main() {
+    ivec2 idx = ivec2(gl_GlobalInvocationID.xy);
+    vec2 k = calculateK(idx.y, idx.x);
+    float kLen = length(k);
+
+    vec4 h0 = imageLoad(h0Data, idx);
+    float omega = sqrt(G * kLen);
+    float phase = omega * push.time;
+
+    vec2 h = complexMul(h0.xy, complexExp(phase)) + complexMul(h0.zw, complexExp(-phase));
+    imageStore(fftDataIn, idx, vec4(h, 0.0, 0.0));
+}

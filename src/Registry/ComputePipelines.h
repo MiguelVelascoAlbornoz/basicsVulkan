@@ -11,6 +11,8 @@
 #define IFFT_COMPUTE_PIPELINE_ID "ifft_compute_pipeline"
 #define IFFT_WAVES_SETUP_COMPUTE_PIPELINE_ID "ifft_waves_setup_compute_pipeline"
 #define IFFT_SET_WAVES_COMPUTE_PIPELINE_ID "ifft_set_waves_compute_pipeline"
+#define IFFT_UPDATE_SPECTRUM_COMPUTE_PIPELINE_ID "ifft_update_spectrum_compute_pipeline"
+
 class ComputePipeline;
 
 class ComputePipelines

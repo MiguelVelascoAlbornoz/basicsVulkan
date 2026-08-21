@@ -1,24 +1,11 @@
 #version 450
+#include "../glsl/fftGeral.glsl"
 
 layout(local_size_x = 1) in;
-layout(binding = 0, rgba32f) uniform image2D fftDataIn;
-float L = 1.0f;
-const float PI = 3.14159265358979323846;
-const uint FFT_N = 512;
+layout(binding = 0, rg32f) uniform image2D fftDataIn;
 
 
 
-ivec2 kToIndex(vec2 k) {
-
-    int col = int(round(k.x));
-    int fil = int(round(k.y));
-
-    // wraparound a [0, N-1]
-    col = (col + int(FFT_N)) % int(FFT_N);
-    fil = (fil + int(FFT_N)) % int(FFT_N);
-
-    return ivec2(col, fil);
-}
 void setWave(vec2 k, float amp, float phase) {
     ivec2 idx = kToIndex(k);
     ivec2 idxOp = kToIndex(-k); // índice de la frecuencia opuesta
