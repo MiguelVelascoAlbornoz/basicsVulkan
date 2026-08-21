@@ -246,10 +246,9 @@ void Registry::initImages(const App* app)
     Images::ifftInImage = Images::registerImages(IFFT_IN_IMAGE_ID,new Image(app->renderer->getVulkanDevice(),app->FFT_N,app->FFT_N,VK_FORMAT_R32G32B32A32_SFLOAT,VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,VK_IMAGE_ASPECT_COLOR_BIT,{.magFilter  = VK_FILTER_LINEAR, .minFilter = VK_FILTER_LINEAR, .adressMode =  VK_SAMPLER_ADDRESS_MODE_REPEAT},0));
     Images::registerImages(IFFT_OUT_IMAGE_ID,new Image(app->renderer->getVulkanDevice(),app->FFT_N,app->FFT_N,VK_FORMAT_R32G32B32A32_SFLOAT,VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,VK_IMAGE_ASPECT_COLOR_BIT,{.magFilter  = VK_FILTER_LINEAR, .minFilter = VK_FILTER_LINEAR, .adressMode =  VK_SAMPLER_ADDRESS_MODE_REPEAT},0));
     Images::registerImages(IFFT_DERIVATES_TEMP_IMAGE_ID,new Image(app->renderer->getVulkanDevice(),app->FFT_N,app->FFT_N,VK_FORMAT_R32G32B32A32_SFLOAT,VK_IMAGE_USAGE_STORAGE_BIT,VK_IMAGE_ASPECT_COLOR_BIT,{.magFilter  = VK_FILTER_LINEAR, .minFilter = VK_FILTER_LINEAR, .adressMode =  VK_SAMPLER_ADDRESS_MODE_REPEAT},0));
-    Images::registerImages(IFFT_DERIVATES_TEMP_IMAGE_ID,new Image(app->renderer->getVulkanDevice(),app->FFT_N,app->FFT_N,VK_FORMAT_R32G32B32A32_SFLOAT,VK_IMAGE_USAGE_STORAGE_BIT,VK_IMAGE_ASPECT_COLOR_BIT,{.magFilter  = VK_FILTER_LINEAR, .minFilter = VK_FILTER_LINEAR, .adressMode =  VK_SAMPLER_ADDRESS_MODE_REPEAT},0));
     Images::registerImages(IFFT_DISPLACEMENT_TEMP_IMAGE_ID,new Image(app->renderer->getVulkanDevice(),app->FFT_N,app->FFT_N,VK_FORMAT_R32G32B32A32_SFLOAT,VK_IMAGE_USAGE_STORAGE_BIT,VK_IMAGE_ASPECT_COLOR_BIT,{.magFilter  = VK_FILTER_NEAREST, .minFilter = VK_FILTER_NEAREST, .adressMode =  VK_SAMPLER_ADDRESS_MODE_REPEAT},0));
     Images::registerImages(IFFT_DISPLACEMENT_OUT_IMAGE_ID,new Image(app->renderer->getVulkanDevice(),app->FFT_N,app->FFT_N,VK_FORMAT_R32G32_SFLOAT,VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,VK_IMAGE_ASPECT_COLOR_BIT,{.magFilter  = VK_FILTER_LINEAR, .minFilter = VK_FILTER_LINEAR, .adressMode =  VK_SAMPLER_ADDRESS_MODE_REPEAT},0));
-    Images::registerImages(IFFT_H0_IMAGE_ID,new Image(app->renderer->getVulkanDevice(),app->FFT_N,app->FFT_N,VK_FORMAT_R32G32_SFLOAT,VK_IMAGE_USAGE_STORAGE_BIT ,VK_IMAGE_ASPECT_COLOR_BIT,{.magFilter  = VK_FILTER_LINEAR, .minFilter = VK_FILTER_LINEAR, .adressMode =  VK_SAMPLER_ADDRESS_MODE_REPEAT},0));
+    Images::registerImages(IFFT_H0_IMAGE_ID,new Image(app->renderer->getVulkanDevice(),app->FFT_N,app->FFT_N,VK_FORMAT_R32G32_SFLOAT,VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,VK_IMAGE_ASPECT_COLOR_BIT,{.magFilter  = VK_FILTER_LINEAR, .minFilter = VK_FILTER_LINEAR, .adressMode =  VK_SAMPLER_ADDRESS_MODE_REPEAT},0));
 
 
     Images::registerImages(GRASS_IMAGE_ID,Image::loadFromFile(app->renderer->getVulkanDevice(),"assets/Textures/grass.png",VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT));
@@ -332,5 +331,5 @@ void Registry::initComputePipelines(const App* app)
     };
     updateWavesPipelineConfig.shaderMacros = {"FFT_N",std::to_string(app->FFT_N)};
     updateWavesPipelineConfig.pushConstantsSize=sizeof(float);
-    ComputePipelines::registerPipelines(IFFT_UPDATE_SPECTRUM_COMPUTE_PIPELINE_ID,new ComputePipeline(app->renderer->getVulkanDevice(),app->renderer->descriptorPool,ifftConfig));
+    ComputePipelines::registerPipelines(IFFT_UPDATE_SPECTRUM_COMPUTE_PIPELINE_ID,new ComputePipeline(app->renderer->getVulkanDevice(),app->renderer->descriptorPool,updateWavesPipelineConfig));
 }

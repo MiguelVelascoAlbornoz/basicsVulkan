@@ -119,7 +119,7 @@ void Renderer::initVulkan(Window* window)  {
         poolSize1.descriptorCount = 2;
         VkDescriptorPoolSize poolSize2{};
         poolSize2.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        poolSize2.descriptorCount = 9;
+        poolSize2.descriptorCount = 8;
         VkDescriptorPoolSize poolSize3{};
         poolSize3.type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
         poolSize3.descriptorCount = 12;
@@ -131,7 +131,7 @@ void Renderer::initVulkan(Window* window)  {
     poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT; // <-- agregado
     poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
     poolInfo.pPoolSizes = poolSizes.data();
-    poolInfo.maxSets = 6;
+    poolInfo.maxSets = 10;
 
 
         vkCreateDescriptorPool(
