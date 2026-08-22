@@ -17,13 +17,17 @@ layout(binding = 3) uniform sampler2D displacementMap;
 void main() {
     fragNormal = vec3(modelUBO.rotationMatrix*vec4(normal,1.0f));
 
-    vec2 displacementValue = texture(displacementMap,vertexLocalPos.xz).xy*.1;
+    float multiplier = 1;
+    float zoom = 1;
+    float choppicity = .05;
+
+    vec2 displacementValue = texture(displacementMap,vertexLocalPos.xz*zoom).xy*choppicity;
 
     worldPos = vec3(modelUBO.modelMatrix*vec4(vertexLocalPos*modelUBO.scale,1.0f));
     worldPos = worldPos + vec3(displacementValue.x,0.0f,displacementValue.y);
 
-    vec4 mapValue = texture(heightMap,vertexLocalPos.xz*1);
-    float multiplier = 1.0f;
+    vec4 mapValue = texture(heightMap,vertexLocalPos.xz*zoom)*multiplier;
+
     float height = (mapValue.x*multiplier);
 
     vec3 mapNormal = normalize(vec3(-mapValue.z, 1, -mapValue.y));

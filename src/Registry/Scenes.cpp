@@ -44,12 +44,13 @@ void Scenes::renderAxis( const VkCommandBuffer commandBuffer)
 }
 
 void Scenes::renderTest(const VkCommandBuffer commandBuffer) {
+    //Images::images[IFFT_OUT_IMAGE_ID]->transitionLayout(commandBuffer,VK_IMAGE_LAYOUT,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,VK_PIPELINE_STAGE_TRANSFER_BIT);
 
 
     Model cubeModel;
-    cubeModel.mesh = Meshes::cubeMesh;
+    cubeModel.mesh = Meshes::meshes["plane_mesh"];
     cubeModel.setTranslation(vec3(0.0f,0.0f,0.0f));
-    cubeModel.setRotation(vec3(324,424,0.0f));
+    cubeModel.setRotation(vec3(0,0,0.0f));
     cubeModel.setScale(vec3(1.0f,1.0f,1.0f));
 
     Pipeline* testPipeline = Pipelines::getPipeline(TEST_PIPELINE_ID);
@@ -60,5 +61,4 @@ void Scenes::renderTest(const VkCommandBuffer commandBuffer) {
     cubeModel.draw(commandBuffer,testPipeline);
 
 }
-
 

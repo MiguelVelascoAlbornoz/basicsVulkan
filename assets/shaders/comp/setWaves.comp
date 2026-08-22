@@ -1,8 +1,9 @@
 #version 450
 #include "../glsl/fftGeral.glsl"
-
+#include "../glsl/random.glsl"
 layout(local_size_x = 1) in;
 layout(binding = 0, rg32f) uniform image2D fftDataIn;
+
 
 
 
@@ -12,28 +13,77 @@ void setWave(vec2 k, float amp, float phase) {
 
     vec2 valor = amp * vec2(cos(phase), sin(phase));
     imageStore(fftDataIn,idx,vec4(valor,0.0f,0.0f));
-    imageStore(fftDataIn,idxOp,vec4(valor.x,-valor.y,0.0f,0.0f));
+    //imageStore(fftDataIn,idxOp,vec4(valor.x,-valor.y,0.0f,0.0f));
 
 }
 
+float phillips(vec2 k, vec2 windDir, float windSpeed, float A) {
+    float kLen = length(k);
+    if (kLen < 0.0001) return 0.0;
 
+    float L = (windSpeed * windSpeed) / G; // G = 9.81
+
+    vec2 kHat = k / kLen;
+    float kDotW = dot(kHat, normalize(windDir));
+
+    float phillips = A * exp(-1.0 / pow(kLen * L, 2.0)) / pow(kLen, 4.0);
+    phillips *= kDotW * kDotW; // factor direccional básico
+
+    return phillips;
+}
+vec2 boxMuller(ivec2 seed) {
+    float u1 = randomFloat(seed.x);
+    float u2 = randomFloat(seed.y);
+    float r = sqrt(-2.0 * log(max(u1, 1e-6)));
+    float theta = 2.0 * PI * u2;
+    return vec2(r * cos(theta), r * sin(theta));
+}
 void main(){
-    // --- Olas grandes (k bajo, longitud de onda larga), amplitud alta ---
-    setWave(vec2( 6.283,  0.0),    0.0035, 0.0);
-    setWave(vec2( 0.0,    6.283),  0.0030, 1.1);
-    setWave(vec2(-6.283,  6.283),  0.0028, 2.3);
-    setWave(vec2( 6.283, -6.283),  0.0025, 0.6);
-    setWave(vec2(-6.283, -6.283),  0.0022, 3.4);
 
-    // --- Olas medianas, direcciones variadas, amplitud media ---
-    setWave(vec2( 12.566,  6.283), 0.0015, 0.9);
-    setWave(vec2(-12.566,  6.283), 0.0014, 2.7);
-    setWave(vec2( 6.283,  12.566), 0.0013, 4.1);
-    setWave(vec2(-6.283, -12.566), 0.0012, 1.5);
-    setWave(vec2( 18.850,  0.0),   0.0011, 5.0);
-    setWave(vec2( 0.0,   -18.850), 0.0010, 0.3);
-    setWave(vec2( 12.566, -12.566),0.0010, 3.9);
-    setWave(vec2(-12.566, -6.283), 0.0009, 2.0);
+    for (int i = 0; i < 512; ++i){
+        for (int j = 0; j <512; ++j){
+            vec2 k = calculateK(i,j);
+            vec2 gauss = boxMuller(ivec2(i,j));
+            float ph =phillips(k,windDir,windSpeed,As);
+            vec2 h0 = sqrt(ph * 0.5) * gauss;
+            imageStore(fftDataIn, ivec2(i,j), vec4(h0, 0.0, 0.0));
+        }
+    }
 
 
 }
+/* Pool
+windSpeed  = 0.3
+A          = 3e-4
+choppicity = 0.05
+multiplier = 0.15
+zoom       = 1.0
+*/
+/* Calm ocean close
+windSpeed  = 0.8
+A          = 1e-3
+choppicity = 0.15
+multiplier = 0.3
+zoom       = 1.5*/
+/*
+Calm ocean far
+windSpeed  = 1.0
+A          = 1e-3
+choppicity = 0.2
+multiplier = 0.4
+zoom       = 4.0 – 8.0
+*/
+/* Storm ocean
+indSpeed  = 1.8
+A          = 4e-3
+choppicity = 0.6 – 0.8
+multiplier = 0.7
+zoom       = 3.0
+*/
+/* Really calm ocean
+windSpeed  = 1.2
+A          = 1.2e-3
+choppicity = 0.25
+multiplier = 0.35
+zoom       = 3.0
+*/

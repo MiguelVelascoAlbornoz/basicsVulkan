@@ -349,7 +349,3 @@ void Registry::initComputePipelines(const App* app)
     updateWavesPipelineConfig.pushConstantsSize=sizeof(float);
     ComputePipelines::registerPipelines(IFFT_UPDATE_SPECTRUM_COMPUTE_PIPELINE_ID,new ComputePipeline(app->renderer->getVulkanDevice(),app->renderer->descriptorPool,updateWavesPipelineConfig));
 }
-void Registry::initComputePipelines(const App* app)
-{
-    app->player->getPosition();//EVITAR WARNINGS
-}

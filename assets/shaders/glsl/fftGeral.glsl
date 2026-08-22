@@ -1,6 +1,12 @@
-float L = 1.0f;
+
 const float PI = 3.14159265358979323846;
 const uint FFT_N = 512;
+float G = 9.81;
+float L = 1.0f;
+vec2 windDir = normalize(vec2(1.0f,1.0f));
+float windSpeed = .3f;
+float As = 3e-4;
+
 ivec2 kToIndex(vec2 k) {
 
     int col = int(round(k.x));
