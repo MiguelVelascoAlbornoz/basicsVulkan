@@ -52,52 +52,12 @@ App::App(const std::function<void(App*)>& registryCallback) {
 
     //Crear las ondas
     computePipeline = ComputePipelines::computePipelines[IFFT_SET_WAVES_COMPUTE_PIPELINE_ID];
-    Images::ifftInImage->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_TRANSFER_BIT ,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
     Images::images[IFFT_H0_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_TRANSFER_BIT ,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
     computePipeline->bind(cmd);
     ComputePipeline::dispatch(cmd,
         1,  // grupos en X, redondeando hacia arriba
         1, // grupos en Y
         1);
-
-    //stage 0 -> FFT en columnas
-    Images::images[IFFT_DISPLACEMENT_TEMP_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT  ,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-    Images::images[IFFT_DISPLACEMENT_TEMP_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT  ,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-    Images::images[IFFT_DISPLACEMENT_OUT_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT  ,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-    Images::images[IFFT_DERIVATES_TEMP_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT  ,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-    Images::ifftInImage->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT  ,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-    Images::images[IFFT_OUT_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-
-    computePipeline= ComputePipelines::getPipeline(IFFT_COMPUTE_PIPELINE_ID);
-    computePipeline->bind(cmd);
-    ComputePipelines::IfftComputePushConstants push= {0};
-    vkCmdPushConstants(cmd, computePipeline->getPipelineLayout(),VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(push), &push);
-    ComputePipeline::dispatch(cmd,FFT_N, 5,1);
-
-
-    //STAGE 1 -> FFT en filas
-    computePipeline= ComputePipelines::getPipeline(IFFT_COMPUTE_PIPELINE_ID);
-    Images::images[IFFT_DISPLACEMENT_TEMP_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT  ,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-    Images::images[IFFT_DISPLACEMENT_OUT_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT  ,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-    Images::images[IFFT_DERIVATES_TEMP_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT  ,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-    Images::ifftInImage->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-    Images::images[IFFT_OUT_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-    computePipeline->bind(cmd);
-    push= {1};
-    vkCmdPushConstants(cmd, computePipeline->getPipelineLayout(),VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(push), &push);
-    ComputePipeline::dispatch(cmd,FFT_N,  5, 1);
-
-    //CREAR EL PNG
-    Images::images[IFFT_OUT_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,VK_PIPELINE_STAGE_TRANSFER_BIT);
-
-    renderer->getVulkanDevice()->endSingleTimeCommands(cmd);
-
-    Images::images[IFFT_OUT_IMAGE_ID]->saveColorImageToPNG("out.png");
-
-    cmd =renderer->getVulkanDevice()->beginSingleTimeCommands();
-
-    Images::images[IFFT_OUT_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_PIPELINE_STAGE_TRANSFER_BIT,VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
-    Images::images[IFFT_DISPLACEMENT_OUT_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
 
 
     renderer->getVulkanDevice()->endSingleTimeCommands(cmd);
@@ -165,6 +125,65 @@ void App::executionLoop()
 
             managePlayerMovement();
             if (!editorMode) manageCameraRotation(mouseMotion);
+
+            {
+                VkCommandBuffer cmd =renderer->getVulkanDevice()->beginSingleTimeCommands();
+                    // Generar h(k,t=0) a partir de h0Image
+    Images::ifftInImage->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_TRANSFER_BIT ,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+    Images::images[IFFT_H0_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT  ,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+    ComputePipeline* updateSpectrum = ComputePipelines::getPipeline(IFFT_UPDATE_SPECTRUM_COMPUTE_PIPELINE_ID);
+    updateSpectrum->bind(cmd);
+    float initialTime = (cycleStartTimeNS/1e9)*0.1;
+    updateSpectrum->pushConstants(cmd, &initialTime, sizeof(float));
+    ComputePipeline::dispatch(cmd, FFT_N/16, FFT_N/16, 1); // local_size_x=16,y=16 en el shader
+
+
+    //stage 0 -> FFT en columnas
+    Images::images[IFFT_DISPLACEMENT_TEMP_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT  ,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+    Images::images[IFFT_DISPLACEMENT_TEMP_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT  ,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+    Images::images[IFFT_DISPLACEMENT_OUT_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT  ,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+    Images::images[IFFT_DERIVATES_TEMP_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT  ,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+    Images::ifftInImage->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT  ,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+    Images::images[IFFT_OUT_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+
+    ComputePipeline* computePipeline= ComputePipelines::getPipeline(IFFT_COMPUTE_PIPELINE_ID);
+    computePipeline->bind(cmd);
+    ComputePipelines::IfftComputePushConstants push= {0};
+    vkCmdPushConstants(cmd, computePipeline->getPipelineLayout(),VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(push), &push);
+    ComputePipeline::dispatch(cmd,FFT_N, 5,1);
+
+
+    //STAGE 1 -> FFT en filas
+    computePipeline= ComputePipelines::getPipeline(IFFT_COMPUTE_PIPELINE_ID);
+    Images::images[IFFT_DISPLACEMENT_TEMP_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT  ,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+    Images::images[IFFT_DISPLACEMENT_OUT_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT  ,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+    Images::images[IFFT_DERIVATES_TEMP_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT  ,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+    Images::ifftInImage->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+    Images::images[IFFT_OUT_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_GENERAL,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+    computePipeline->bind(cmd);
+    push= {1};
+    vkCmdPushConstants(cmd, computePipeline->getPipelineLayout(),VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(push), &push);
+    ComputePipeline::dispatch(cmd,FFT_N,  5, 1);
+
+                Images::images[IFFT_OUT_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
+                Images::images[IFFT_DISPLACEMENT_OUT_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
+
+/*
+    //CREAR EL PNG
+    Images::images[IFFT_OUT_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+    renderer->getVulkanDevice()->endSingleTimeCommands(cmd);
+
+    Images::images[IFFT_OUT_IMAGE_ID]->saveColorImageToPNG("out.png");
+
+    cmd =renderer->getVulkanDevice()->beginSingleTimeCommands();
+
+*/
+                renderer->getVulkanDevice()->endSingleTimeCommands(cmd);
+
+            }
+
+
             timeAcc -= minNSPerTick;
             ticks++;
             ticksCounter++;

@@ -12,13 +12,26 @@ const float G  = 9.81;
 
 void main() {
     ivec2 idx = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 idy = ivec2(
+            (int(FFT_N) - idx.x) % int(FFT_N),
+            (int(FFT_N) - idx.y) % int(FFT_N)
+    );
+
     vec2 k = calculateK(idx.y, idx.x);
     float kLen = length(k);
 
-    vec4 h0 = imageLoad(h0Data, idx);
+    vec2 h0 = imageLoad(h0Data, idx).xy;
+    vec2 h1 = imageLoad(h0Data, idy).xy;
+
     float omega = sqrt(G * kLen);
     float phase = omega * push.time;
 
-    vec2 h = complexMul(h0.xy, complexExp(phase)) + complexMul(h0.zw, complexExp(-phase));
+    vec2 h = complexMul(
+            h0,
+            complexExp(phase)
+    ) + complexMul(
+            vec2(h1.x, -h1.y),
+            complexExp(-phase)
+    );
     imageStore(fftDataIn, idx, vec4(h, 0.0, 0.0));
 }

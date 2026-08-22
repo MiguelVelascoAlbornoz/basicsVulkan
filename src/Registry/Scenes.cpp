@@ -7,12 +7,12 @@
 #include "Meshes.h"
 #include "Pipelines.h"
 #include "Uniforms.h"
-
+#include "../Renderer/ComputePipeline.h"
 #include "../Scene/Model.h"
 #include "../Renderer/Image.h"
 #include "Images.h"
 #include "../Renderer/Mesh/Mesh.h"
-
+#include "ComputePipelines.h"
 
 void Scenes::renderAxis( const VkCommandBuffer commandBuffer)
 {

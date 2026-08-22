@@ -298,7 +298,7 @@ void Registry::initComputePipelines(const App* app)
     .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT}
     };
 
-    ifftConfig.shaderMacros = {"FFT_N",std::to_string(app->FFT_N)};
+    //ifftConfig.shaderMacros = {"FFT_N",std::to_string(app->FFT_N)};
     ifftConfig.shaderName = "ifft";
     ifftConfig.pushConstantsSize = sizeof(ComputePipelines::IfftComputePushConstants);
     ComputePipelines::registerPipelines(IFFT_COMPUTE_PIPELINE_ID,new ComputePipeline(app->renderer->getVulkanDevice(),app->renderer->descriptorPool,ifftConfig));
@@ -306,7 +306,7 @@ void Registry::initComputePipelines(const App* app)
 
     ComputePipelineConfig setWavesPipelineConfig;
     setWavesPipelineConfig.shaderName = "setWaves";
-    setWavesPipelineConfig.shaderMacros = {"FFT_N",std::to_string(app->FFT_N)};
+    //setWavesPipelineConfig.shaderMacros = {"FFT_N",std::to_string(app->FFT_N)};
     setWavesPipelineConfig.images  ={ {
         .image = Images::images[IFFT_H0_IMAGE_ID]->getView(),
         .sampler = VK_NULL_HANDLE,
@@ -329,7 +329,7 @@ void Registry::initComputePipelines(const App* app)
                 .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT
             }
     };
-    updateWavesPipelineConfig.shaderMacros = {"FFT_N",std::to_string(app->FFT_N)};
+    //updateWavesPipelineConfig.shaderMacros = {"FFT_N",std::to_string(app->FFT_N)};
     updateWavesPipelineConfig.pushConstantsSize=sizeof(float);
     ComputePipelines::registerPipelines(IFFT_UPDATE_SPECTRUM_COMPUTE_PIPELINE_ID,new ComputePipeline(app->renderer->getVulkanDevice(),app->renderer->descriptorPool,updateWavesPipelineConfig));
 }

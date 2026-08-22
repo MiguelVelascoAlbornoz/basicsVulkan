@@ -1,6 +1,6 @@
 float L = 1.0f;
 const float PI = 3.14159265358979323846;
-
+const uint FFT_N = 512;
 ivec2 kToIndex(vec2 k) {
 
     int col = int(round(k.x));
