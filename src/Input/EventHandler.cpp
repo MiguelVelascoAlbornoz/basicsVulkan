@@ -133,4 +133,5 @@ void App::manageCameraRotation(SDL_MouseMotionEvent event) {
         vec3 newFacing(cameraRotation.x + event.xrel* realSensibility, cameraRotation.y - event.yrel * realSensibility, cameraRotation.z);
          player->setRotation(newFacing.x,newFacing.y,newFacing.z,cameraRotation.w);
         Uniforms::cameraUniform->addIndexToQueue(Uniforms::CameraUBO::VIEW_PROJECTION_MATRIX);
+        Uniforms::cameraUniform->addIndexToQueue(Uniforms::CameraUBO::VIEW_DIR);
 }

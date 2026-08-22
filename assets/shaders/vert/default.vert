@@ -6,19 +6,10 @@ layout (location=1) in  vec3 normal;
 layout (location=0) out vec3 fragNormal;
 layout (location=1) out vec3 worldPos;
 
-layout(std140, binding = 0) uniform UniformBufferObject {
-
-    mat4 viewProjectionMatrix;
-    float time;
-} ubo;
-layout(std140,push_constant) uniform ModelUBO {
-    mat4 modelMatrix;
-    vec3 scale;
-    mat4 rotationMatrix;
-} modelUBO;
-
+#include "../glsl/CameraUBO.glsl"
+#include "../glsl/ModelUBO.glsl"
 void main() {
     fragNormal = vec3(modelUBO.rotationMatrix*vec4(normal,1.0f));
     worldPos = vec3(modelUBO.modelMatrix*vec4(vertexLocalPos*modelUBO.scale,1.0f));
-    gl_Position = ubo.viewProjectionMatrix*vec4(worldPos, 1.0);
+    gl_Position = cameraUBO.viewProjectionMatrix*vec4(worldPos, 1.0);
 }

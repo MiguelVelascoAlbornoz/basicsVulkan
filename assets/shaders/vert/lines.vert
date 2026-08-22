@@ -2,19 +2,13 @@
 
 layout (location=0) in  vec3 vertexLocalPos;
 
-layout(std140, binding = 0) uniform UniformBufferObject {
 
-    mat4 viewProjectionMatrix;
-    float time;
-} ubo;
-layout(std140,push_constant) uniform ModelUBO {
-    vec3 direction;
-    vec3 color;
-} modelUBO;
+#include "../glsl/CameraUBO.glsl"
+#include "../glsl/LineModelUBO.glsl"
 
 
 
 void main() {
-    vec3 worldPos = vertexLocalPos*modelUBO.direction;
-    gl_Position = ubo.viewProjectionMatrix*vec4(worldPos, 1.0);
+    vec3 worldPos = vertexLocalPos*lineModelUBO.direction;
+    gl_Position =cameraUBO.viewProjectionMatrix*vec4(worldPos, 1.0);
 }
