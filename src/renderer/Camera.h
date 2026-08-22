@@ -49,6 +49,10 @@ public:
     mat3 getWorldMatrix() {
         return {up,front,right};
     }
+    [[nodiscard]] const vec3* getViewDirection() const
+    {
+        return &front;
+    }
     /** *
      * @return Retorna un vec4 con toda la informacion de la rotation de la camara del tipo: (yaw,pitch,roll,yawToRoll)
      */

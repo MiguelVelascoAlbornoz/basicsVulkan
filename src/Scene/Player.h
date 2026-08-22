@@ -11,6 +11,12 @@ using namespace glm;
 class Player {
 public:
     struct PlayerCameraSettings {
+        enum BitsPerChannel
+        {
+            BITS_8,
+            BITS_16,
+            BITS_32
+        };
         float fov;
         float aspectRatio;
         float farPlane;
@@ -20,6 +26,8 @@ public:
         float fboResolutionMultiplier = 1;
         int MSAAsamples = 0;
         bool sampleShadding = false;
+        BitsPerChannel bitsPerChannel;
+
 
     };
     Player(int id);
@@ -31,6 +39,7 @@ public:
     void setRotation(float yaw,float pitch, float roll, float yawToRoll);
     void setRotation(vec4& rotation) ;
     void move(vec3 delta);
+
     const vec3* getPosition() {
         return &position;
     }

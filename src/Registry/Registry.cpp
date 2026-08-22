@@ -41,7 +41,9 @@ void Registry::initUniforms(const App* app)
 
     std::vector<std::pair<const void*,AttribType::INPUT_TYPES>> inputsMap = {
         {player->camera->getViewProjectionMatrix(),AttribType::MAT4},
-        {&app->tickDeltaTimeNS,AttribType::FLOAT}
+        {&app->tickDeltaTimeNS,AttribType::FLOAT},
+    {player->camera->getPosition(),AttribType::VEC3},
+        {player->camera->getViewDirection(),AttribType::VEC3},
     };
     Uniforms::cameraUniform = Uniforms::registerUniform(CAMERA_UNIFORM_ID, new UniformBuffer(device,inputsMap));
 
@@ -222,6 +224,20 @@ void Registry::initMenus(const App* app)
     Menus::F3Menu = dynamic_cast<F3GUI*>(Menus::registerMenu(F3_MENU_ID,new F3GUI(app)));
 }
 
+VkFormat getFormatByBits(Player::PlayerCameraSettings::BitsPerChannel bitPerChannel)
+{
+    switch (bitPerChannel)
+    {
+
+    case Player::PlayerCameraSettings::BitsPerChannel::BITS_16:
+        return VK_FORMAT_R16G16B16A16_SFLOAT;
+    case Player::PlayerCameraSettings::BitsPerChannel::BITS_32:
+        return VK_FORMAT_R32G32B32A32_SFLOAT;
+    default:
+        return VK_FORMAT_R8G8B8A8_UNORM;
+    }
+}
+
 void Registry::initFramebuffers(const App* app)
 {
     FrameBuffers::defaultFrameBuffer = FrameBuffers::registerFrameBuffer(
@@ -230,7 +246,7 @@ void Registry::initFramebuffers(const App* app)
             app->renderer->getVulkanDevice(),
             app->window->getWidth()*app->player->getPlayerCameraSettings()->fboResolutionMultiplier,
             app->window->getHeight()*app->player->getPlayerCameraSettings()->fboResolutionMultiplier,
-            VK_FORMAT_R8G8B8A8_UNORM,
+            getFormatByBits(app->player->getPlayerCameraSettings()->bitsPerChannel),
             true,
             true,app->player->getPlayerCameraSettings()->MSAAsamples
         )
@@ -332,4 +348,8 @@ void Registry::initComputePipelines(const App* app)
     //updateWavesPipelineConfig.shaderMacros = {"FFT_N",std::to_string(app->FFT_N)};
     updateWavesPipelineConfig.pushConstantsSize=sizeof(float);
     ComputePipelines::registerPipelines(IFFT_UPDATE_SPECTRUM_COMPUTE_PIPELINE_ID,new ComputePipeline(app->renderer->getVulkanDevice(),app->renderer->descriptorPool,updateWavesPipelineConfig));
+}
+void Registry::initComputePipelines(const App* app)
+{
+    app->player->getPosition();//EVITAR WARNINGS
 }

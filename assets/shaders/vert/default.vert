@@ -10,17 +10,8 @@ layout (location=1) out vec3 worldPos;
 layout(binding = 2) uniform sampler2D heightMap;
 layout(binding = 3) uniform sampler2D displacementMap;
 
-layout(std140, binding = 0) uniform UniformBufferObject {
-
-    mat4 viewProjectionMatrix;
-    float time;
-} ubo;
-layout(std140,push_constant) uniform ModelUBO {
-    mat4 modelMatrix;
-    vec3 scale;
-    mat4 rotationMatrix;
-} modelUBO;
-
+#include "../glsl/CameraUBO.glsl"
+#include "../glsl/ModelUBO.glsl"
 
 
 void main() {
@@ -40,6 +31,6 @@ void main() {
     worldPos += fragNormal*height;
 
     fragNormal = mapNormal;
+    gl_Position = cameraUBO.viewProjectionMatrix*vec4(worldPos, 1.0);
 
-    gl_Position = ubo.viewProjectionMatrix*vec4(worldPos, 1.0);
 }
