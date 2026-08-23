@@ -57,8 +57,6 @@ private:
 
 
 
-    void manageCameraRotation(SDL_MouseMotionEvent event);
-
     bool runnig = true; /**< Estado do loop */
 };
 

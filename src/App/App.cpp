@@ -97,8 +97,6 @@ void App::executionLoop()
             tickDeltaTimeNS = SDL_GetTicksNS()- tickStartTimeNS;
             tickStartTimeNS = SDL_GetTicksNS();
 
-            managePlayerMovement();
-            if (!editorMode) manageCameraRotation(mouseMotion);
             timeAcc -= minNSPerTick;
             ticks++;
             ticksCounter++;

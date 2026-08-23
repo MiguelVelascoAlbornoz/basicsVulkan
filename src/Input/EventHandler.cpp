@@ -69,8 +69,6 @@ void App::manageEvents() {
         }  if (event.type == SDL_EVENT_MOUSE_MOTION) {
             mouseMotion = event.motion;
             movedMouse = true;
-
-
         }
     }
 
@@ -78,45 +76,10 @@ void App::manageEvents() {
 void App::managePlayerMovement() {
     const bool* keys = SDL_GetKeyboardState(nullptr);
 
-
-    mat3 cameraWorldMatrix = player->camera->getWorldMatrix();
-
-
-    vec3 delta = vec3();
     if (keys[SDL_SCANCODE_SPACE])
     {
-        delta = delta + cameraWorldMatrix[0];
+    }
 
-    }
-    if (keys[SDL_SCANCODE_W]) {
-        delta = delta +cameraWorldMatrix[1];
-
-    }
-    if (keys[SDL_SCANCODE_S]) {
-        delta =delta - cameraWorldMatrix[1];
-
-    }
-    if (keys[SDL_SCANCODE_A]) {
-        delta =delta + cameraWorldMatrix[2];
-
-    }
-    if (keys[SDL_SCANCODE_D]) {
-        delta =delta - cameraWorldMatrix[2];
-
-    }
-    if (keys[SDL_SCANCODE_LSHIFT]) {
-        delta =delta - cameraWorldMatrix[0];
-
-    }
-    if (delta.x != 0 || delta.y != 0 || delta.z != 0) {
-        delta = normalize(delta);
-        delta = delta*player->speed;
-        if (keys[SDL_SCANCODE_LCTRL]) {
-            delta = delta*player->speedMultiplier;
-        }
-        player->move(delta);
-        Uniforms::onPlayerRenderUpdate();
-    }
 }
 void App::onFBOResolutionChange() const {
     vkDeviceWaitIdle(renderer->getVulkanDevice()->device);
@@ -125,13 +88,4 @@ void App::onFBOResolutionChange() const {
     Pipelines::updatePostProcessPipelinesDescriptors(player->getPlayerCameraSettings()->MSAAsamples > 0);
 
 }
-void App::manageCameraRotation(SDL_MouseMotionEvent event) {
-        if (!movedMouse) return;
 
-        vec4 cameraRotation =  player->camera->getCameraRotation();
-        float realSensibility =  player->rotationSensitivity;
-        vec3 newFacing(cameraRotation.x + event.xrel* realSensibility, cameraRotation.y - event.yrel * realSensibility, cameraRotation.z);
-         player->setRotation(newFacing.x,newFacing.y,newFacing.z,cameraRotation.w);
-        Uniforms::cameraUniform->addIndexToQueue(Uniforms::CameraUBO::VIEW_PROJECTION_MATRIX);
-        Uniforms::cameraUniform->addIndexToQueue(Uniforms::CameraUBO::VIEW_DIR);
-}

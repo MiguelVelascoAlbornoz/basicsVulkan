@@ -47,19 +47,12 @@ void Scenes::renderAxis( const VkCommandBuffer commandBuffer)
 
 void Scenes::renderTest(const VkCommandBuffer commandBuffer) {
 
-
-    Model cubeModel;
-    cubeModel.mesh = Meshes::cubeMesh;
-    cubeModel.setTranslation(vec3(0.0f,0.0f,0.0f));
-   // cubeModel.setRotation(vec3(324,424,0.0f));
-    cubeModel.setScale(vec3(1.0f,1.0f,1.0f));
-
     Pipeline* testPipeline = Pipelines::getPipeline(TEST_PIPELINE_ID);
     testPipeline->bind(commandBuffer); // bind the graphics pipeline (shaders + fixed-function state);
     vkCmdBindDescriptorSets(commandBuffer,VK_PIPELINE_BIND_POINT_GRAPHICS,testPipeline->getPipelineLayout(),0,1,&testPipeline->descriptorSet,0,nullptr);
 
 
-    cubeModel.draw(commandBuffer,testPipeline);
+    vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 
 }
 
