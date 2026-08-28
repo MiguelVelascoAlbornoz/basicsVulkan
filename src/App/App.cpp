@@ -5,7 +5,13 @@
  * @author Miguel Velasco
  */
 #include "App.h"
+
+#include <d3d11.h>
+
 #include <imGUI/imgui_impl_sdl3.h>
+#include <wrl/client.h>
+#include <dxgi1_2.h>
+
 #include "../Renderer/Renderer.h"
 #include "../Registry/Scenes.h"
 #include "../Renderer/Window.h"
@@ -13,6 +19,7 @@
 #include "../Renderer/VulkanDevice.h"
 #include "../Renderer/UniformBuffer.h"
 #include "../Registry/Images.h"
+
 
 
 App::App(const std::function<void(App*)>& registryCallback) {
@@ -37,8 +44,164 @@ App::App(const std::function<void(App*)>& registryCallback) {
     registryCallback(this);
 
     FrameBuffers::turnOnFBO(FrameBuffers::defaultFrameBuffer);
+
+
+    ID3D11Device* device = nullptr;
+    ID3D11DeviceContext* context = nullptr;
+    D3D_FEATURE_LEVEL featureLevel;
+
+    if (D3D11CreateDevice(
+            nullptr,
+            D3D_DRIVER_TYPE_HARDWARE,
+            nullptr,
+            D3D11_CREATE_DEVICE_BGRA_SUPPORT,
+            nullptr, 0,
+            D3D11_SDK_VERSION,
+            &device,
+            &featureLevel,
+            &context) != S_OK)
+    {
+        std::cerr << "Failed to initialize d3d11." << std::endl;
+        runnig = false;
+        return;
+    }
+
+    //Obtaining output monitor
+        // Create a DXGIFactory object.
+    IDXGIFactory* pFactory = NULL;
+    if(FAILED(CreateDXGIFactory(__uuidof(IDXGIFactory) ,(void**)&pFactory)))
+    {
+        std::cerr << "Failed to create factory" << std::endl;
+        runnig = false;
+        return;
+    }
+        //Obtainig adapters
+    IDXGIAdapter * pAdapter;
+    std::vector <IDXGIAdapter*> vAdapters;
+    for ( UINT i = 0;
+          pFactory->EnumAdapters(i, &pAdapter) != DXGI_ERROR_NOT_FOUND;
+          ++i )
+    {
+        vAdapters.push_back(pAdapter);
+    }
+        //Selecting adapter
+    if (vAdapters.empty())
+    {
+        std::cerr << "Not available adapters" << std::endl;
+        runnig = false;
+        return;
+    }
+    pAdapter = *vAdapters.data();
+
+        //Obtaining outputs
+    UINT i = 0;
+    IDXGIOutput * pOutput;
+    std::vector<IDXGIOutput*> vOutputs;
+    while(pAdapter->EnumOutputs(i, &pOutput) != DXGI_ERROR_NOT_FOUND)
+    {
+        vOutputs.push_back(pOutput);
+        ++i;
+    }
+        //Selecting outputs
+    if (vOutputs.empty())
+    {
+        std::cerr << "Not available outputs" << std::endl;
+        runnig = false;
+        return;
+    }
+    pOutput = *vOutputs.data();
+    IDXGIOutput1* output1 = nullptr;
+    HRESULT hr = pOutput->QueryInterface(__uuidof(IDXGIOutput1), (void**)&output1);
+
+    if (FAILED(hr) || output1 == nullptr)
+    {
+        std::cerr << "No se pudo obtener IDXGIOutput1" << std::endl;
+        runnig = false;
+        return;
+    }
+
+    //Obtaining duplicated output
+    IDXGIOutputDuplication *ppOutputDuplication = nullptr;
+    output1->DuplicateOutput(device,&ppOutputDuplication);
+    if (ppOutputDuplication == nullptr)
+    {
+        std::cerr << "Error obtaining duplicated output" << std::endl;
+        runnig = false;
+        return;
+    }
+
+    //Obtaining frame
+    DXGI_OUTDUPL_FRAME_INFO frameInfo;
+    IDXGIResource* frameResource = nullptr;
+    if (ppOutputDuplication->AcquireNextFrame(1000,&frameInfo,&frameResource) != S_OK)
+    {
+        std::cerr << "Error obtaining frame" << std::endl;
+        runnig = false;
+        return;
+    }
+    ID3D11Texture2D* frameTexture;
+    hr = frameResource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)&frameTexture);
+    if (hr != S_OK)
+    {
+        std::cerr << "No se pudo obtener la textura" << std::endl;
+        runnig = false;
+        return;
+    }
+
+    //Now copy de frameTexturo into a new Texture
+
+    D3D11_TEXTURE2D_DESC textureDesc;
+    frameTexture->GetDesc(&textureDesc);
+    textureDesc.MiscFlags  = D3D11_RESOURCE_MISC_SHARED_NTHANDLE | D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX ;
+
+    ID3D11Texture2D* dstTexture = nullptr;
+    if (device->CreateTexture2D(&textureDesc,nullptr,&dstTexture) != S_OK)
+    {
+        std::cerr << "No se pudo crear la textura de destino" << std::endl;
+        runnig = false;
+        return;
+    }
+
+    ID3D11Resource* dstResource = nullptr;
+    hr = dstTexture->QueryInterface(__uuidof( ID3D11Resource), (void**)&dstResource);
+    if (hr != S_OK)
+    {
+        std::cerr << "No se pudo obtener el destiny resource" << std::endl;
+        runnig = false;
+        return;
+    }
+    ID3D11Resource* srcResource = nullptr;
+    hr = frameTexture->QueryInterface(__uuidof( ID3D11Resource), (void**)&srcResource);
+    if (hr != S_OK)
+    {
+        std::cerr << "No se pudo obtener el source resource" << std::endl;
+        runnig = false;
+        return;
+    }
+    ID3D11DeviceContext* deviceContext = nullptr;
+    device->GetImmediateContext(&deviceContext);
+
+    deviceContext->CopyResource(dstResource,srcResource);
+
+    IDXGIResource1* dstResource1 = nullptr;
+    hr = frameTexture->QueryInterface(__uuidof( IDXGIResource1), (void**)&dstResource1);
+    if (hr != S_OK)
+    {
+        std::cerr << "No se pudo obtener el destiny resource1" << std::endl;
+        runnig = false;
+        return;
+    }
+    HANDLE handle;
+    if (dstResource1->CreateSharedHandle(nullptr, DXGI_SHARED_RESOURCE_READ| DXGI_SHARED_RESOURCE_WRITE  , nullptr,&handle) != S_OK)
+    {
+        std::cerr << "No se pudo obtener el handle" << std::endl;
+        runnig = false;
+        return;
+    }
     //Finally execution loop
     executionLoop();
+
+
 
 
 }
