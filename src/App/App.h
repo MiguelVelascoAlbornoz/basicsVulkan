@@ -6,13 +6,18 @@
 #ifndef APP_H
 #define APP_H
 
+#include <dxgiformat.h>
+
 #include  "../Registry/Uniforms.h"
 #include "../Registry/Pipelines.h"
 #include "../Registry/Menus.h"
 #include "../Registry/Meshes.h"
 #include "../Registry/FrameBuffers.h"
+#include <windows.h> // HANDLE
 #include "../Scene/Player.h"
 #include <SDL3/SDL.h>
+
+#include "vulkan/vulkan_enums.hpp"
 class Window;
 class Renderer;
 
@@ -42,6 +47,10 @@ public:
     Uint64 ticksPerSecond = 0;
     bool movedMouse;
     void onFBOResolutionChange() const;
+    HANDLE desktopImageHandle;
+    int desktopWidth;
+    int desktopHeight;
+    DXGI_FORMAT  desktopFormat;
 private:
     /**
      * @brief Main execution loop of the application.

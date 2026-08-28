@@ -5,6 +5,7 @@
 
 #include "stbImage/stb_image_write.h"
 #include <glm/glm.hpp>
+#include <vulkan/vulkan_win32.h>
 struct FormatInfo {
     int bytesPerTexel;
     int channels;
@@ -261,6 +262,103 @@ void Image::saveColorImageToPNG(const std::string& filename) const
     vkFreeMemory(dev, stagingMemory, nullptr);
     std::cout << "Imagen guardada en: " << filename << std::endl;
 }
+
+Image::Image(VulkanDevice* device, ImportTag) : device(device) {}
+
+Image* Image::importFromD3D11Handle(VulkanDevice* device, HANDLE sharedHandle, uint32_t width, uint32_t height,
+    VkFormat format, VkImageUsageFlags usage, SampleConfig config)
+{
+    VkDevice dev = device->device;
+    auto* img = new Image(device, ImportTag{});
+    img->width = width;
+    img->height = height;
+    img->format = format;
+    img->usage = usage;
+    img->aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    img->sampleConfig = config;
+    img->samples = 0;
+
+    // 1. VkImage "consciente" de que su memoria vendrá de fuera
+    VkExternalMemoryImageCreateInfo extImageInfo{};
+    extImageInfo.sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO;
+    extImageInfo.handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_BIT;
+
+    VkImageCreateInfo imageInfo{};
+    imageInfo.sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    imageInfo.pNext         = &extImageInfo;
+    imageInfo.imageType     = VK_IMAGE_TYPE_2D;
+    imageInfo.extent        = { width, height, 1 };
+    imageInfo.mipLevels     = 1;
+    imageInfo.arrayLayers   = 1;
+    imageInfo.format        = format;
+    imageInfo.tiling        = VK_IMAGE_TILING_OPTIMAL;
+    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    imageInfo.usage         = usage;
+    imageInfo.samples       = VK_SAMPLE_COUNT_1_BIT;
+    imageInfo.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
+
+    if (vkCreateImage(dev, &imageInfo, nullptr, &img->image) != VK_SUCCESS) {
+        std::cerr << "(IMAGE) Error: no se pudo crear el VkImage para el import." << std::endl;
+        img->error = true;
+        return img;
+    }
+
+    // 2. Importar la memoria D3D11 dentro del VkDeviceMemory
+    VkMemoryRequirements memReq;
+    vkGetImageMemoryRequirements(dev, img->image, &memReq);
+
+    VkMemoryDedicatedAllocateInfo dedicatedInfo{};
+    dedicatedInfo.sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO;
+    dedicatedInfo.image = img->image;
+
+    VkImportMemoryWin32HandleInfoKHR importInfo{};
+    importInfo.sType      = VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_KHR;
+    importInfo.pNext      = &dedicatedInfo;
+    importInfo.handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_BIT;
+    importInfo.handle     = sharedHandle;
+
+    VkMemoryAllocateInfo allocInfo{};
+    allocInfo.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.pNext           = &importInfo;
+    allocInfo.allocationSize  = memReq.size;
+    allocInfo.memoryTypeIndex = device->findMemoryType(memReq.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    if (vkAllocateMemory(dev, &allocInfo, nullptr, &img->memory) != VK_SUCCESS) {
+        std::cerr << "(IMAGE) Error: no se pudo importar la memoria D3D11." << std::endl;
+        img->error = true;
+        return img;
+    }
+    vkBindImageMemory(dev, img->image, img->memory, 0);
+
+    // El handle NT ya quedó referenciado internamente; el import no lo consume.
+    CloseHandle(sharedHandle);
+
+    // 3. View + sampler, igual que en create()
+    VkImageViewCreateInfo viewInfo{};
+    viewInfo.sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    viewInfo.image    = img->image;
+    viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    viewInfo.format   = format;
+    viewInfo.components = { VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY,
+                             VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY };
+    viewInfo.subresourceRange.aspectMask     = img->aspectMask;
+    viewInfo.subresourceRange.baseMipLevel   = 0;
+    viewInfo.subresourceRange.levelCount     = 1;
+    viewInfo.subresourceRange.baseArrayLayer = 0;
+    viewInfo.subresourceRange.layerCount     = 1;
+
+    if (vkCreateImageView(dev, &viewInfo, nullptr, &img->view) != VK_SUCCESS) {
+        std::cerr << "(IMAGE) Error: no se pudo crear el image view importado." << std::endl;
+        img->error = true;
+        return img;
+    }
+
+    img->createSampler(config.magFilter, config.minFilter, config.borderColor, config.adressMode);
+    img->currentLayout = VK_IMAGE_LAYOUT_UNDEFINED; // la textura D3D11 no tiene un "layout" Vulkan; transiciónala tú antes de samplear
+
+    return img;
+}
+
 Image* Image::loadFromFile(VulkanDevice* device, const std::string& path, VkImageUsageFlags usage,VkImageLayout newLayout, SampleConfig config) {
     int w, h, channels;
     stbi_uc* pixels = stbi_load(path.c_str(), &w, &h, &channels, 4);

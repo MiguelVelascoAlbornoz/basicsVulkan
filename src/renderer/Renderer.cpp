@@ -8,8 +8,9 @@
 #include <imGUI/imgui_impl_sdl3.h>
 #include <SDL3/SDL_vulkan.h>
 #include <imGUI/imgui_impl_vulkan.h>
+#include <vulkan/vulkan_win32.h>
 
-
+#include "Image.h"
 #include "../Registry/Pipelines.h"
 #include "../Registry/Scenes.h"
 #include "../Registry/FrameBuffers.h"
@@ -331,6 +332,33 @@ void Renderer::update()
     submitInfo.pCommandBuffers      = &commandBuffers[currentFrame];
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores    = signalSemaphores;
+
+    VkWin32KeyedMutexAcquireReleaseInfoKHR keyedMutexInfo{};
+    VkDeviceMemory sharedMemory = VK_NULL_HANDLE;
+    UINT64 acquireKey = 0, releaseKey = 0;
+    uint32_t timeoutMs = 0;
+
+    if (sharedCaptureImage) {
+        const Image::KeyedMutexSync& sync = sharedCaptureImage->getKeyedMutexSync();
+        if (sync.active) {
+            sharedMemory = sharedCaptureImage->getMemory();
+            acquireKey = sync.acquireKey;
+            releaseKey = sync.releaseKey;
+            timeoutMs = sync.timeoutMs;
+
+            keyedMutexInfo.sType = VK_STRUCTURE_TYPE_WIN32_KEYED_MUTEX_ACQUIRE_RELEASE_INFO_KHR;
+            keyedMutexInfo.acquireCount     = 1;
+            keyedMutexInfo.pAcquireSyncs    = &sharedMemory;
+            keyedMutexInfo.pAcquireKeys     = &acquireKey;
+            keyedMutexInfo.pAcquireTimeouts = &timeoutMs;
+            keyedMutexInfo.releaseCount     = 1;
+            keyedMutexInfo.pReleaseSyncs    = &sharedMemory;
+            keyedMutexInfo.pReleaseKeys     = &releaseKey;
+
+            submitInfo.pNext = &keyedMutexInfo;
+        }
+    }
+
 
     if (!vulkanDevice->queueSubmit(&submitInfo, inFlightFences[currentFrame])){
         return;

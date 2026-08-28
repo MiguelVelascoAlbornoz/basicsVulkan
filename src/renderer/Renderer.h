@@ -17,15 +17,17 @@ class SwapChain;
 class Window;
 class FrameBufferObject;
 class VulkanDevice;
+class Image;
 #include <vector>
 #include <Vulkan/vulkan.h>
+
 /**
  * @brief The Renderer class encapsulates the creation and management of an SDL renderer, including error management and GUI initialization.
  * It provides methods to initialize the renderer, manage errors, and set up the GUI.
  */
 class Renderer {
     public:
-
+        void setSharedCaptureImage(Image* img) { sharedCaptureImage = img; }
         /**
          * @brief Constructor of the Renderer class.
          * @details Initializes the SDL renderer for the given window and ImGUI. If the renderer fails to initialize, it sets the error flag to true and prints an error message to the standard error stream.
@@ -63,7 +65,7 @@ class Renderer {
     VkRenderPass renderPass = VK_NULL_HANDLE;
     VkDescriptorPool descriptorPool = VK_NULL_HANDLE; /**< @brief Descriptor pool usado por la aplicación para asignar sus descriptor sets. */
 private:
-
+    Image* sharedCaptureImage = nullptr;
 
     void initGUI(const Window *window);
     /**< @brief Initializes Vulkan for rendering.

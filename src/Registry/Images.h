@@ -14,6 +14,7 @@
 
 class Image;
 #define MISSING_IMAGE_ID "missing_image_id"
+#define DESKTOP_IMAGE_ID "desktop_image_id"
 
 class Images {
 public:

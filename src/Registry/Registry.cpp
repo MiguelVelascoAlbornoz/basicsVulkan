@@ -62,9 +62,9 @@ void Registry::initPipelines(const App* app)
     };
     pipelineConfigDefault.images = {
         {
-            .image = Images::missingImage->getView(),
-            .sampler = Images::missingImage->getSampler(),
-            .layout = Images::missingImage->getCurrentLayout(),
+            .image = Images::images[DESKTOP_IMAGE_ID]->getView(),
+            .sampler = Images::images[DESKTOP_IMAGE_ID]->getSampler(),
+            .layout = Images::images[DESKTOP_IMAGE_ID]->getCurrentLayout(),
             .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT
         }
@@ -178,7 +178,10 @@ void Registry::initImages(const App* app)
 {
 
     Images::missingImage = Images::registerImages(MISSING_IMAGE_ID,
-        Image::loadFromFile(app->renderer->getVulkanDevice(),"assets/Textures/missing_texture.png",VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT));
+    Image::loadFromFile(app->renderer->getVulkanDevice(),"assets/Textures/missing_texture.png",VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT));
+    Images::images[DESKTOP_IMAGE_ID] = Images::registerImages(DESKTOP_IMAGE_ID,Image::importFromD3D11Handle(app->renderer->getVulkanDevice(),app->desktopImageHandle,app->desktopWidth,app->desktopHeight,PipelineUtils::dxgiToVulkanFormat(app->desktopFormat)));
+
+    app->renderer->setSharedCaptureImage(Images::images[DESKTOP_IMAGE_ID]);
 }
 void Registry::initComputePipelines(const App* app)
 {

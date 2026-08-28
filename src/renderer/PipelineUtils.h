@@ -30,6 +30,7 @@ struct UniformBinding
 class PipelineUtils
 {
 public:
+    static VkFormat dxgiToVulkanFormat(DXGI_FORMAT dxgiFormat);
     static VkShaderModule createShaderModule(const std::vector<char> &code, VkDevice device);
 
     /**

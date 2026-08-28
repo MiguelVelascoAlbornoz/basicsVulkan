@@ -41,9 +41,6 @@ App::App(const std::function<void(App*)>& registryCallback) {
 
     player = new Player(0);
 
-    registryCallback(this);
-
-    FrameBuffers::turnOnFBO(FrameBuffers::defaultFrameBuffer);
 
 
     ID3D11Device* device = nullptr;
@@ -149,7 +146,7 @@ App::App(const std::function<void(App*)>& registryCallback) {
     }
 
     //Now copy de frameTexturo into a new Texture
-
+        //Crear la textra de destino
     D3D11_TEXTURE2D_DESC textureDesc;
     frameTexture->GetDesc(&textureDesc);
     textureDesc.MiscFlags  = D3D11_RESOURCE_MISC_SHARED_NTHANDLE | D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX ;
@@ -161,7 +158,7 @@ App::App(const std::function<void(App*)>& registryCallback) {
         runnig = false;
         return;
     }
-
+        //Castear la textura de destino al resource especifico para copiar
     ID3D11Resource* dstResource = nullptr;
     hr = dstTexture->QueryInterface(__uuidof( ID3D11Resource), (void**)&dstResource);
     if (hr != S_OK)
@@ -170,6 +167,7 @@ App::App(const std::function<void(App*)>& registryCallback) {
         runnig = false;
         return;
     }
+        //Castear la textura de origen a un un resource especifico para copiar
     ID3D11Resource* srcResource = nullptr;
     hr = frameTexture->QueryInterface(__uuidof( ID3D11Resource), (void**)&srcResource);
     if (hr != S_OK)
@@ -178,11 +176,19 @@ App::App(const std::function<void(App*)>& registryCallback) {
         runnig = false;
         return;
     }
+        //Obtener contexto del device para hacer la copia
     ID3D11DeviceContext* deviceContext = nullptr;
     device->GetImmediateContext(&deviceContext);
 
-    deviceContext->CopyResource(dstResource,srcResource);
+        //Hacer la copia
+    IDXGIKeyedMutex* keyedMutex = nullptr;
+    dstResource->QueryInterface(__uuidof(IDXGIKeyedMutex), (void**)&keyedMutex);
 
+    keyedMutex->AcquireSync(0, INFINITE); // key 0 = "yo escribo"
+    deviceContext->CopyResource(dstResource, frameTexture);
+    keyedMutex->ReleaseSync(1);           // key 1 = "listo, que lea Vulkan"
+
+        //Castear el resource de destino para poder obtener el handle
     IDXGIResource1* dstResource1 = nullptr;
     hr = frameTexture->QueryInterface(__uuidof( IDXGIResource1), (void**)&dstResource1);
     if (hr != S_OK)
@@ -191,13 +197,21 @@ App::App(const std::function<void(App*)>& registryCallback) {
         runnig = false;
         return;
     }
-    HANDLE handle;
-    if (dstResource1->CreateSharedHandle(nullptr, DXGI_SHARED_RESOURCE_READ| DXGI_SHARED_RESOURCE_WRITE  , nullptr,&handle) != S_OK)
+        //Obtener handle
+    if (dstResource1->CreateSharedHandle(nullptr, DXGI_SHARED_RESOURCE_READ  , nullptr,&desktopImageHandle) != S_OK)
     {
         std::cerr << "No se pudo obtener el handle" << std::endl;
         runnig = false;
         return;
     }
+    desktopHeight = textureDesc.Height;
+    desktopWidth = textureDesc.Width;
+    desktopFormat = textureDesc.Format;
+
+
+    registryCallback(this);
+
+    FrameBuffers::turnOnFBO(FrameBuffers::defaultFrameBuffer);
     //Finally execution loop
     executionLoop();
 

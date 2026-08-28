@@ -3,6 +3,8 @@
 //
 
 #include "PipelineUtils.h"
+
+#include <dxgiformat.h>
 #include <memory>
 #include <iostream>
 #include "VulkanDevice.h"
@@ -176,4 +178,19 @@ void PipelineUtils::createSampler(VkDevice device,
     samplerInfo.borderColor = borderColor;//VK_BORDER_COLOR_INT_OPAQUE_WHITE; // 1.0 = "infinitamente lejos" fuera de rango
     samplerInfo.unnormalizedCoordinates = VK_FALSE;
     vkCreateSampler(device, &samplerInfo, nullptr, &sampler);
+}
+
+VkFormat PipelineUtils::dxgiToVulkanFormat(DXGI_FORMAT dxgiFormat)
+{
+    switch (dxgiFormat) {
+    case DXGI_FORMAT_B8G8R8A8_UNORM:        return VK_FORMAT_B8G8R8A8_UNORM;
+    case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:   return VK_FORMAT_B8G8R8A8_SRGB;
+    case DXGI_FORMAT_R8G8B8A8_UNORM:        return VK_FORMAT_R8G8B8A8_UNORM;
+    case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:   return VK_FORMAT_R8G8B8A8_SRGB;
+    case DXGI_FORMAT_R16G16B16A16_FLOAT:    return VK_FORMAT_R16G16B16A16_SFLOAT;
+    case DXGI_FORMAT_R10G10B10A2_UNORM:     return VK_FORMAT_A2B10G10R10_UNORM_PACK32;
+    default:
+        std::cerr << "(PIPELINE) Formato DXGI no soportado: " << static_cast<int>(dxgiFormat) << std::endl;
+        return VK_FORMAT_UNDEFINED;
+    }
 }
