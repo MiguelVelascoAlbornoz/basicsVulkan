@@ -4,7 +4,7 @@
 
 #include "PipelineUtils.h"
 
-#include <dxgiformat.h>
+
 #include <memory>
 #include <iostream>
 #include "VulkanDevice.h"

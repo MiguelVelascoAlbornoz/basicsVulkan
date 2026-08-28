@@ -3,12 +3,19 @@
  * @brief Renderer class implementation.
  * @author Miguel Velasco
  */
+#define VK_USE_PLATFORM_WIN32_KHR
+#ifdef _WIN32
+    #define WIN32_LEAN_AND_MEAN
+    #include <windows.h>
+#endif
+#include <vulkan/vulkan.h>
 #include "Renderer.h"
 
 #include <imGUI/imgui_impl_sdl3.h>
 #include <SDL3/SDL_vulkan.h>
 #include <imGUI/imgui_impl_vulkan.h>
-#include <vulkan/vulkan_win32.h>
+
+
 
 #include "Image.h"
 #include "../Registry/Pipelines.h"

@@ -9,7 +9,6 @@
 #include <d3d11.h>
 
 #include <imGUI/imgui_impl_sdl3.h>
-#include <wrl/client.h>
 #include <dxgi1_2.h>
 
 #include "../Renderer/Renderer.h"

@@ -7,7 +7,7 @@
 #include <vulkan/vulkan.h>
 #include <string>
 #include <vector>
-
+#include <dxgiformat.h>
 #include "VulkanDevice.h"
 class UniformBuffer;
 class VulkanDevice;

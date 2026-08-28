@@ -180,6 +180,7 @@ void Registry::initImages(const App* app)
     Images::missingImage = Images::registerImages(MISSING_IMAGE_ID,
     Image::loadFromFile(app->renderer->getVulkanDevice(),"assets/Textures/missing_texture.png",VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT));
     Images::images[DESKTOP_IMAGE_ID] = Images::registerImages(DESKTOP_IMAGE_ID,Image::importFromD3D11Handle(app->renderer->getVulkanDevice(),app->desktopImageHandle,app->desktopWidth,app->desktopHeight,PipelineUtils::dxgiToVulkanFormat(app->desktopFormat)));
+    Images::images[DESKTOP_IMAGE_ID]->transitionLayout();
 
     app->renderer->setSharedCaptureImage(Images::images[DESKTOP_IMAGE_ID]);
 }

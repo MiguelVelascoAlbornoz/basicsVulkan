@@ -1,3 +1,9 @@
+#define VK_USE_PLATFORM_WIN32_KHR
+#ifdef _WIN32
+    #define WIN32_LEAN_AND_MEAN
+    #include <windows.h>
+#endif
+
 #include "Image.h"
 #include "VulkanDevice.h"
 #include "stbImage/stb_image.h"
@@ -5,7 +11,7 @@
 
 #include "stbImage/stb_image_write.h"
 #include <glm/glm.hpp>
-#include <vulkan/vulkan_win32.h>
+
 struct FormatInfo {
     int bytesPerTexel;
     int channels;

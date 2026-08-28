@@ -13,11 +13,13 @@
 #include "../Registry/Menus.h"
 #include "../Registry/Meshes.h"
 #include "../Registry/FrameBuffers.h"
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h> // HANDLE
 #include "../Scene/Player.h"
 #include <SDL3/SDL.h>
 
-#include "vulkan/vulkan_enums.hpp"
+
+
 class Window;
 class Renderer;
 

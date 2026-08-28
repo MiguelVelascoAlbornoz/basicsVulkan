@@ -5,6 +5,7 @@
 #include <string>
 #include <unordered_map>
 #include <vulkan/vulkan.h>
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h> // HANDLE
 class VulkanDevice;
 
