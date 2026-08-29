@@ -6,14 +6,14 @@
 #ifndef APP_H
 #define APP_H
 
-#include <dxgiformat.h>
+
 
 #include  "../Registry/Uniforms.h"
 #include "../Registry/Pipelines.h"
 #include "../Registry/Menus.h"
 #include "../Registry/Meshes.h"
 #include "../Registry/FrameBuffers.h"
-#define WIN32_LEAN_AND_MEAN
+
 #include "../Scene/Player.h"
 #include <SDL3/SDL.h>
 

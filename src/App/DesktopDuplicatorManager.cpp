@@ -27,7 +27,20 @@ bool DesktopDuplicatorManager::createDesktopDuplicator(){
     }
     return true;
 }
+DesktopDuplicatorManager::~DesktopDuplicatorManager()
+{
+    // dstResource depende del device
+    if (dstResource)       { dstResource->Release();       dstResource = nullptr; }
 
+    // outputDuplication depende del device
+    if (outputDuplication) { outputDuplication->Release(); outputDuplication = nullptr; }
+
+    if (context) { context->Release(); context = nullptr; }
+    if (device)  { device->Release();  device = nullptr; }
+
+    // OJO con esto, ver punto 2
+    if (handle) {  handle = nullptr; }
+}
 bool DesktopDuplicatorManager::createDestinyResource()
 {
     if (outputDuplication == nullptr)
@@ -68,6 +81,7 @@ bool DesktopDuplicatorManager::createDestinyResource()
     width = outputDesc.ModeDesc.Width;
     height = outputDesc.ModeDesc.Height;
     format = outputDesc.ModeDesc.Format;
+    dstResource->QueryInterface(__uuidof(IDXGIKeyedMutex), (void**)&keyedMutex);
    return  true;
 }
 
@@ -87,7 +101,7 @@ bool DesktopDuplicatorManager::createWindowsHandler()
         return false;
     }
     //Obtener handle
-    if (dstResource1->CreateSharedHandle(nullptr, DXGI_SHARED_RESOURCE_READ  , nullptr,handle) != S_OK)
+    if (dstResource1->CreateSharedHandle(nullptr, DXGI_SHARED_RESOURCE_READ  , nullptr,&this->handle) != S_OK)
     {
         std::cerr << "No se pudo obtener el handle" << std::endl;
         return false;
@@ -111,10 +125,10 @@ bool DesktopDuplicatorManager::writeDestinyResource()
         std::cerr << "No se pudo obtener la desktop texture" << std::endl;
         return false;
     }
-    IDXGIKeyedMutex* keyedMutex = nullptr;
-    dstResource->QueryInterface(__uuidof(IDXGIKeyedMutex), (void**)&keyedMutex);
 
-    keyedMutex->AcquireSync(0, INFINITE); // key 0 = "yo escribo"
+
+
+    keyedMutex->AcquireSync(0, 1); // key 0 = "yo escribo"
     context->CopyResource(dstResource, frameTexture);
     keyedMutex->ReleaseSync(1);
 

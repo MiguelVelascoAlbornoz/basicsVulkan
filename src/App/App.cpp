@@ -63,6 +63,7 @@ App::App(const std::function<void(App*)>& registryCallback) {
 App::~App()
 {
     vkDeviceWaitIdle(renderer->getVulkanDevice()->device);
+    delete desktopDuplicatorManager;
     Meshes::freeMeshes();
     delete player;
     Uniforms::freeUniforms();
@@ -122,6 +123,8 @@ void App::executionLoop()
         renderGUI();
 
        // + + + + +  VULKAN RENDER + + + + +
+        desktopDuplicatorManager->writeDestinyResource();
+
         Uniforms::cameraUniform->addIndexToQueue(Uniforms::CameraUBO::TIME);
         Uniforms::cameraUniform->clearQueue();
 

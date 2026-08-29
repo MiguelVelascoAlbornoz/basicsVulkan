@@ -4,20 +4,23 @@
 
 #ifndef BASICSVULKAN_DESKTOPDUPLICATORMANAGER_H
 #define BASICSVULKAN_DESKTOPDUPLICATORMANAGER_H
-#include <d3d11.h>
+
+#include <windows.h>
+#include <dxgi.h>
 
 struct ID3D11DeviceContext;
 struct ID3D11Device;
 struct IDXGIOutputDuplication;
 struct ID3D11Resource;
-
+struct IDXGIKeyedMutex;
 class DesktopDuplicatorManager
 {
     public:
     bool createDesktopDuplicator();
+    ~DesktopDuplicatorManager();
 
     bool writeDestinyResource();
-    [[nodiscard]] const HANDLE* getHandle() const
+     [[nodiscard]] HANDLE getHandle() const
     {
         return handle;
     };
@@ -40,8 +43,9 @@ private:
     bool createDestinyResource();
     bool createWindowsHandler();
     int width = 0, height = 0;
-    HANDLE* handle = nullptr;
+    HANDLE handle = nullptr;
     DXGI_FORMAT format;
+    IDXGIKeyedMutex* keyedMutex = nullptr;
     ID3D11DeviceContext* context = nullptr;
     ID3D11Device* device = nullptr;
     IDXGIOutputDuplication* outputDuplication = nullptr;
