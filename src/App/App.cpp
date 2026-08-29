@@ -189,7 +189,8 @@ App::App(const std::function<void(App*)>& registryCallback) {
 
         //Castear el resource de destino para poder obtener el handle
     IDXGIResource1* dstResource1 = nullptr;
-    hr = frameTexture->QueryInterface(__uuidof( IDXGIResource1), (void**)&dstResource1);
+
+    hr = dstResource->QueryInterface(__uuidof( IDXGIResource1), (void**)&dstResource1);
     if (hr != S_OK)
     {
         std::cerr << "No se pudo obtener el destiny resource1" << std::endl;
