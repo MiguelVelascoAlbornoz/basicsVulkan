@@ -37,6 +37,10 @@ for (const auto& layer : layers) {
     }
     #endif
 
+    std::vector<const char*> instanceExtensions(extensions, extensions + extensionCount);
+    instanceExtensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+    instanceExtensions.push_back(VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME);
+
     VkApplicationInfo appInfo{};
     appInfo.sType      = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     appInfo.pApplicationName   = PROJECT_NAME;
@@ -48,8 +52,8 @@ for (const auto& layer : layers) {
     VkInstanceCreateInfo createInfo{};
     createInfo.sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     createInfo.pApplicationInfo        = &appInfo;
-    createInfo.enabledExtensionCount   = extensionCount;
-    createInfo.ppEnabledExtensionNames = extensions;
+    createInfo.enabledExtensionCount   = static_cast<uint32_t>(instanceExtensions.size());
+    createInfo.ppEnabledExtensionNames = instanceExtensions.data();
 createInfo.enabledLayerCount =
     static_cast<uint32_t>(validationLayers.size());
 

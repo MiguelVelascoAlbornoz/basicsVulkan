@@ -178,7 +178,11 @@ bool VulkanDevice::createLogicalDevice(VkSurfaceKHR surface)
     queueCreateInfo.pQueuePriorities = &queuePriority;
     
     const std::vector<const char*> deviceExtensions = {
-    VK_KHR_SWAPCHAIN_EXTENSION_NAME
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+        VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME,
+        VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME,
+        VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME,
+        VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME // dependencia de dedicated allocation
     };
     VkPhysicalDeviceFeatures deviceFeatures{}; // <-- nuevo
     deviceFeatures.sampleRateShading = VK_TRUE; // <-- nuevo, necesario para sampleShadingEnable
@@ -210,9 +214,32 @@ bool VulkanDevice::createLogicalDevice(VkSurfaceKHR surface)
     this->graphicsQueueFamilyIndex = graphicsFamily;
     this->presentQueueFamilyIndex  = presentFamily;
 
+    pfnGetMemoryWin32HandlePropertiesKHR =
+    reinterpret_cast<PFN_vkGetMemoryWin32HandlePropertiesKHR>(
+        vkGetDeviceProcAddr(device, "vkGetMemoryWin32HandlePropertiesKHR"));
+
+    if (!pfnGetMemoryWin32HandlePropertiesKHR) {
+        std::cerr << "(VULKAN) Error: no se pudo cargar vkGetMemoryWin32HandlePropertiesKHR." << std::endl;
+        return false;
+    }
     return true;
 }
+bool VulkanDevice::getMemoryWin32HandleProperties(HANDLE handle, VkExternalMemoryHandleTypeFlagBits handleType,
+                                                   VkMemoryWin32HandlePropertiesKHR& outProps) const
+{
+    if (!pfnGetMemoryWin32HandlePropertiesKHR) {
+        std::cerr << "(VULKAN) Error: vkGetMemoryWin32HandlePropertiesKHR no está cargada." << std::endl;
+        return false;
+    }
+    outProps.sType = VK_STRUCTURE_TYPE_MEMORY_WIN32_HANDLE_PROPERTIES_KHR;
+    outProps.pNext = nullptr;
 
+    if (pfnGetMemoryWin32HandlePropertiesKHR(device, handleType, handle, &outProps) != VK_SUCCESS) {
+        std::cerr << "(VULKAN) Error: fallo vkGetMemoryWin32HandlePropertiesKHR." << std::endl;
+        return false;
+    }
+    return true;
+}
 bool VulkanDevice::queueSubmit(const VkSubmitInfo *submitInfo, VkFence fence)
 {
      if ( vkQueueSubmit(graphicsQueue, 1, submitInfo, fence) != VK_SUCCESS) {

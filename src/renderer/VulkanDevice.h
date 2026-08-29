@@ -1,7 +1,10 @@
 #ifndef VULKAN_DEVICE_H
 #define VULKAN_DEVICE_H
 
-
+#ifdef _WIN32
+    #define WIN32_LEAN_AND_MEAN
+    #include <windows.h>
+#endif
 #include <imGUI\imgui_impl_vulkan.h>
 #include <vector>
 class VulkanDevice {
@@ -26,7 +29,12 @@ public:
      * 3. Creates the logical device and retrieves the handles to the specified queues.
      */
     bool createLogicalDevice(VkSurfaceKHR surface);
-
+    /** @brief Consulta qué memory types son válidos para importar un handle NT de D3D11 compartido.
+         *  @details Necesario porque memReq.memoryTypeBits de una VkImage "normal" NO alcanza:
+         *  el spec exige usar los bits devueltos por esta función para el memoryTypeIndex
+         *  cuando se hace un import (VUID-VkMemoryAllocateInfo-memoryTypeIndex-00645). */
+    bool getMemoryWin32HandleProperties(HANDLE handle, VkExternalMemoryHandleTypeFlagBits handleType,
+                                         VkMemoryWin32HandlePropertiesKHR& outProps) const;
 
     VkPhysicalDevice getPhysicalDevice() const { return physicalDevice; } /**< @brief Get the handle to the selected physical device. */
     bool queueSubmit( const VkSubmitInfo* submitInfo, VkFence fence); /**< @brief Submits a command buffer to the specified queue for execution. */
@@ -68,6 +76,8 @@ private:
 
     /// @brief Índice de la queue family que soporta presentación en la superficie.
     uint32_t presentQueueFamilyIndex = 0xFFFFFFFF;
-   
+
+    // Puntero cacheado, cargado en createLogicalDevice() vía vkGetDeviceProcAddr
+    PFN_vkGetMemoryWin32HandlePropertiesKHR pfnGetMemoryWin32HandlePropertiesKHR = nullptr;
 };
 #endif // VULKAN_DEVICE_H

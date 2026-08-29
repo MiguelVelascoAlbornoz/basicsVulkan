@@ -60,7 +60,7 @@ flags = {
         "-MP", #Gera um ficheiro .d mesmo que o ficheiro .cpp não tenha dependências, evitando erros de "file not found" quando um ficheiro .h é eliminado
         f"-DPROJECT_VERSION=\"{projectVersion}\"",
         f"-DENGINE_VERSION=\"{engineVersion}\"",
-
+        "-DVK_USE_PLATFORM_WIN32_KHR "
         "-fdiagnostics-color=never",
         "-Wall",
         "-Wextra",

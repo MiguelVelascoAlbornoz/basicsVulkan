@@ -1,4 +1,4 @@
-#define VK_USE_PLATFORM_WIN32_KHR
+
 #ifdef _WIN32
     #define WIN32_LEAN_AND_MEAN
     #include <windows.h>
@@ -312,6 +312,19 @@ Image* Image::importFromD3D11Handle(VulkanDevice* device, HANDLE sharedHandle, u
     // 2. Importar la memoria D3D11 dentro del VkDeviceMemory
     VkMemoryRequirements memReq;
     vkGetImageMemoryRequirements(dev, img->image, &memReq);
+
+    VkMemoryWin32HandlePropertiesKHR handleProps{};
+    if (!device->getMemoryWin32HandleProperties(sharedHandle, VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_BIT, handleProps)) {
+        img->error = true;
+        return img;
+    }
+
+    uint32_t validBits = memReq.memoryTypeBits & handleProps.memoryTypeBits;
+    if (validBits == 0) {
+        std::cerr << "(IMAGE) Error: no hay memory types compatibles entre la imagen y el handle importado." << std::endl;
+        img->error = true;
+        return img;
+    }
 
     VkMemoryDedicatedAllocateInfo dedicatedInfo{};
     dedicatedInfo.sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO;

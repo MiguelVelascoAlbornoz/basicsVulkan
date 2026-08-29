@@ -229,8 +229,9 @@ App::~App()
     delete player;
     Uniforms::freeUniforms();
     Images::freeImages();
-    delete window;
     delete renderer;
+    delete window;
+
     Menus::freeMenus();
     }
 
