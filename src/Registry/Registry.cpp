@@ -14,6 +14,7 @@
 #include "../Renderer/Camera.h"
 #include "../Renderer/UniformBuffer.h"
 #include "Images.h"
+#include "../App/DesktopDuplicatorManager.h"
 #include "../Renderer/Image.h"
 #include "../Renderer/Mesh/Mesh.h"
 #include "../Menu/EditorMenu.h"
@@ -179,13 +180,13 @@ void Registry::initImages(const App* app)
 
     Images::missingImage = Images::registerImages(MISSING_IMAGE_ID,
     Image::loadFromFile(app->renderer->getVulkanDevice(),"assets/Textures/missing_texture.png",VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT));
-    Images::images[DESKTOP_IMAGE_ID] = Images::registerImages(DESKTOP_IMAGE_ID,Image::importFromD3D11Handle(app->renderer->getVulkanDevice(),app->desktopImageHandle,app->desktopWidth,app->desktopHeight,PipelineUtils::dxgiToVulkanFormat(app->desktopFormat)));
+    Images::images[DESKTOP_IMAGE_ID] = Images::registerImages(DESKTOP_IMAGE_ID,Image::importFromD3D11Handle(app->renderer->getVulkanDevice(),*app->desktopDuplicatorManager->getHandle(),app->desktopDuplicatorManager->getWidth(),app->desktopDuplicatorManager->getHeight(),PipelineUtils::dxgiToVulkanFormat(app->desktopDuplicatorManager->getFormat())));
 
 
     VkCommandBuffer cmd = app->renderer->getVulkanDevice()->beginSingleTimeCommands();
     Images::images[DESKTOP_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
     app->renderer->getVulkanDevice()->endSingleTimeCommands(cmd);
-
+    Images::images[DESKTOP_IMAGE_ID]->setKeyedMutexSync(/*acquireKey=*/1, /*releaseKey=*/0);
     app->renderer->setSharedCaptureImage(Images::images[DESKTOP_IMAGE_ID]);
 }
 void Registry::initComputePipelines(const App* app)

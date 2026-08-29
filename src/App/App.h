@@ -14,12 +14,12 @@
 #include "../Registry/Meshes.h"
 #include "../Registry/FrameBuffers.h"
 #define WIN32_LEAN_AND_MEAN
-#include <windows.h> // HANDLE
 #include "../Scene/Player.h"
 #include <SDL3/SDL.h>
 
 
 
+class DesktopDuplicatorManager;
 class Window;
 class Renderer;
 
@@ -49,10 +49,9 @@ public:
     Uint64 ticksPerSecond = 0;
     bool movedMouse;
     void onFBOResolutionChange() const;
-    HANDLE desktopImageHandle;
-    int desktopWidth;
-    int desktopHeight;
-    DXGI_FORMAT  desktopFormat;
+
+    DesktopDuplicatorManager* desktopDuplicatorManager;
+
 private:
     /**
      * @brief Main execution loop of the application.
