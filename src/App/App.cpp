@@ -19,7 +19,7 @@
 #include "../Registry/Images.h"
 #include "../Renderer/Image.h"
 #include "../Renderer/Pipeline.h"
-
+#include "../Renderer/Mesh/FrameBufferObject.h"
 void App::startServer()
 {
     type = App::HOST;
@@ -40,7 +40,7 @@ void App::startServer()
     desktopImage->transitionLayout(cmd,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
     renderer->getVulkanDevice()->endSingleTimeCommands(cmd);
     desktopImage->setKeyedMutexSync(/*acquireKey=*/1, /*releaseKey=*/0);
-    renderer->setSharedCaptureImage(Images::images[DESKTOP_IMAGE_ID]);
+
 
     std::vector<ImageBinding> imageBindings= {
             {
@@ -51,8 +51,31 @@ void App::startServer()
                 .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT
             }
     };
-    std::vector<UniformBinding> uniformBindings= {};
-    Pipelines::defaultPipeline->updateDescriptorSet(uniformBindings,imageBindings);
+    //DEFAULT PIPELINE
+    PipelineConfig pipelineConfigDefault;
+    pipelineConfigDefault.vertexAttributes = {AttribType::VEC3,AttribType::VEC3};
+    pipelineConfigDefault.pushConstantsSize = sizeof(Model::ModelUBO);
+    //pipelineConfigDefault.uniformObjects = {
+    //            {Uniforms::cameraUniform, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT },
+    //};
+    pipelineConfigDefault.images = {
+        {
+            .image   = desktopImage->getView(),
+            .sampler = desktopImage->getSampler(),
+            .layout  = desktopImage->getCurrentLayout(),
+        }
+    };
+    pipelineConfigDefault.multisamplerSamples = player->getPlayerCameraSettings()->MSAAsamples;
+    pipelineConfigDefault.sampleShadding = player->getPlayerCameraSettings()->sampleShadding;
+    Pipelines::defaultPipeline = new Pipeline(renderer->getVulkanDevice(),FrameBuffers::defaultFrameBuffer->getRenderPass(),pipelineConfigDefault,renderer->descriptorPool);
+    FrameBuffers::defaultFrameBuffer->registerDependentPipeline(Pipelines::defaultPipeline);
+    Pipelines::registerPipelines(TEST_PIPELINE_ID,Pipelines::defaultPipeline);
+
+
+
+
+    renderer->setSharedCaptureImage(desktopImage);
+    FrameBuffers::turnOnFBO(FrameBuffers::defaultFrameBuffer);
 }
 
 void App::startClient()
@@ -82,7 +105,7 @@ App::App(const std::function<void(App*)>& registryCallback) {
 
     registryCallback(this);
 
-    FrameBuffers::turnOnFBO(FrameBuffers::defaultFrameBuffer);
+
 
     Menus::openMenu(CHOOSE_APP_TYPE_MENU_ID);
 
@@ -99,6 +122,7 @@ App::App(const std::function<void(App*)>& registryCallback) {
 App::~App()
 {
     vkDeviceWaitIdle(renderer->getVulkanDevice()->device);
+    delete desktopImage;
     ImGuiFonts::freeFonts();
     delete desktopDuplicatorManager;
     Meshes::freeMeshes();
@@ -163,13 +187,17 @@ void App::executionLoop()
         if (type == HOST)
         {
             desktopDuplicatorManager->writeDestinyResource();
+            renderer->update();
+        } else
+        {
+
         }
 
 
-        Uniforms::cameraUniform->addIndexToQueue(Uniforms::CameraUBO::TIME);
-        Uniforms::cameraUniform->clearQueue();
+        //Uniforms::cameraUniform->addIndexToQueue(Uniforms::CameraUBO::TIME);
+        //Uniforms::cameraUniform->clearQueue();
 
-        renderer->update();
+
         // - - - - - VULKAN RENDER END - - - -
 
         //For debug count the number off ticks and cycles in a second

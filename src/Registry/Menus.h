@@ -52,7 +52,6 @@ public:
         }
         for (auto it = openMenus.begin(); it != openMenus.end();) {
             if (it->second->shouldClose) {
-                delete it->second;
                 it = openMenus.erase(it);
             } else {
                 ++it;
