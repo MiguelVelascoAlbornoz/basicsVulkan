@@ -20,6 +20,7 @@
 #include "../Renderer/Image.h"
 #include "../Renderer/Mesh/Mesh.h"
 #include "../Menu/EditorMenu.h"
+#include "../Menu/ListeningMenu.h"
 
 #include "../renderer/Window.h"
 
@@ -147,6 +148,8 @@ void Registry::initMenus( App* app)
     Menus::editorMenu = dynamic_cast<EditorMenu*>(Menus::registerMenu(EDITOR_MENU_ID,new EditorMenu(app)));
     Menus::F3Menu = dynamic_cast<F3GUI*>(Menus::registerMenu(F3_MENU_ID,new F3GUI(app)));
     Menus::chooseMenu = dynamic_cast<ChooseAppTypeMenu*>(Menus::registerMenu(CHOOSE_APP_TYPE_MENU_ID,new ChooseAppTypeMenu(app)));
+    Menus::listeningMenu = dynamic_cast<ListeningMenu*>(Menus::registerMenu(LISTENING_MENU_ID,new ListeningMenu(app)));
+
 }
 
 VkFormat getFormatByBits(Player::PlayerCameraSettings::BitsPerChannel bitPerChannel)

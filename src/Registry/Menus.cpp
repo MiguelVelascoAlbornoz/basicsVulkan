@@ -13,6 +13,7 @@ std::unordered_map<std::string, Menu*> Menus::menus; /**< @brief Map to store me
 ChooseAppTypeMenu* Menus::chooseMenu;
 EditorMenu* Menus::editorMenu;
 F3GUI* Menus::F3Menu;
+ListeningMenu* Menus::listeningMenu;
 
 Menu* Menus::registerMenu(const std::string& menuID, Menu *menu)
 {

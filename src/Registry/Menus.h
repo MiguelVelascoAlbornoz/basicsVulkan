@@ -20,14 +20,15 @@ class ChooseAppTypeMenu;
 #define EDITOR_MENU_ID "editor_menu"
 #define F3_MENU_ID "f3_menu"
 #define CHOOSE_APP_TYPE_MENU_ID "choose_app_type_menu"
-
+#define LISTENING_MENU_ID "listening_menu"
 class F3GUI;
-
+class ListeningMenu;
 class Menus {
 public:
     static EditorMenu* editorMenu;
     static F3GUI* F3Menu;
     static ChooseAppTypeMenu* chooseMenu;
+    static ListeningMenu* listeningMenu;
 
     static std::unordered_map<std::string,Menu*> openMenus;
     static std::unordered_map<std::string, Menu*> menus; /**< @brief Map to store menu rendering functions. */

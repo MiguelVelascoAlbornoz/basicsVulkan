@@ -36,6 +36,7 @@ public:
         CLIENT,
         UNDEFINED
     };
+    std::vector<std::string> privateIps;
     Window* window = nullptr; /**< window pointer, must be deleted must be deleted and end*/
     Renderer* renderer = nullptr; /**< renderer pointer, must be deleted at end */
      AppType type = UNDEFINED;
@@ -49,7 +50,8 @@ public:
     bool F3Mode = false;
     Uint64 cycleStartTimeNS = 0; /**< Exact time of start of the current cycle **/
     Uint64 cycleDeltaTimeNS = 0; /**< Delay in nano seconds of a entire cycle of execution. From start to start of the while. */
-
+    int hostPort = 9000;
+    std::string publicIP = "";
     Uint64 tickDeltaTimeNS = 0; /**< Delay between the start and the start of the past tick. **/
     Uint64 tickStartTimeNS = 0; /**< Exact time of start of the current tick **/
     SDL_MouseMotionEvent mouseMotion;
@@ -58,7 +60,7 @@ public:
     bool movedMouse;
     void onFBOResolutionChange() const;
      bool runnig = true; /**< Estado do loop */
-     DesktopDuplicatorManager* desktopDuplicatorManager;
+     DesktopDuplicatorManager* desktopDuplicatorManager = nullptr;
 
 private:
     /**

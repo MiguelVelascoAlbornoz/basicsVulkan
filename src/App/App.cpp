@@ -6,6 +6,10 @@
  */
 #include "App.h"
 
+#include <WinSock2.h>
+#include <Ws2tcpip.h>
+
+#include <iphlpapi.h>
 
 #include <imGUI/imgui_impl_sdl3.h>
 #include "../Registry/ImGuiFonts.h"
@@ -15,11 +19,71 @@
 #include "../Renderer/Window.h"
 #include "../Scene/Model.h"
 #include "../Renderer/VulkanDevice.h"
-#include "../Renderer/UniformBuffer.h"
+#include <winhttp.h>
 #include "../Registry/Images.h"
 #include "../Renderer/Image.h"
 #include "../Renderer/Pipeline.h"
-#include "../Renderer/Mesh/FrameBufferObject.h"
+
+static std::string getPublicIP() {
+    std::string result;
+    HINTERNET hSession = WinHttpOpen(L"MyApp/1.0",
+        WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
+        WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
+    if (!hSession) return result;
+
+    HINTERNET hConnect = WinHttpConnect(hSession, L"api.ipify.org",
+        INTERNET_DEFAULT_HTTPS_PORT, 0);
+    if (!hConnect) { WinHttpCloseHandle(hSession); return result; }
+
+    HINTERNET hRequest = WinHttpOpenRequest(hConnect, L"GET", L"/",
+        nullptr, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES,
+        WINHTTP_FLAG_SECURE);
+    if (!hRequest) { WinHttpCloseHandle(hConnect); WinHttpCloseHandle(hSession); return result; }
+
+    if (WinHttpSendRequest(hRequest, WINHTTP_NO_ADDITIONAL_HEADERS, 0,
+                            WINHTTP_NO_REQUEST_DATA, 0, 0, 0) &&
+        WinHttpReceiveResponse(hRequest, nullptr)) {
+
+
+        do {
+            DWORD available = 0;
+            WinHttpQueryDataAvailable(hRequest, &available);
+            if (available == 0) break;
+
+            std::vector<char> buffer(available + 1, 0);
+            DWORD downloaded = 0;
+            WinHttpReadData(hRequest, buffer.data(), available, &downloaded);
+            result.append(buffer.data(), downloaded);
+        } while (true);
+        }
+
+    WinHttpCloseHandle(hRequest);
+    WinHttpCloseHandle(hConnect);
+    WinHttpCloseHandle(hSession);
+    return result;
+}
+static std::vector<std::string> getAllPrivateIPs() {
+    std::vector<std::string> ips;
+    ULONG bufferSize = 15000;
+    std::vector<char> buffer(bufferSize);
+    auto* addresses = reinterpret_cast<IP_ADAPTER_ADDRESSES*>(buffer.data());
+
+    const ULONG result = GetAdaptersAddresses(AF_INET, GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST,
+                                         nullptr, addresses, &bufferSize);
+    if (result != NO_ERROR) return ips;
+
+    for (const auto* adapter = addresses; adapter != nullptr; adapter = adapter->Next) {
+        if (adapter->OperStatus != IfOperStatusUp) continue; // solo adaptadores activos
+
+        for (const auto* unicast = adapter->FirstUnicastAddress; unicast != nullptr; unicast = unicast->Next) {
+            const auto* addr = reinterpret_cast<sockaddr_in*>(unicast->Address.lpSockaddr);
+            char ipStr[INET_ADDRSTRLEN];
+            inet_ntop(AF_INET, &addr->sin_addr, ipStr, sizeof(ipStr));
+            ips.emplace_back(ipStr);
+        }
+    }
+    return ips;
+}
 void App::startServer()
 {
     type = App::HOST;
@@ -50,6 +114,40 @@ void App::startServer()
 
     renderer->setSharedCaptureImage(desktopImage);
     FrameBuffers::turnOnFBO(FrameBuffers::defaultFrameBuffer);
+
+    WSADATA wsaData;
+    WSAStartup(MAKEWORD(2,2), &wsaData);
+
+    // TCP: SOCK_STREAM | UDP: SOCK_DGRAM
+    SOCKET udpSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+
+    sockaddr_in serverAddr{};
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_addr.s_addr = INADDR_ANY;  // escuchar en todas las interfaces
+    serverAddr.sin_port = htons(hostPort);         // puerto elegido
+
+    if (bind(udpSocket, (sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
+        std::cerr << "bind() falló: " << WSAGetLastError() << std::endl;
+    }
+    privateIps = getAllPrivateIPs();
+    publicIP = getPublicIP();
+    /**char buffer[65536]; // suficiente para el datagrama UDP más grande posible
+    sockaddr_in senderAddr{};
+    int senderAddrLen = sizeof(senderAddr);
+
+    int bytesReceived = recvfrom(
+        udpSocket,
+        buffer, sizeof(buffer),
+        0,                                  // flags
+        (sockaddr*)&senderAddr, &senderAddrLen  // te dice quién lo mandó
+    );
+
+    if (bytesReceived == SOCKET_ERROR) {
+        std::cerr << "recvfrom() falló: " << WSAGetLastError() << std::endl;
+    } else {
+        // buffer[0..bytesReceived) tiene el contenido de UN datagrama completo
+    }*/
+
 }
 
 void App::startClient()
