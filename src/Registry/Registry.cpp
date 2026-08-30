@@ -4,7 +4,7 @@
 #include "../App/App.h"
 #include "Registry.h"
 
-#include "ComputePipelines.h"
+
 #include "Scenes.h"
 #include "../Menu/F3GUI.h"
 #include "../Renderer/Renderer.h"
@@ -14,15 +14,18 @@
 #include "../Renderer/Camera.h"
 #include "../Renderer/UniformBuffer.h"
 #include "Images.h"
+#include "ImGuiFonts.h"
 #include "../App/DesktopDuplicatorManager.h"
+#include "../Menu/ChooseAppTypeMenu.h"
 #include "../Renderer/Image.h"
 #include "../Renderer/Mesh/Mesh.h"
 #include "../Menu/EditorMenu.h"
+
 #include "../renderer/Window.h"
-#include "../Renderer/ComputePipeline.h"
 
 
-void Registry::registryCallback(const App* app)
+
+void Registry::registryCallback( App* app)
 {   Registry::initImages(app);
     Registry::initFramebuffers(app);
     Registry::initUniforms(app);
@@ -30,6 +33,7 @@ void Registry::registryCallback(const App* app)
     Registry::initComputePipelines(app);
     Registry::initMeshes(app);
     Registry::initMenus(app);
+    Registry::initFonts();
 };
 
 void Registry::initUniforms(const App* app)
@@ -58,14 +62,14 @@ void Registry::initPipelines(const App* app)
     PipelineConfig pipelineConfigDefault;
     pipelineConfigDefault.vertexAttributes = {AttribType::VEC3,AttribType::VEC3};
     pipelineConfigDefault.pushConstantsSize = sizeof(Model::ModelUBO);
-    pipelineConfigDefault.uniformObjects = {
-                {Uniforms::cameraUniform, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT },
-    };
+    //pipelineConfigDefault.uniformObjects = {
+    //            {Uniforms::cameraUniform, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT },
+    //};
     pipelineConfigDefault.images = {
         {
-            .image = Images::images[DESKTOP_IMAGE_ID]->getView(),
-            .sampler = Images::images[DESKTOP_IMAGE_ID]->getSampler(),
-            .layout = Images::images[DESKTOP_IMAGE_ID]->getCurrentLayout(),
+            .image =VK_NULL_HANDLE,
+            .sampler = VK_NULL_HANDLE,
+            .layout =VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
             .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT
         }
@@ -137,11 +141,12 @@ void Registry::initMeshes(const App* app)
     Meshes::registerMesh("plane_mesh", new Mesh(device,planeMeshVertices.data(),sizeof(float)*6,resolution*resolution,planeMeshIndices));
 }
 
-void Registry::initMenus(const App* app)
+void Registry::initMenus( App* app)
 {
     //Registers
     Menus::editorMenu = dynamic_cast<EditorMenu*>(Menus::registerMenu(EDITOR_MENU_ID,new EditorMenu(app)));
     Menus::F3Menu = dynamic_cast<F3GUI*>(Menus::registerMenu(F3_MENU_ID,new F3GUI(app)));
+    Menus::chooseMenu = dynamic_cast<ChooseAppTypeMenu*>(Menus::registerMenu(CHOOSE_APP_TYPE_MENU_ID,new ChooseAppTypeMenu(app)));
 }
 
 VkFormat getFormatByBits(Player::PlayerCameraSettings::BitsPerChannel bitPerChannel)
@@ -180,16 +185,17 @@ void Registry::initImages(const App* app)
 
     Images::missingImage = Images::registerImages(MISSING_IMAGE_ID,
     Image::loadFromFile(app->renderer->getVulkanDevice(),"assets/Textures/missing_texture.png",VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT));
-    Images::images[DESKTOP_IMAGE_ID] = Images::registerImages(DESKTOP_IMAGE_ID,Image::importFromD3D11Handle(app->renderer->getVulkanDevice(),app->desktopDuplicatorManager->getHandle(),app->desktopDuplicatorManager->getWidth(),app->desktopDuplicatorManager->getHeight(),PipelineUtils::dxgiToVulkanFormat(app->desktopDuplicatorManager->getFormat())));
 
-
-    VkCommandBuffer cmd = app->renderer->getVulkanDevice()->beginSingleTimeCommands();
-    Images::images[DESKTOP_IMAGE_ID]->transitionLayout(cmd,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
-    app->renderer->getVulkanDevice()->endSingleTimeCommands(cmd);
-    Images::images[DESKTOP_IMAGE_ID]->setKeyedMutexSync(/*acquireKey=*/1, /*releaseKey=*/0);
-    app->renderer->setSharedCaptureImage(Images::images[DESKTOP_IMAGE_ID]);
 }
 void Registry::initComputePipelines(const App* app)
 {
     app->player->getPosition();//EVITAR WARNINGS
+}
+
+void Registry::initFonts()
+{
+
+    ImGuiFonts::registerFont(WINDOWS_FONT_ID,"C:/Windows/Fonts/segoeui.ttf");
+    ImGuiFonts::registerFont(WINDOWS_FONT_BOLD_ID,"C:/Windows/Fonts/segoeuib.ttf");
+
 }

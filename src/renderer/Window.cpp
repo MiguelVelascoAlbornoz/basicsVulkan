@@ -72,7 +72,7 @@ void Window::createWindow(int width, int height) {
         flags = flags | SDL_WINDOW_FULLSCREEN;
     }
     window = SDL_CreateWindow(PROJECT_NAME, width, height,  flags);
-    SDL_SetWindowRelativeMouseMode(window, true);
+    //SDL_SetWindowRelativeMouseMode(window, true);
     if (!window) {
         SDL_Log("Couldn't create window/renderer: %s", SDL_GetError());
         error = true;

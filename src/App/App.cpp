@@ -8,7 +8,7 @@
 
 
 #include <imGUI/imgui_impl_sdl3.h>
-
+#include "../Registry/ImGuiFonts.h"
 #include "DesktopDuplicatorManager.h"
 #include "../Renderer/Renderer.h"
 #include "../Registry/Scenes.h"
@@ -17,8 +17,47 @@
 #include "../Renderer/VulkanDevice.h"
 #include "../Renderer/UniformBuffer.h"
 #include "../Registry/Images.h"
+#include "../Renderer/Image.h"
+#include "../Renderer/Pipeline.h"
+
+void App::startServer()
+{
+    type = App::HOST;
+    if (desktopDuplicatorManager)
+    {
+        std::cerr << "StartServer(): A server is already existing." << std::endl;
+        runnig = false;
+    }
+    desktopDuplicatorManager = new DesktopDuplicatorManager();
+    if (!desktopDuplicatorManager->createDesktopDuplicator())
+    {
+        runnig = false;
+    }
+    desktopImage =Image::importFromD3D11Handle(renderer->getVulkanDevice(),desktopDuplicatorManager->getHandle(),desktopDuplicatorManager->getWidth(),desktopDuplicatorManager->getHeight(),DesktopDuplicatorManager::dxgiToVulkanFormat(desktopDuplicatorManager->getFormat()));
 
 
+    VkCommandBuffer cmd = renderer->getVulkanDevice()->beginSingleTimeCommands();
+    desktopImage->transitionLayout(cmd,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+    renderer->getVulkanDevice()->endSingleTimeCommands(cmd);
+    desktopImage->setKeyedMutexSync(/*acquireKey=*/1, /*releaseKey=*/0);
+    renderer->setSharedCaptureImage(Images::images[DESKTOP_IMAGE_ID]);
+
+    std::vector<ImageBinding> imageBindings= {
+            {
+                .image = desktopImage->getView(),
+                .sampler = desktopImage->getSampler(),
+                .layout = desktopImage->getCurrentLayout(),
+                .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT
+            }
+    };
+    std::vector<UniformBinding> uniformBindings= {};
+    Pipelines::defaultPipeline->updateDescriptorSet(uniformBindings,imageBindings);
+}
+
+void App::startClient()
+{
+}
 
 App::App(const std::function<void(App*)>& registryCallback) {
     //Initizialise window
@@ -39,17 +78,14 @@ App::App(const std::function<void(App*)>& registryCallback) {
 
     player = new Player(0);
 
-    desktopDuplicatorManager = new DesktopDuplicatorManager();
-    if (!desktopDuplicatorManager->createDesktopDuplicator())
-    {
-        runnig = false;
-        return;
-    }
 
 
     registryCallback(this);
 
     FrameBuffers::turnOnFBO(FrameBuffers::defaultFrameBuffer);
+
+    Menus::openMenu(CHOOSE_APP_TYPE_MENU_ID);
+
     //Finally execution loop
     executionLoop();
 
@@ -63,6 +99,7 @@ App::App(const std::function<void(App*)>& registryCallback) {
 App::~App()
 {
     vkDeviceWaitIdle(renderer->getVulkanDevice()->device);
+    ImGuiFonts::freeFonts();
     delete desktopDuplicatorManager;
     Meshes::freeMeshes();
     delete player;
@@ -123,7 +160,11 @@ void App::executionLoop()
         renderGUI();
 
        // + + + + +  VULKAN RENDER + + + + +
-        desktopDuplicatorManager->writeDestinyResource();
+        if (type == HOST)
+        {
+            desktopDuplicatorManager->writeDestinyResource();
+        }
+
 
         Uniforms::cameraUniform->addIndexToQueue(Uniforms::CameraUBO::TIME);
         Uniforms::cameraUniform->clearQueue();

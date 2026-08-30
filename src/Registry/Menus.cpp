@@ -10,7 +10,7 @@
 std::unordered_map<std::string,Menu*> Menus::openMenus;
 std::unordered_map<std::string, Menu*> Menus::menus; /**< @brief Map to store menu rendering functions. */
 
-
+ChooseAppTypeMenu* Menus::chooseMenu;
 EditorMenu* Menus::editorMenu;
 F3GUI* Menus::F3Menu;
 

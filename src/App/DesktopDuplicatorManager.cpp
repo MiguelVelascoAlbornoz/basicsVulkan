@@ -114,25 +114,35 @@ bool DesktopDuplicatorManager::writeDestinyResource()
 {
     DXGI_OUTDUPL_FRAME_INFO frameInfo;
     IDXGIResource* frameResource = nullptr;
-    if (outputDuplication->AcquireNextFrame(1000,&frameInfo,&frameResource) != S_OK)
-    {
-        std::cerr << "Error obtaining desktop frame" << std::endl;
-         return false;
-    }
-    ID3D11Texture2D* frameTexture;
-    if (frameResource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)&frameTexture) != S_OK)
-    {
-        std::cerr << "No se pudo obtener la desktop texture" << std::endl;
+
+    HRESULT hr = outputDuplication->AcquireNextFrame(500, &frameInfo, &frameResource);
+
+    // El handshake del mutex debe ocurrir SIEMPRE, haya o no frame nuevo,
+    // porque Vulkan (Renderer::update) va a intentar su acquire/release
+    // con keys fijas en cada frame sin importar esto.
+    if (keyedMutex->AcquireSync(0, INFINITE) != S_OK) {
+        std::cerr << "No se pudo adquirir el keyed mutex (D3D11 side)." << std::endl;
+        if (frameResource) frameResource->Release();
         return false;
     }
 
+    if (hr == S_OK) {
+        ID3D11Texture2D* frameTexture = nullptr;
+        if (frameResource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)&frameTexture) == S_OK) {
+            context->CopyResource(dstResource, frameTexture);
+            frameTexture->Release();
+        } else {
+            std::cerr << "No se pudo obtener la desktop texture" << std::endl;
+        }
+        frameResource->Release();
+        outputDuplication->ReleaseFrame();
+    } else if (hr != DXGI_ERROR_WAIT_TIMEOUT) {
+        // Timeout (sin cambios en pantalla) es normal, no es un error real.
+        std::cerr << "Error obtaining desktop frame: 0x" << std::hex << hr << std::endl;
+    }
 
-
-    keyedMutex->AcquireSync(0, 1); // key 0 = "yo escribo"
-    context->CopyResource(dstResource, frameTexture);
     keyedMutex->ReleaseSync(1);
-
-    return  true;
+    return true;
 }
 
 bool DesktopDuplicatorManager::selectDuplicationOuput()
@@ -224,4 +234,19 @@ bool DesktopDuplicatorManager::initializeID3D11()
         return false;
     }
     return true;
+}
+
+VkFormat DesktopDuplicatorManager::dxgiToVulkanFormat(DXGI_FORMAT dxgiFormat)
+{
+    switch (dxgiFormat) {
+    case DXGI_FORMAT_B8G8R8A8_UNORM:        return VK_FORMAT_B8G8R8A8_UNORM;
+    case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:   return VK_FORMAT_B8G8R8A8_SRGB;
+    case DXGI_FORMAT_R8G8B8A8_UNORM:        return VK_FORMAT_R8G8B8A8_UNORM;
+    case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:   return VK_FORMAT_R8G8B8A8_SRGB;
+    case DXGI_FORMAT_R16G16B16A16_FLOAT:    return VK_FORMAT_R16G16B16A16_SFLOAT;
+    case DXGI_FORMAT_R10G10B10A2_UNORM:     return VK_FORMAT_A2B10G10R10_UNORM_PACK32;
+    default:
+        std::cerr << "(PIPELINE) Formato DXGI no soportado: " << static_cast<int>(dxgiFormat) << std::endl;
+        return VK_FORMAT_UNDEFINED;
+    }
 }

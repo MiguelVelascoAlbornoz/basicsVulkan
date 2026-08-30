@@ -7,7 +7,7 @@
 
 #include <windows.h>
 #include <dxgi.h>
-
+#include <vulkan/vulkan.h>
 struct ID3D11DeviceContext;
 struct ID3D11Device;
 struct IDXGIOutputDuplication;
@@ -15,7 +15,9 @@ struct ID3D11Resource;
 struct IDXGIKeyedMutex;
 class DesktopDuplicatorManager
 {
+
     public:
+    static VkFormat dxgiToVulkanFormat(DXGI_FORMAT dxgiFormat);
     bool createDesktopDuplicator();
     ~DesktopDuplicatorManager();
 

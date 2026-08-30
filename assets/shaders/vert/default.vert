@@ -3,8 +3,7 @@
 layout (location=0) out vec2 outUV;
 
 
-#include "../glsl/CameraUBO.glsl"
-#include "../glsl/ModelUBO.glsl"
+
 
 void main() {
     outUV = vec2((gl_VertexIndex << 1) & 2, gl_VertexIndex & 2);

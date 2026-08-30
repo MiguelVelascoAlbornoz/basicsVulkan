@@ -15,7 +15,7 @@ public:
     virtual void render() = 0; /**< @brief Function to render the menu. */
     virtual ~Menu() = default; /**< @brief Virtual destructor for the Menu class. */
     void openMenu(const std::string& menuID);
-
+    bool shouldClose = false;
 };
 
 #endif //BASICSVULKAN_MENU_H

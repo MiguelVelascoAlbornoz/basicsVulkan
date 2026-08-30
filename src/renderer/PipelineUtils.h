@@ -7,7 +7,7 @@
 #include <vulkan/vulkan.h>
 #include <string>
 #include <vector>
-#include <dxgiformat.h>
+
 #include "VulkanDevice.h"
 class UniformBuffer;
 class VulkanDevice;
@@ -30,7 +30,7 @@ struct UniformBinding
 class PipelineUtils
 {
 public:
-    static VkFormat dxgiToVulkanFormat(DXGI_FORMAT dxgiFormat);
+
     static VkShaderModule createShaderModule(const std::vector<char> &code, VkDevice device);
 
     /**

@@ -19,21 +19,29 @@
 
 
 
+
 class DesktopDuplicatorManager;
 class Window;
 class Renderer;
-
+class Image;
 /**
  * @brief The App class serves as the main application class that manages the window, renderer, and the main execution loop. It initializes the window and renderer, handles events, and updates the display in a continuous loop until the application is closed.
  * The App class is responsible for creating the main window and renderer, managing events such as user
  */
 class App {
 public:
-
+    enum AppType
+    {
+        HOST,
+        CLIENT,
+        UNDEFINED
+    };
     Window* window = nullptr; /**< window pointer, must be deleted must be deleted and end*/
     Renderer* renderer = nullptr; /**< renderer pointer, must be deleted at end */
-
-
+     AppType type = UNDEFINED;
+    void startServer();
+    void startClient();
+    Image* desktopImage = nullptr;
     App(const std::function<void(App*)>& registryCallback);
     ~App();
     Player* player = nullptr;
@@ -49,8 +57,8 @@ public:
     Uint64 ticksPerSecond = 0;
     bool movedMouse;
     void onFBOResolutionChange() const;
-
-    DesktopDuplicatorManager* desktopDuplicatorManager;
+     bool runnig = true; /**< Estado do loop */
+     DesktopDuplicatorManager* desktopDuplicatorManager;
 
 private:
     /**
@@ -67,7 +75,7 @@ private:
 
 
 
-    bool runnig = true; /**< Estado do loop */
+
 };
 
 

@@ -27,6 +27,7 @@ class Image;
  */
 class Renderer {
     public:
+        void setGUIStyle();
         void setSharedCaptureImage(Image* img) { sharedCaptureImage = img; }
         /**
          * @brief Constructor of the Renderer class.

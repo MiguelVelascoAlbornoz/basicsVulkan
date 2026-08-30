@@ -67,6 +67,9 @@ void Renderer::initGUI(const Window* window)
     std::cout << "Display size: " << io.DisplaySize.x << " x " << io.DisplaySize.y << std::endl;
     
     #endif
+
+
+
 }
 
 void Renderer::initVulkan(Window* window)  {
@@ -149,6 +152,32 @@ void Renderer::initVulkan(Window* window)  {
 }
 
 
+void Renderer::setGUIStyle()
+{
+    ImGui::StyleColorsLight();
+    ImGuiStyle& style = ImGui::GetStyle();
+
+    // Cero redondeo en todo — instaladores clásicos son cuadrados
+    style.WindowRounding    = 0.0f;
+    style.ChildRounding     = 0.0f;
+    style.FrameRounding     = 0.0f;
+    style.GrabRounding      = 0.0f;
+    style.PopupRounding     = 0.0f;
+    style.ScrollbarRounding = 0.0f;
+
+    style.WindowBorderSize  = 1.0f;
+    style.FrameBorderSize   = 1.0f;
+    style.WindowPadding     = ImVec2(0, 0); // el wizard controla su propio padding interno
+
+    ImVec4* colors = style.Colors;
+    colors[ImGuiCol_WindowBg]        = ImVec4(0.94f, 0.94f, 0.94f, 1.00f); // gris clásico
+    colors[ImGuiCol_ChildBg]         = ImVec4(1.00f, 1.00f, 1.00f, 1.00f); // panel de contenido blanco
+    colors[ImGuiCol_Button]          = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
+    colors[ImGuiCol_ButtonHovered]   = ImVec4(0.86f, 0.93f, 1.00f, 1.00f);
+    colors[ImGuiCol_ButtonActive]    = ImVec4(0.78f, 0.88f, 1.00f, 1.00f);
+    colors[ImGuiCol_Border]          = ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
+    colors[ImGuiCol_Text]            = ImVec4(0.10f, 0.10f, 0.10f, 1.00f);
+}
 
 Renderer::Renderer(Window *window)
 {
