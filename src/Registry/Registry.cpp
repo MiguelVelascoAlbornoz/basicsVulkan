@@ -58,6 +58,25 @@ void Registry::initUniforms(const App* app)
 void Registry::initPipelines(const App* app)
 {
     //Register pipelines
+    //DEFAULT PIPELINE
+    PipelineConfig pipelineConfigDefault;
+    pipelineConfigDefault.vertexAttributes = {AttribType::VEC3,AttribType::VEC3};
+    pipelineConfigDefault.pushConstantsSize = sizeof(Model::ModelUBO);
+    //pipelineConfigDefault.uniformObjects = {
+    //            {Uniforms::cameraUniform, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT },
+    //};
+    pipelineConfigDefault.images = {
+        {
+            .image =VK_NULL_HANDLE,
+            .sampler = VK_NULL_HANDLE,
+            .layout =VK_IMAGE_LAYOUT_UNDEFINED,
+            .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT
+        }
+    };
+    pipelineConfigDefault.multisamplerSamples = app->player->getPlayerCameraSettings()->MSAAsamples;
+    pipelineConfigDefault.sampleShadding = app->player->getPlayerCameraSettings()->sampleShadding;
+    Pipelines::defaultPipeline = new Pipeline(app->renderer->getVulkanDevice(),FrameBuffers::defaultFrameBuffer->getRenderPass(),pipelineConfigDefault,app->renderer->descriptorPool);
 
     //LINE PIPELINE
     PipelineConfig linePipelineConfig;
@@ -86,12 +105,13 @@ void Registry::initPipelines(const App* app)
 
 
 
+    Pipelines::registerPipelines(TEST_PIPELINE_ID,Pipelines::defaultPipeline);
     Pipelines::registerPipelines(LINES_PIPELINE_ID,Pipelines::linesPipeline);
     Pipelines::postProcessPipeline = Pipelines::registerPipelines(POST_PROCESS_PIPELINE_ID, new Pipeline(app->renderer->getVulkanDevice(),app->renderer->renderPass,postProcessPipelineConfig,app->renderer->descriptorPool));
     Pipelines::postProcessPipelineMSAA = Pipelines::registerPipelines(POST_PROCESS_PIPELINE_MSAA_ID, new Pipeline(app->renderer->getVulkanDevice(),app->renderer->renderPass,postProcessPipelineConfigMSAA,app->renderer->descriptorPool));
 
 
-
+    FrameBuffers::defaultFrameBuffer->registerDependentPipeline(Pipelines::defaultPipeline);
     FrameBuffers::defaultFrameBuffer->registerDependentPipeline(Pipelines::linesPipeline);
 }
 void Registry::initMeshes(const App* app)

@@ -42,37 +42,11 @@ void App::startServer()
     desktopImage->setKeyedMutexSync(/*acquireKey=*/1, /*releaseKey=*/0);
 
 
-    std::vector<ImageBinding> imageBindings= {
-            {
-                .image = desktopImage->getView(),
-                .sampler = desktopImage->getSampler(),
-                .layout = desktopImage->getCurrentLayout(),
-                .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT
-            }
-    };
-    //DEFAULT PIPELINE
-    PipelineConfig pipelineConfigDefault;
-    pipelineConfigDefault.vertexAttributes = {AttribType::VEC3,AttribType::VEC3};
-    pipelineConfigDefault.pushConstantsSize = sizeof(Model::ModelUBO);
-    //pipelineConfigDefault.uniformObjects = {
-    //            {Uniforms::cameraUniform, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT },
-    //};
-    pipelineConfigDefault.images = {
-        {
-            .image   = desktopImage->getView(),
-            .sampler = desktopImage->getSampler(),
-            .layout  = desktopImage->getCurrentLayout(),
-        }
-    };
-    pipelineConfigDefault.multisamplerSamples = player->getPlayerCameraSettings()->MSAAsamples;
-    pipelineConfigDefault.sampleShadding = player->getPlayerCameraSettings()->sampleShadding;
-    Pipelines::defaultPipeline = new Pipeline(renderer->getVulkanDevice(),FrameBuffers::defaultFrameBuffer->getRenderPass(),pipelineConfigDefault,renderer->descriptorPool);
-    FrameBuffers::defaultFrameBuffer->registerDependentPipeline(Pipelines::defaultPipeline);
-    Pipelines::registerPipelines(TEST_PIPELINE_ID,Pipelines::defaultPipeline);
-
-
-
+    auto cfg = Pipelines::defaultPipeline->getConfig();
+    cfg.images[0].image   = desktopImage->getView();
+    cfg.images[0].sampler = desktopImage->getSampler();
+    cfg.images[0].layout  = desktopImage->getCurrentLayout();
+    Pipelines::defaultPipeline->updateDescriptorSet(cfg.uniformObjects, cfg.images);
 
     renderer->setSharedCaptureImage(desktopImage);
     FrameBuffers::turnOnFBO(FrameBuffers::defaultFrameBuffer);
@@ -187,13 +161,13 @@ void App::executionLoop()
         if (type == HOST)
         {
             desktopDuplicatorManager->writeDestinyResource();
-            renderer->update();
+
         } else
         {
 
         }
 
-
+        renderer->update();
         //Uniforms::cameraUniform->addIndexToQueue(Uniforms::CameraUBO::TIME);
         //Uniforms::cameraUniform->clearQueue();
 

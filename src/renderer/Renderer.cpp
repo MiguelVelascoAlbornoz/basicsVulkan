@@ -269,15 +269,17 @@ void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
         SDL_Log("(VULKAN) Error: fallo al empezar a grabar el command buffer.");
         return;
     }
-
+    const bool sceneActive = !FrameBuffers::activeFBOs.empty();
     // ---- PASADA 1: escena -> FBO ----
 
-    for (const auto& fbo : FrameBuffers::activeFBOs)
-    {
-        fbo->beginRenderPass(commandBuffer);
-        fbo->renderScenes(commandBuffer);
-        fbo->endRenderPass(commandBuffer);
+    if (sceneActive) {
+        for (const auto& fbo : FrameBuffers::activeFBOs) {
+            fbo->beginRenderPass(commandBuffer);
+            fbo->renderScenes(commandBuffer);
+            fbo->endRenderPass(commandBuffer);
+        }
     }
+
 
 
     // ---- PASADA 2: FBO -> swapchain (post-proceso) ----
@@ -311,12 +313,16 @@ void Renderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t image
     scissor.extent = swapchainExtent;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    Pipeline* quadPipeline = FrameBuffers::defaultFrameBuffer->getMultiSamplerPower() > 0 ?Pipelines::getPipeline(POST_PROCESS_PIPELINE_MSAA_ID) : Pipelines::getPipeline(POST_PROCESS_PIPELINE_ID);
-    quadPipeline->bind(commandBuffer);
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-    quadPipeline->getPipelineLayout(), 0, 1, &quadPipeline->descriptorSet, 0, nullptr);
-    Meshes::quadMesh->bind(commandBuffer);
-    Meshes::quadMesh->draw(commandBuffer);
+    if (sceneActive) {
+        Pipeline* quadPipeline = FrameBuffers::defaultFrameBuffer->getMultiSamplerPower() > 0
+            ? Pipelines::getPipeline(POST_PROCESS_PIPELINE_MSAA_ID)
+            : Pipelines::getPipeline(POST_PROCESS_PIPELINE_ID);
+        quadPipeline->bind(commandBuffer);
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+            quadPipeline->getPipelineLayout(), 0, 1, &quadPipeline->descriptorSet, 0, nullptr);
+        Meshes::quadMesh->bind(commandBuffer);
+        Meshes::quadMesh->draw(commandBuffer);
+    }
 
     //scene->render(commandBuffer); // Renderizar la escena (dibujar los meshes)
 
