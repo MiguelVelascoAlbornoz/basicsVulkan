@@ -7,6 +7,7 @@
 
 #include <windows.h>
 #include <dxgi.h>
+#include <pthread.h>
 #include <vulkan/vulkan.h>
 struct ID3D11DeviceContext;
 struct ID3D11Device;
@@ -40,6 +41,7 @@ class DesktopDuplicatorManager
     };
 
 private:
+
     bool initializeID3D11();
     bool selectDuplicationOuput();
     bool createDestinyResource();

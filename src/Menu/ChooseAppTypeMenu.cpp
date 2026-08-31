@@ -90,7 +90,7 @@ void ChooseAppTypeMenu::render()
     }
 
     if (DrawButtonWithShadow("Connect to Server",ImVec2(viewport->WorkSize.x /2+ spacement/2, y), ImVec2(buttonWidth, buttonHeight),false)) {
-       app->startClient();
+       //app->startClient();
         shouldClose = true;
     }
 

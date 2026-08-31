@@ -52,7 +52,7 @@ ImGuiWindowFlags_NoScrollWithMouse;
     );
     ImGui::PushFont(ImGuiFonts::fonts[WINDOWS_FONT_BOLD_ID][3]); // fuente más grande para el título
     ImGui::SetCursorPos(ImVec2(24, 24));
-    ImGui::TextColored(ImVec4(.1,.1,.1,1), ("Listening port " + std::to_string(app->hostPort)).c_str());
+    ImGui::TextColored(ImVec4(.1,.1,.1,1), ("Listening port " + std::to_string(app->netManager->getHostPort())).c_str());
     ImGui::PopFont();
 
 
@@ -72,13 +72,15 @@ ImGuiWindowFlags_NoScrollWithMouse;
     colors[ImGuiCol_Text]          = ImVec4(0.10f, 0.10f, .10f, 1.00f);
 
     ImGui::SetCursorPos(ImVec2(48, headerHeight + 20));
-    ImGui::Columns(2, nullptr, false);
+    ImGui::Columns(3, nullptr, false);
     ImGui::PushFont(ImGuiFonts::fonts[WINDOWS_FONT_ID][3]);
     ImGui::TextUnformatted("PRIVATE IPS");
     ImGui::NextColumn();
     ImGui::TextUnformatted("PUBLIC IP");
+    ImGui::NextColumn();
+    ImGui::TextUnformatted("STATUS");
     ImGui::PopFont();
-    ImGui::TableSetColumnIndex(1);
+    ImGui::NextColumn();
     ImGui::Dummy(ImVec2(0, 3));
 
     ImGui::PushStyleColor(ImGuiCol_Separator, IM_COL32(210, 210, 210, 255));
@@ -94,8 +96,8 @@ ImGuiWindowFlags_NoScrollWithMouse;
 
     // Private IPs
     ImGui::Indent(8.0f);
-
-    for (const auto& ip : app->privateIps)
+    std::vector<std::string> privateIPs = app->netManager->getPrivateIPs();
+    for (const auto& ip : privateIPs)
     {
         ImGui::TextUnformatted(ip.c_str());
     }
@@ -108,7 +110,20 @@ ImGuiWindowFlags_NoScrollWithMouse;
     // Cambiamos a la columna derecha
     ImGui::NextColumn();
 
-    ImGui::TextUnformatted(app->publicIP.c_str());
+    ImGui::TextUnformatted(app->netManager->getPublicIP().c_str());
+
+    ImGui::NextColumn();
+
+    switch (app->netManager->getStatus())
+    {
+
+    case NetManager::WAITING:
+        ImGui::TextColored(ImVec4(.7f,.7f,0.0f,1.0f),"Waiting");
+        break;
+    case NetManager::UNDEFINED:
+        ImGui::TextColored(ImVec4(.0f,.0f,0.0f,1.0f),"Undefined");
+        break;
+    }
 
     ImGui::PopFont();
 
