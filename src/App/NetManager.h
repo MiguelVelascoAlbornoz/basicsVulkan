@@ -23,6 +23,8 @@ public:
         INVALID_IP,
         WAITING,
         UNDEFINED,
+        CONNECTING,
+        CONNECTED
     };
     static std::string obtainPublicIP();
     static std::vector<std::string> obtainAllPrivateIPs();

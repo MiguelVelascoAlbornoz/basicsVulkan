@@ -110,7 +110,7 @@ bool DesktopDuplicatorManager::createWindowsHandler()
 
 }
 
-bool DesktopDuplicatorManager::writeDestinyResource()
+bool DesktopDuplicatorManager::writeDestinyResource() const
 {
     DXGI_OUTDUPL_FRAME_INFO frameInfo;
     IDXGIResource* frameResource = nullptr;

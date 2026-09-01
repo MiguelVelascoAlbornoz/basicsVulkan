@@ -120,7 +120,7 @@ ImGuiWindowFlags_NoScrollWithMouse;
     case NetManager::WAITING:
         ImGui::TextColored(ImVec4(.7f,.7f,0.0f,1.0f),"Waiting");
         break;
-    case NetManager::UNDEFINED:
+    default:
         ImGui::TextColored(ImVec4(.0f,.0f,0.0f,1.0f),"Undefined");
         break;
     }

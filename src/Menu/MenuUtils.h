@@ -4,9 +4,10 @@
 
 #ifndef BASICSVULKAN_MENUUTILS_H
 #define BASICSVULKAN_MENUUTILS_H
+#include <string>
 
 struct ImVec2;
  bool ModernButton(const char* label, const char* icon, ImVec2 size);
  bool DrawButtonWithShadow(const char* label, ImVec2 pos, ImVec2 size, bool primary);
-
+ std::string GetLoadingDots();
 #endif //BASICSVULKAN_MENUUTILS_H

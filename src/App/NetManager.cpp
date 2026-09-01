@@ -109,6 +109,7 @@ void NetManager::tryConnection(std::string ip, const int port, const std::string
         connectionIP = ip;
         hostPort = port;
         connectionPassword = password;
+        status = CONNECTING;
         {
             std::lock_guard lock(mutex);
             shoulTryConnection = true;
@@ -174,6 +175,33 @@ void NetManager::clientThread()
     cv.wait(lock, [this] {
         return shoulTryConnection;
     });
+    // Datos a enviar
+    const char* message = connectionPassword.c_str();
+    const int messageLen = static_cast<int>(strlen(message));
+
+    // Dirección de destino
+    sockaddr_in destAddr{};
+    destAddr.sin_family = AF_INET;
+    destAddr.sin_port   = htons(hostPort);                     // puerto destino
+    inet_pton(AF_INET, connectionIP.c_str(), &destAddr.sin_addr); // IP destino
+
+    const int bytesSent = sendto(
+        udpSocket,
+        message, messageLen,
+        0,                                   // flags
+        (sockaddr*)&destAddr, sizeof(destAddr)
+    );
+
+    if (bytesSent == SOCKET_ERROR) {
+        std::cerr << "sendto() falló: " << WSAGetLastError() << std::endl;
+    } else {
+        // bytesSent == messageLen si se envió completo (UDP no fragmenta la llamada)
+        if (bytesSent != messageLen)
+        {
+            std::cout << "Message has been fragmented." << std::endl;
+        }
+        status = CONNECTED;
+    }
 }
 bool NetManager::init()
 {
@@ -219,6 +247,7 @@ NetManager::~NetManager()
         closesocket(udpSocket);
         udpSocket = INVALID_SOCKET;
     }
+
     redThread.join();
     // Liberar los recursos de Winsock
     WSACleanup();

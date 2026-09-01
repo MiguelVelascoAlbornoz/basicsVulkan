@@ -1,7 +1,6 @@
 #include "imGUI/imgui.h"
 #include "MenuUtils.h"
 
-#include <string>
 
 bool ModernButton(const char* label, const char* icon, const ImVec2 size)
 {
@@ -48,3 +47,9 @@ bool DrawButtonWithShadow(const char* label, const ImVec2 pos, const ImVec2 size
     return ret;
 }
 
+std::string GetLoadingDots()
+{
+    // Ciclo: . -> .. -> ... -> repite, cada 400ms
+    int step = static_cast<int>(ImGui::GetTime() / 0.4) % 3;
+    return std::string(step + 1, '.');
+}

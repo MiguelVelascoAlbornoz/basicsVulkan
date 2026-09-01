@@ -22,7 +22,7 @@ class DesktopDuplicatorManager
     bool createDesktopDuplicator();
     ~DesktopDuplicatorManager();
 
-    bool writeDestinyResource();
+    [[nodiscard]] bool writeDestinyResource() const;
      [[nodiscard]] HANDLE getHandle() const
     {
         return handle;
