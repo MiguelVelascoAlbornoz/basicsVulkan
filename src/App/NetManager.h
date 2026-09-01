@@ -42,7 +42,7 @@ public:
     std::mutex mutex;
     std::condition_variable cv;
     bool shoulTryConnection = false;
-    void tryConnection(std::string ip, int port, const std::string& password);
+    void tryConnection(const std::string& ip, int port, const std::string& password);
 private:
     ConexionStatus status = UNDEFINED;
     void serverThread();

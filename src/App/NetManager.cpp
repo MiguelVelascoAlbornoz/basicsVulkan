@@ -4,6 +4,7 @@
 
 #include "NetManager.h"
 
+#include <cstring>
 #include <iostream>
 #include <iphlpapi.h>
 #include <winhttp.h>
@@ -99,7 +100,7 @@ void NetManager::sendFrame()
 }
 
 
-void NetManager::tryConnection(std::string ip, const int port, const std::string& password)
+void NetManager::tryConnection(const std::string& ip, const int port, const std::string& password)
 {
     sockaddr_in addr{};
     int result = inet_pton(AF_INET, ip.c_str(), &addr.sin_addr);
@@ -130,8 +131,7 @@ void NetManager::tryConnection(std::string ip, const int port, const std::string
 void NetManager::serverThread()
 {
 
-    //Lo primero que hace el server es esperar un intento de conexxion, la conexion solo se va a considerar valida si el mensaje de conexion es la contraseña, ahi se guarda la IP de quien se conecto y se entra en modo
-    //envio de frame
+    //Esperar por una conexion
     char buffer[65536]; // suficiente para el datagrama UDP más grande posible
     sockaddr_in senderAddr{};
     int senderAddrLen = sizeof(senderAddr);
@@ -143,7 +143,7 @@ void NetManager::serverThread()
         0,                                  // flags
         (sockaddr*)&senderAddr, &senderAddrLen  // te dice quién lo mandó
     );
-
+    //Una vez recibida valida si fue exitosa y despues imprime el mensaje
     if (bytesReceived == SOCKET_ERROR) {
         std::cerr << "recvfrom() falló: " << WSAGetLastError() << std::endl;
     } else {
@@ -157,25 +157,35 @@ void NetManager::serverThread()
             INET_ADDRSTRLEN
         );
         std::cout << "Conexion realizada con: " << senderIP << std::endl;
-        std::cout << "Mensaje enviado: " << std::endl;
+        std::cout << "Mensaje recibido: " << std::endl;
         for (int i = 0; i <bytesReceived; i++)
         {
             std::cout << buffer[i];
         }
         std::cout << std::endl;
     }
+    //Envia un mensaje al cliente que se intento conectar
+    const char* respuesta = "Te conectaste?.";
+    const int bytesSent = sendto(
+        udpSocket,
+        respuesta, std::strlen(respuesta),
+        0,                                   // flags
+        (sockaddr*)&senderAddr, senderAddrLen
+    );
 }
 
 
 void NetManager::clientThread()
 {
 
+    //Esperar a que el cliente ponga la IP, puerto y contraseña
     std::unique_lock lock(mutex);
 
     cv.wait(lock, [this] {
         return shoulTryConnection;
     });
-    // Datos a enviar
+    // Despierta cuando el cliente meta en "conectar"
+    // Manda el mensaje a la IP dada
     const char* message = connectionPassword.c_str();
     const int messageLen = static_cast<int>(strlen(message));
 
@@ -191,7 +201,6 @@ void NetManager::clientThread()
         0,                                   // flags
         (sockaddr*)&destAddr, sizeof(destAddr)
     );
-
     if (bytesSent == SOCKET_ERROR) {
         std::cerr << "sendto() falló: " << WSAGetLastError() << std::endl;
     } else {
@@ -202,6 +211,23 @@ void NetManager::clientThread()
         }
         status = CONNECTED;
     }
+    //Una vez mandado el mensaje el status pasa a conectado
+    //Espera por una respuesta del server
+
+    int destAddrLen = sizeof(destAddr);
+    char buffer[65536];
+    int bytesReceived = recvfrom(
+        udpSocket,
+        buffer, sizeof(buffer),
+        0,                                  // flags
+        (sockaddr*)&destAddr, &destAddrLen  // te dice quién lo mandó
+    );
+    //Imprime tal mensaje
+    for (int i = 0; i <bytesReceived; i++)
+    {
+        std::cout << buffer[i];
+    }
+    std::cout << std::endl;
 }
 bool NetManager::init()
 {
