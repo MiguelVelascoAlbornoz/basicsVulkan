@@ -97,10 +97,33 @@ void NetManager::sendFrame()
         // bytesSent == messageLen si se envió completo (UDP no fragmenta la llamada)
     }
 }
-void NetManager::startClient()
+
+
+void NetManager::tryConnection(std::string ip, const int port, const std::string& password)
 {
+    sockaddr_in addr{};
+    int result = inet_pton(AF_INET, ip.c_str(), &addr.sin_addr);
 
+    if (result == 1)
+    {
+        connectionIP = ip;
+        hostPort = port;
+        connectionPassword = password;
+        {
+            std::lock_guard lock(mutex);
+            shoulTryConnection = true;
+        }
 
+        cv.notify_one();
+    }
+    else if (result == 0)
+    {
+        status = INVALID_IP;
+    }
+    else
+    {
+        status = UNEXPECTED_ERROR;
+    }
 }
 
 void NetManager::serverThread()
@@ -142,6 +165,16 @@ void NetManager::serverThread()
     }
 }
 
+
+void NetManager::clientThread()
+{
+
+    std::unique_lock lock(mutex);
+
+    cv.wait(lock, [this] {
+        return shoulTryConnection;
+    });
+}
 bool NetManager::init()
 {
     WSADATA wsaData;
@@ -165,8 +198,19 @@ bool NetManager::init()
     privateIps = obtainAllPrivateIPs();
     publicIP = obtainPublicIP();
 
-    redThread = std::thread(&NetManager::serverThread, this);
     return true;
+}
+bool NetManager::initServer()
+{
+    bool success = init();
+    redThread = std::thread(&NetManager::serverThread, this);
+    return success;
+}
+bool NetManager::initClient()
+{
+    bool success = init();
+    redThread = std::thread(&NetManager::clientThread, this);
+    return success;
 }
 NetManager::~NetManager()
 {

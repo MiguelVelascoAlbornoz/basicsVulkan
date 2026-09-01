@@ -21,6 +21,7 @@ class ChooseAppTypeMenu;
 #define F3_MENU_ID "f3_menu"
 #define CHOOSE_APP_TYPE_MENU_ID "choose_app_type_menu"
 #define LISTENING_MENU_ID "listening_menu"
+#define CONNECT_MENU_ID "connect_menu"
 class F3GUI;
 class ListeningMenu;
 class Menus {

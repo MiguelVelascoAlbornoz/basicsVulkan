@@ -17,6 +17,7 @@
 #include "ImGuiFonts.h"
 #include "../App/DesktopDuplicatorManager.h"
 #include "../Menu/ChooseAppTypeMenu.h"
+#include "../Menu/ConnectMenu.h"
 #include "../Renderer/Image.h"
 #include "../Renderer/Mesh/Mesh.h"
 #include "../Menu/EditorMenu.h"
@@ -149,7 +150,7 @@ void Registry::initMenus( App* app)
     Menus::F3Menu = dynamic_cast<F3GUI*>(Menus::registerMenu(F3_MENU_ID,new F3GUI(app)));
     Menus::chooseMenu = dynamic_cast<ChooseAppTypeMenu*>(Menus::registerMenu(CHOOSE_APP_TYPE_MENU_ID,new ChooseAppTypeMenu(app)));
     Menus::listeningMenu = dynamic_cast<ListeningMenu*>(Menus::registerMenu(LISTENING_MENU_ID,new ListeningMenu(app)));
-
+    Menus::registerMenu(CONNECT_MENU_ID,new ConnectMenu(app));
 }
 
 VkFormat getFormatByBits(Player::PlayerCameraSettings::BitsPerChannel bitPerChannel)

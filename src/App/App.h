@@ -43,6 +43,7 @@ public:
     Renderer* renderer = nullptr; /**< renderer pointer, must be deleted at end */
      AppType type = UNDEFINED;
     void startServer();
+    void startClient();
     NetManager* netManager = nullptr;
     Image* desktopImage = nullptr;
     App(const std::function<void(App*)>& registryCallback);

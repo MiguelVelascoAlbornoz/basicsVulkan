@@ -31,8 +31,10 @@ void ChooseAppTypeMenu::render()
 
 
     ImGuiStyle& style = ImGui::GetStyle();
+
     style.WindowRounding = style.FrameRounding;
     ImVec4* colors = style.Colors;
+    colors[ImGuiCol_InputTextCursor] = ImVec4(.0f, 0.0f, 0.0f, 1.00f);
     colors[ImGuiCol_WindowBg]      = ImVec4(0.9f, 0.9f, 0.9f, 1.00f); // gris casi blanco, no blanco puro
     colors[ImGuiCol_Text]          = ImVec4(0.13f, 0.13f, 0.15f, 1.00f);
     colors[ImGuiCol_Border]        = ImVec4(0.80f, 0.80f, 0.82f, 1.00f);
@@ -90,8 +92,9 @@ void ChooseAppTypeMenu::render()
     }
 
     if (DrawButtonWithShadow("Connect to Server",ImVec2(viewport->WorkSize.x /2+ spacement/2, y), ImVec2(buttonWidth, buttonHeight),false)) {
-       //app->startClient();
+       app->startClient();
         shouldClose = true;
+        Menus::openMenu(CONNECT_MENU_ID);
     }
 
     ImGui::PopFont();

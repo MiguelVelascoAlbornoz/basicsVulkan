@@ -54,7 +54,7 @@ void App::startServer()
     Pipelines::defaultPipeline->updateDescriptorSet(cfg.uniformObjects, cfg.images);
 
     renderer->setSharedCaptureImage(desktopImage);
-    FrameBuffers::turnOnFBO(FrameBuffers::defaultFrameBuffer);
+    //FrameBuffers::turnOnFBO(FrameBuffers::defaultFrameBuffer);
 
     if (netManager)
     {
@@ -63,11 +63,26 @@ void App::startServer()
         return;
     }
     netManager = new NetManager();
-    if (!netManager->init())
+    if (!netManager->initServer())
     {
         runnig = false;
     }
 
+}
+void App::startClient()
+{
+    type = AppType::CLIENT;
+    if (netManager)
+    {
+        std::cerr << "startClient(): A client is already existing." << std::endl;
+        runnig = false;
+        return;
+    }
+    netManager = new NetManager();
+    if (!netManager->initClient())
+    {
+        runnig = false;
+    }
 }
 App::App(const std::function<void(App*)>& registryCallback) {
     //Initizialise window

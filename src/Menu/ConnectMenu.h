@@ -20,7 +20,9 @@ class ConnectMenu : public Menu
 
         private:
         App* app; /**< @brief Pointer to the window, used for file dialog operations. */
-
+        char ipBuffer[64] = "127.0.0.1";
+        char passwordBuffer[128] = "";
+        int port = 9000;
 
 };
 
