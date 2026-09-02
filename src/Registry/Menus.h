@@ -22,6 +22,7 @@ class ChooseAppTypeMenu;
 #define CHOOSE_APP_TYPE_MENU_ID "choose_app_type_menu"
 #define LISTENING_MENU_ID "listening_menu"
 #define CONNECT_MENU_ID "connect_menu"
+#define SEND_MESSAGE_MENU_ID "send_message_menu"
 class F3GUI;
 class ListeningMenu;
 class Menus {

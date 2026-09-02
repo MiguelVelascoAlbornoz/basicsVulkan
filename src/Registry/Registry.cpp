@@ -18,6 +18,7 @@
 #include "../App/DesktopDuplicatorManager.h"
 #include "../Menu/ChooseAppTypeMenu.h"
 #include "../Menu/ConnectMenu.h"
+#include "../Menu/SendMessageMenu.h"
 #include "../Renderer/Image.h"
 #include "../Renderer/Mesh/Mesh.h"
 #include "../Menu/EditorMenu.h"
@@ -151,6 +152,7 @@ void Registry::initMenus( App* app)
     Menus::chooseMenu = dynamic_cast<ChooseAppTypeMenu*>(Menus::registerMenu(CHOOSE_APP_TYPE_MENU_ID,new ChooseAppTypeMenu(app)));
     Menus::listeningMenu = dynamic_cast<ListeningMenu*>(Menus::registerMenu(LISTENING_MENU_ID,new ListeningMenu(app)));
     Menus::registerMenu(CONNECT_MENU_ID,new ConnectMenu(app));
+    Menus::registerMenu(SEND_MESSAGE_MENU_ID,new SendMessageMenu(app));
 }
 
 VkFormat getFormatByBits(Player::PlayerCameraSettings::BitsPerChannel bitPerChannel)

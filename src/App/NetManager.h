@@ -12,11 +12,14 @@
 
 #include <thread>
 
+#define MAX_UDP_RECEIVE_BUFFER_SIZE 65536
 class NetManager
 {
 
 
 public:
+    /** @brief Bytes que ocupa el status al inicio de cada mensaje. */
+    static constexpr size_t STATUS_HEADER_SIZE = sizeof(int32_t);
     enum ConexionStatus
     {
         UNEXPECTED_ERROR,
@@ -24,10 +27,18 @@ public:
         WAITING,
         UNDEFINED,
         CONNECTING,
-        CONNECTED
+        CONNECTED,
+        SHUTTING_DOWN,
+        TIMEOUT,
+        INVALID_PASSWORD
     };
     static std::string obtainPublicIP();
     static std::vector<std::string> obtainAllPrivateIPs();
+    void assignIntToCharArray(int32_t value, char* buffer, size_t offset);
+    int32_t charArrayToInt(const char* buffer, size_t offset);
+    std::vector<char> buildMessage(ConexionStatus status, const std::string& payload);
+    ConexionStatus extractStatus(const char* buffer, int len);
+    std::string extractPayload(const char* buffer, int len);
 
     bool init();
     bool initServer();
