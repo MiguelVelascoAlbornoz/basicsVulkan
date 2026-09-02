@@ -251,7 +251,7 @@ void NetManager::clientThread()
             continue;
         }
         // bytesSent == messageLen si se envió completo (UDP no fragmenta la llamada)
-        if (bytesSent != message.size()){
+        if (bytesSent != static_cast<int>(message.size())){
             std::cout << "Message has been fragmented." << std::endl;
             status = UNEXPECTED_ERROR;
             continue;
