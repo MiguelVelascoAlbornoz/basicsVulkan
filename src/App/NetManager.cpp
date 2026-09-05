@@ -344,6 +344,7 @@ void NetManager::clientWaitForConnection()
         cv.wait(lock, [this] {
             return shoulTryConnection;
         });
+        shoulTryConnection = false;
         // Despierta cuando el cliente meta en "conectar"
 
         // Manda el mensaje a la IP dada
@@ -445,7 +446,7 @@ void NetManager::clientThread()
         fd_set readfds;
         FD_ZERO(&readfds);
         FD_SET(udpSocket, &readfds);
-        timeval tv{ 0, 100 }; // 100ms
+        timeval tv{ 0, 1000000*heartbeatInterval }; // 100ms
 
         int result = select(0, &readfds, nullptr, nullptr, &tv);
 
