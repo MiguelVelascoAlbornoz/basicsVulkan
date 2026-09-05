@@ -293,21 +293,24 @@ void NetManager::tryConnection(const std::string& ip, const int port, const std:
         status = UNEXPECTED_ERROR;
     }
 }
-void NetManager::manageHeartBeat()
+
+bool NetManager::manageHeartBeat()
 {
-    if (!waitingHeartbeat)
+   if (!waitingHeartbeat)
+   {
+       heartBeatStartTime =  std::chrono::steady_clock::now();
+       waitingHeartbeat = true;
+   }
+    sendPackage("",HEARTBEAT);
+    if ( std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - heartBeatStartTime).count() > connectionTimeout)
     {
-        heartBeatStartTime =  std::chrono::steady_clock::now();
-        waitingHeartbeat = true;
-        sendPackage("",HEARTBEAT);
-    } else if ( std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - heartBeatStartTime).count() > connectionTimeout)
-    {
+        std::cout << "Disconnected from: " << connectionIP << std::endl;
         status = TIMEOUT;
         connectionIP = "";
         connectionAddr = {};
-        serverWaitForConnection();
-        std::cout << "<Server> Disconnected from client: " << connectionIP << std::endl;
+        return false;
     }
+    return true;
 }
 
 void NetManager::serverThread()
@@ -440,22 +443,25 @@ void NetManager::clientWaitForConnection()
 
 void NetManager::clientThread()
 {
-    clientWaitForConnection();
-    while (status == CONNECTED)
+    while (status != SHUTTING_DOWN)
     {
-        // Esperar datos en el socket, pero como máximo X ms
-        fd_set readfds;
-        FD_ZERO(&readfds);
-        FD_SET(udpSocket, &readfds);
-        timeval tv{ 0, 1000000*heartbeatInterval }; // 100ms
+        clientWaitForConnection();
+        while (status == CONNECTED)
+        {
+            // Esperar datos en el socket, pero como máximo X ms
+            fd_set readfds;
+            FD_ZERO(&readfds);
+            FD_SET(udpSocket, &readfds);
+            timeval tv{ 0, 1000000*heartbeatInterval }; // 100ms
 
-        int result = select(0, &readfds, nullptr, nullptr, &tv);
+            int result = select(0, &readfds, nullptr, nullptr, &tv);
 
-        if (result > 0 && FD_ISSET(udpSocket, &readfds)) {
-            // Llegó algo -> recvfrom() ya no bloquea, procesar mensaje
-            handleIncomingPacket();
+            if (result > 0 && FD_ISSET(udpSocket, &readfds)) {
+                // Llegó algo -> recvfrom() ya no bloquea, procesar mensaje
+                handleIncomingPacket();
+            }
+            manageHeartBeat();
         }
-        manageHeartBeat();
     }
 }
 

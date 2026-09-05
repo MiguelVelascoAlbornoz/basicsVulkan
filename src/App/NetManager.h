@@ -68,7 +68,7 @@ public:
     std::condition_variable cv;
     bool shoulTryConnection = false;
     void tryConnection(const std::string& ip, int port, const std::string& password);
-    void manageHeartBeat();
+    bool manageHeartBeat();
     std::string getConnectionIP() { return connectionIP; };
     sockaddr_in connectionAddr;
 private:
