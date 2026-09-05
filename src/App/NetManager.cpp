@@ -153,6 +153,7 @@ void NetManager::handleIncomingPacket()
         std::cout << "ping: " << ping.count() << " ms" << std::endl;
     } else
     {
+        waitingHeartbeat = false;
         std::string payload = extractPayload(buffer, bytesReceived);
         std::cout << connectionIP + ": " << payload << std::endl;
     }
