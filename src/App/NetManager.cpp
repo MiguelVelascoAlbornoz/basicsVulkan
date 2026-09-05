@@ -72,8 +72,6 @@ std::string NetManager::obtainPublicIP() {
     }
     return ips;
 }
-
-
 void NetManager::assignIntToCharArray(int32_t value, char* buffer, size_t offset)
 {
     // htonl para que el formato en el cable sea el mismo sin importar el
@@ -89,20 +87,27 @@ int32_t NetManager::charArrayToInt(const char* buffer, size_t offset)
     return static_cast<int32_t>(ntohl(netValue));
 }
 
-std::vector<char> NetManager::buildMessage(ConexionStatus status, const std::string& payload)
+
+std::vector<char> NetManager::buildMessage(PackageHeader header, const std::string& payload)
 {
     std::vector<char> message(STATUS_HEADER_SIZE + payload.size());
-    assignIntToCharArray(static_cast<int32_t>(status), message.data(), 0);
+    assignIntToCharArray(static_cast<int32_t>(header), message.data(), 0);
     memcpy(message.data() + STATUS_HEADER_SIZE, payload.data(), payload.size());
     return message;
 }
-
-NetManager::ConexionStatus NetManager::extractStatus(const char* buffer, int len)
+std::vector<char> NetManager::buildMessage(PackageHeader header, const char* payload, int bytesCount)
+{
+    std::vector<char> message(STATUS_HEADER_SIZE + bytesCount);
+    assignIntToCharArray(static_cast<int32_t>(header), message.data(), 0);
+    memcpy(message.data() + STATUS_HEADER_SIZE, payload, bytesCount);
+    return message;
+}
+NetManager::PackageHeader NetManager::extractHeader(const char* buffer, int len)
 {
     if (len < static_cast<int>(STATUS_HEADER_SIZE)) {
-        return UNEXPECTED_ERROR;
+        return UNEXPECTED_HEADER;
     }
-    return static_cast<ConexionStatus>(charArrayToInt(buffer, 0));
+    return static_cast<PackageHeader>(charArrayToInt(buffer, 0));
 }
 
 std::string NetManager::extractPayload(const char* buffer, int len)
@@ -112,6 +117,61 @@ std::string NetManager::extractPayload(const char* buffer, int len)
     }
     return { buffer + STATUS_HEADER_SIZE, static_cast<size_t>(len) - STATUS_HEADER_SIZE };
 }
+
+void NetManager::handleIncomingPacket() const
+{
+
+    char buffer[MAX_UDP_RECEIVE_BUFFER_SIZE];
+    sockaddr_in replyAddr{};
+    int replyAddrLen = sizeof(replyAddr);
+    int bytesReceived = recvfrom(udpSocket, buffer, sizeof(buffer), 0,
+                                  reinterpret_cast<sockaddr*>(&replyAddr), &replyAddrLen);
+
+    //Validar si la respuesta se recibio
+    if (bytesReceived == SOCKET_ERROR)
+    {
+        return;
+    }
+    if (replyAddr.sin_addr.s_addr != connectionAddr.sin_addr.s_addr ||
+        replyAddr.sin_port != connectionAddr.sin_port) {
+        return; // respuesta de origen no esperado, descartar
+        }
+    if (bytesReceived < MAX_UDP_RECEIVE_BUFFER_SIZE)
+    {
+        buffer[bytesReceived] = '\0';
+    } else
+    {
+        std::cout << "<Mensaje truncado>" << std::endl;
+        buffer[MAX_UDP_RECEIVE_BUFFER_SIZE-1] = '\0';
+    }
+    //PackageHeader packageHeader = extractHeader(buffer, bytesReceived);
+    std::string payload = extractPayload(buffer, bytesReceived);
+    std::cout << connectionIP + ": " << payload << std::endl;
+
+}
+
+void NetManager::sendPackage(const std::string& message, PackageHeader header)
+{
+    bool result = false;
+    int trys = 0;
+    int maxTrys = 5;
+
+    const std::vector<char> m = buildMessage(header, message);
+    do
+    {
+        const int bytesSent = sendto(udpSocket,m.data(), m.size(),0,reinterpret_cast<sockaddr*>(&connectionAddr), sizeof(connectionAddr));
+
+        if (bytesSent == SOCKET_ERROR) {
+            std::cerr << "sendto() falló: " << WSAGetLastError() << std::endl;
+        } else if (bytesSent != static_cast<int>(m.size())) {
+            std::cout << "Message has been fragmented." << std::endl;
+        } else {
+            result = true; // envío exitoso a nivel de socket
+        }
+        trys++;
+    } while (!result  && trys < maxTrys);
+}
+
 void NetManager::sendFrame()
 {
     // Datos a enviar
@@ -190,15 +250,15 @@ void NetManager::serverThread()
         }
 
         //Transformar el mensaje recibido en string
-        ConexionStatus clientStatus = extractStatus(buffer, bytesReceived);
-        if (clientStatus != CONNECTING) continue;
+        PackageHeader clientStatus = extractHeader(buffer, bytesReceived);
+        if (clientStatus != PackageHeader::CONNECTION_TRY) continue;
         std::string payload = extractPayload(buffer, bytesReceived);
         //Comparar si el mensaje es igual a la contraseña
         //Si lo es entonces el status pasa a ser conected y se guarda la IP del sender
         //Si no hay que volveral status de WAITING y a la situacion inicial
         if (strcmp(connectionPassword.c_str(), payload.c_str()) != 0){
             //Enviar mensaje diciendo que la contraseña es invalida
-            std::vector<char> message = buildMessage(INVALID_PASSWORD, "");
+            std::vector<char> message = buildMessage(CONNECTION_ERROR, "Wrong password.");
             sendto(udpSocket,message.data(), message.size(),0, (sockaddr*)&senderAddr, sizeof(senderAddr));
             continue;
         }
@@ -210,12 +270,47 @@ void NetManager::serverThread()
         &senderAddr.sin_addr,
         senderIP,
         INET_ADDRSTRLEN);
+
+
+        std::vector<char> message = buildMessage(CONNECTION_SUCCESS, "You have been connected.");
+        //Enviar mensaje diciendo que se permite la conexion
+        int bytesSent = sendto(udpSocket,message.data(), message.size(),0, (sockaddr*)&senderAddr, sizeof(senderAddr));
+        if (bytesSent == SOCKET_ERROR) {
+            std::cerr << "sendto() falló: " << WSAGetLastError() << std::endl;
+            status = UNEXPECTED_ERROR;
+            continue;
+        }
         status = CONNECTED;
         connectionIP = senderIP;
-        std::vector<char> message = buildMessage(status, "");
-        //Enviar mensaje diciendo que se permite la conexion
-        sendto(udpSocket,message.data(), message.size(),0, (sockaddr*)&senderAddr, sizeof(senderAddr));
+        connectionAddr = senderAddr;
+    }
+    // Esperar datos en el socket, pero como máximo X ms
+    fd_set readfds;
+    FD_ZERO(&readfds);
+    FD_SET(udpSocket, &readfds);
+    timeval tv{ 0, 100 }; // 100ms
 
+    int result = select(0, &readfds, nullptr, nullptr, &tv);
+
+    if (result > 0 && FD_ISSET(udpSocket, &readfds)) {
+        // Llegó algo -> recvfrom() ya no bloquea, procesar mensaje
+        handleIncomingPacket();
+    }
+    while (status == CONNECTED)
+    {
+        // Esperar datos en el socket, pero como máximo X ms
+        fd_set readfds;
+        FD_ZERO(&readfds);
+        FD_SET(udpSocket, &readfds);
+        timeval tv{ 0, 10000 }; // 100ms
+
+        int result = select(0, &readfds, nullptr, nullptr, &tv);
+
+        if (result > 0 && FD_ISSET(udpSocket, &readfds)) {
+            // Llegó algo -> recvfrom() ya no bloquea, procesar mensaje
+            handleIncomingPacket();
+        }
+        sendPackage("HOLAA",MESSAGE);
     }
 }
 
@@ -236,7 +331,7 @@ void NetManager::clientThread()
         // Manda el mensaje a la IP dada
         status = CONNECTING;
 
-        std::vector<char> message = buildMessage(status, connectionPassword);
+        std::vector<char> message = buildMessage(CONNECTION_TRY, connectionPassword);
         // Dirección de destino
         sockaddr_in destAddr{};
         destAddr.sin_family = AF_INET;
@@ -274,10 +369,7 @@ void NetManager::clientThread()
         int bytesReceived = recvfrom(udpSocket, buffer, sizeof(buffer), 0,
                                       (sockaddr*)&replyAddr, &replyAddrLen);
 
-        if (replyAddr.sin_addr.s_addr != serverAddr.sin_addr.s_addr ||
-            replyAddr.sin_port != serverAddr.sin_port) {
-            continue; // respuesta de origen no esperado, descartar
-            }
+
         //Validar si la respuesta se recibio
         if (bytesReceived == SOCKET_ERROR)
         {
@@ -292,17 +384,60 @@ void NetManager::clientThread()
             }
             continue;
         }
+        if (replyAddr.sin_addr.s_addr != serverAddr.sin_addr.s_addr ||
+            replyAddr.sin_port != serverAddr.sin_port) {
+            status = UNEXPECTED_ERROR;
+            continue; // respuesta de origen no esperado, descartar
+        }
         //Validar contraseña
 
-        ConexionStatus serverStatus = extractStatus(buffer, bytesReceived);
+        PackageHeader packageHeader = extractHeader(buffer, bytesReceived);
+        std::string payload = extractPayload(buffer, bytesReceived);
+        if (packageHeader != CONNECTION_SUCCESS)
+        {
+            if (payload == "Wrong password.")
+            {
+                status = INVALID_PASSWORD;
+            } else
+            {
+                status = UNEXPECTED_ERROR;
+            }
+        } else
+        {
+            if (payload == "You have been connected.")
+            {
+                status = CONNECTED;
+                connectionAddr = serverAddr;
+            } else
+            {
+                status = UNEXPECTED_ERROR;
+            }
 
-        switch (serverStatus) {
-        case CONNECTED:        status = CONNECTED; break;
-        case INVALID_PASSWORD: status = INVALID_PASSWORD; continue;
-        default:                status = UNEXPECTED_ERROR; continue;
         }
+
+    }
+    while (status == CONNECTED)
+    {
+        // Esperar datos en el socket, pero como máximo X ms
+        fd_set readfds;
+        FD_ZERO(&readfds);
+        FD_SET(udpSocket, &readfds);
+        timeval tv{ 0, 100 }; // 100ms
+
+        int result = select(0, &readfds, nullptr, nullptr, &tv);
+
+        if (result > 0 && FD_ISSET(udpSocket, &readfds)) {
+            // Llegó algo -> recvfrom() ya no bloquea, procesar mensaje
+            handleIncomingPacket();
+        }
+
     }
 }
+
+void NetManager::startClient()
+{
+}
+
 bool NetManager::init()
 {
     WSADATA wsaData;

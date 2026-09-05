@@ -32,14 +32,26 @@ public:
         TIMEOUT,
         INVALID_PASSWORD
     };
+    enum PackageHeader
+    {
+        CONNECTION_TRY,
+        UNEXPECTED_HEADER,
+        CONNECTION_ERROR,
+        CONNECTION_SUCCESS,
+        MESSAGE,
+        HEARTBEAT,
+    };
     static std::string obtainPublicIP();
     static std::vector<std::string> obtainAllPrivateIPs();
-    void assignIntToCharArray(int32_t value, char* buffer, size_t offset);
-    int32_t charArrayToInt(const char* buffer, size_t offset);
-    std::vector<char> buildMessage(ConexionStatus status, const std::string& payload);
-    ConexionStatus extractStatus(const char* buffer, int len);
-    std::string extractPayload(const char* buffer, int len);
-
+    static void assignIntToCharArray(int32_t value, char* buffer, size_t offset);
+    static int32_t charArrayToInt(const char* buffer, size_t offset);
+    static std::vector<char> buildMessage(PackageHeader status, const std::string& payload);
+    static std::vector<char> buildMessage(PackageHeader header, const char* payload, int bytesCount);
+    static PackageHeader extractHeader(const char* buffer, int len);
+    static std::string extractPayload(const char* buffer, int len);
+    void handleIncomingPacket() const;
+    void sendPackage(const std::string& message, PackageHeader header);
+    void sendHeartbeat();
     bool init();
     bool initServer();
     bool initClient();
@@ -54,6 +66,7 @@ public:
     std::condition_variable cv;
     bool shoulTryConnection = false;
     void tryConnection(const std::string& ip, int port, const std::string& password);
+    sockaddr_in connectionAddr;
 private:
     ConexionStatus status = UNDEFINED;
     void serverThread();
