@@ -13,6 +13,7 @@
 #include <thread>
 
 #define MAX_UDP_RECEIVE_BUFFER_SIZE 65536
+#define WRONG_PASSWORD "Wrong password."
 class NetManager
 {
 
@@ -71,7 +72,7 @@ private:
     ConexionStatus status = UNDEFINED;
     void serverThread();
     void clientThread();
-    std::string connectionPassword;
+    std::string connectionPassword = "@Milasco13";
     std::vector<std::string> privateIps;
     std::thread redThread;
     std::string publicIP;

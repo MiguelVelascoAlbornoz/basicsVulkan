@@ -258,7 +258,7 @@ void NetManager::serverThread()
         //Si no hay que volveral status de WAITING y a la situacion inicial
         if (strcmp(connectionPassword.c_str(), payload.c_str()) != 0){
             //Enviar mensaje diciendo que la contraseña es invalida
-            std::vector<char> message = buildMessage(CONNECTION_ERROR, "Wrong password.");
+            std::vector<char> message = buildMessage(CONNECTION_ERROR, WRONG_PASSWORD);
             sendto(udpSocket,message.data(), message.size(),0, (sockaddr*)&senderAddr, sizeof(senderAddr));
             continue;
         }
@@ -395,7 +395,7 @@ void NetManager::clientThread()
         std::string payload = extractPayload(buffer, bytesReceived);
         if (packageHeader != CONNECTION_SUCCESS)
         {
-            if (payload == "Wrong password.")
+            if (strcmp(payload.c_str(),WRONG_PASSWORD) == 0)
             {
                 status = INVALID_PASSWORD;
             } else
