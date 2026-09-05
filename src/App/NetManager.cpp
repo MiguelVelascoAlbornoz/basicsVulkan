@@ -145,16 +145,23 @@ void NetManager::handleIncomingPacket()
         std::cout << "<Mensaje truncado>" << std::endl;
         buffer[MAX_UDP_RECEIVE_BUFFER_SIZE-1] = '\0';
     }
+    std::string payload = extractPayload(buffer, bytesReceived);
     PackageHeader packageHeader = extractHeader(buffer, bytesReceived);
     if (packageHeader == HEARTBEAT)
     {
-        waitingHeartbeat = false;
-        auto ping = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now()- heartBeatStartTime);
-        std::cout << "ping: " << ping.count() << " ms" << std::endl;
+        if (strcmp(payload.c_str(), "START") == 0)
+        {
+            sendPackage("ANSWER",HEARTBEAT);
+        } else
+        {
+            waitingHeartbeat = false;
+            auto ping = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now()- lastHeartBeatSendTime);
+            std::cout << "ping: " << ping.count() << " ms" << std::endl;
+        }
+
     } else
     {
-        waitingHeartbeat = false;
-        std::string payload = extractPayload(buffer, bytesReceived);
+
         std::cout << connectionIP + ": " << payload << std::endl;
     }
 
@@ -296,13 +303,22 @@ void NetManager::tryConnection(const std::string& ip, const int port, const std:
 
 bool NetManager::manageHeartBeat()
 {
-   if (!waitingHeartbeat)
+    auto now = std::chrono::steady_clock::now();
+
+   if ( std::chrono::duration_cast<std::chrono::seconds>(now - lastHeartBeatSendTime).count())
    {
-       heartBeatStartTime =  std::chrono::steady_clock::now();
+       if (!waitingHeartbeat)
+       {
+           firstHeartBeatTime = now;
+       } else
+       {
+           heartbeatsTry++;
+       }
+       lastHeartBeatSendTime =  now;
        waitingHeartbeat = true;
    }
-    sendPackage("",HEARTBEAT);
-    if ( std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - heartBeatStartTime).count() > connectionTimeout)
+    sendPackage("START",HEARTBEAT);
+    if ( heartbeatsTry > heartbeatsMaxTrys )
     {
         std::cout << "Disconnected from: " << connectionIP << std::endl;
         status = TIMEOUT;
@@ -332,8 +348,7 @@ void NetManager::serverThread()
             // Llegó algo -> recvfrom() ya no bloquea, procesar mensaje
             handleIncomingPacket();
         }
-        manageHeartBeat();
-
+       manageHeartBeat();
     }
 }
 

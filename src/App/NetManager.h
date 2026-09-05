@@ -73,8 +73,10 @@ public:
     sockaddr_in connectionAddr;
 private:
     int heartbeatInterval = 10;
-    int connectionTimeout = 30;
-    std::chrono::steady_clock::time_point heartBeatStartTime;
+    int heartbeatsMaxTrys = 3;
+    int heartbeatsTry = 0;
+    std::chrono::steady_clock::time_point firstHeartBeatTime;
+    std::chrono::steady_clock::time_point lastHeartBeatSendTime;
     bool waitingHeartbeat = false;
     ConexionStatus status = UNDEFINED;
     void serverThread();
