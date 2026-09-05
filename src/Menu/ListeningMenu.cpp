@@ -120,6 +120,9 @@ ImGuiWindowFlags_NoScrollWithMouse;
     case NetManager::WAITING:
         ImGui::TextColored(ImVec4(.7f,.7f,0.0f,1.0f),"Waiting");
         break;
+    case NetManager::CONNECTED:
+        ImGui::TextColored(ImVec4(.1f,.9f,0.2f,1.0f),("Connected to " + app->netManager->getConnectionIP()).c_str());
+        break;
     default:
         ImGui::TextColored(ImVec4(.0f,.0f,0.0f,1.0f),"Undefined");
         break;

@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 #include <WinSock2.h>
-
+#include <chrono>
 #include <thread>
 
 #define MAX_UDP_RECEIVE_BUFFER_SIZE 65536
@@ -50,7 +50,7 @@ public:
     static std::vector<char> buildMessage(PackageHeader header, const char* payload, int bytesCount);
     static PackageHeader extractHeader(const char* buffer, int len);
     static std::string extractPayload(const char* buffer, int len);
-    void handleIncomingPacket() const;
+    void handleIncomingPacket();
     void sendPackage(const std::string& message, PackageHeader header);
     void sendHeartbeat();
     bool init();
@@ -58,6 +58,7 @@ public:
     bool initClient();
     ~NetManager();
     void sendFrame();
+    void serverWaitForConnection();
     void startClient();
     [[nodiscard]] int getHostPort() const {return hostPort;};
     std::string getPublicIP() { return publicIP; };
@@ -67,12 +68,19 @@ public:
     std::condition_variable cv;
     bool shoulTryConnection = false;
     void tryConnection(const std::string& ip, int port, const std::string& password);
+    void manageHeartBeat();
+    std::string getConnectionIP() { return connectionIP; };
     sockaddr_in connectionAddr;
 private:
+    int heartbeatInterval = 10;
+    int connectionTimeout = 30;
+    std::chrono::steady_clock::time_point heartBeatStartTime;
+    bool waitingHeartbeat = false;
     ConexionStatus status = UNDEFINED;
     void serverThread();
+    void clientWaitForConnection();
     void clientThread();
-    std::string connectionPassword = "@Milasco13";
+    std::string connectionPassword;
     std::vector<std::string> privateIps;
     std::thread redThread;
     std::string publicIP;

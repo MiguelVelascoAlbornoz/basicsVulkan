@@ -157,7 +157,10 @@ void ConnectMenu::render()
         } else if (app->netManager->getStatus() == NetManager::CONNECTED)
         {
             resultMessage = "Succesfully connected";
-        } else
+        } else if (app->netManager->getStatus() == NetManager::INVALID_PASSWORD)
+        {
+            resultMessage = "Wrong password";
+        }else
         {
             resultMessage = "Unexpected error";
         }

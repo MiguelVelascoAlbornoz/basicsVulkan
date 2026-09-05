@@ -5,6 +5,7 @@
 #include "NetManager.h"
 
 #include <cstring>
+#include <future>
 #include <iostream>
 #include <iphlpapi.h>
 #include <winhttp.h>
@@ -118,7 +119,7 @@ std::string NetManager::extractPayload(const char* buffer, int len)
     return { buffer + STATUS_HEADER_SIZE, static_cast<size_t>(len) - STATUS_HEADER_SIZE };
 }
 
-void NetManager::handleIncomingPacket() const
+void NetManager::handleIncomingPacket()
 {
 
     char buffer[MAX_UDP_RECEIVE_BUFFER_SIZE];
@@ -144,9 +145,17 @@ void NetManager::handleIncomingPacket() const
         std::cout << "<Mensaje truncado>" << std::endl;
         buffer[MAX_UDP_RECEIVE_BUFFER_SIZE-1] = '\0';
     }
-    //PackageHeader packageHeader = extractHeader(buffer, bytesReceived);
-    std::string payload = extractPayload(buffer, bytesReceived);
-    std::cout << connectionIP + ": " << payload << std::endl;
+    PackageHeader packageHeader = extractHeader(buffer, bytesReceived);
+    if (packageHeader == HEARTBEAT)
+    {
+        waitingHeartbeat = false;
+        auto ping = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now()- heartBeatStartTime);
+        std::cout << "ping: " << ping.count() << " ms" << std::endl;
+    } else
+    {
+        std::string payload = extractPayload(buffer, bytesReceived);
+        std::cout << connectionIP + ": " << payload << std::endl;
+    }
 
 }
 
@@ -197,36 +206,7 @@ void NetManager::sendFrame()
         // bytesSent == messageLen si se envió completo (UDP no fragmenta la llamada)
     }
 }
-
-
-void NetManager::tryConnection(const std::string& ip, const int port, const std::string& password)
-{
-    sockaddr_in addr{};
-    int result = inet_pton(AF_INET, ip.c_str(), &addr.sin_addr);
-
-    if (result == 1)
-    {
-        connectionIP = ip;
-        hostPort = port;
-        connectionPassword = password;
-        {
-            std::lock_guard lock(mutex);
-            shoulTryConnection = true;
-        }
-
-        cv.notify_one();
-    }
-    else if (result == 0)
-    {
-        status = INVALID_IP;
-    }
-    else
-    {
-        status = UNEXPECTED_ERROR;
-    }
-}
-
-void NetManager::serverThread()
+void NetManager::serverWaitForConnection()
 {
     while (status != CONNECTED && status != SHUTTING_DOWN)
     {
@@ -284,25 +264,63 @@ void NetManager::serverThread()
         connectionIP = senderIP;
         connectionAddr = senderAddr;
     }
-    // Esperar datos en el socket, pero como máximo X ms
-    fd_set readfds;
-    FD_ZERO(&readfds);
-    FD_SET(udpSocket, &readfds);
-    timeval tv{ 0, 100 }; // 100ms
+}
 
-    int result = select(0, &readfds, nullptr, nullptr, &tv);
+void NetManager::tryConnection(const std::string& ip, const int port, const std::string& password)
+{
+    sockaddr_in addr{};
+    int result = inet_pton(AF_INET, ip.c_str(), &addr.sin_addr);
 
-    if (result > 0 && FD_ISSET(udpSocket, &readfds)) {
-        // Llegó algo -> recvfrom() ya no bloquea, procesar mensaje
-        handleIncomingPacket();
+    if (result == 1)
+    {
+        connectionIP = ip;
+        hostPort = port;
+        connectionPassword = password;
+        {
+            std::lock_guard lock(mutex);
+            shoulTryConnection = true;
+        }
+
+        cv.notify_one();
     }
+    else if (result == 0)
+    {
+        status = INVALID_IP;
+    }
+    else
+    {
+        status = UNEXPECTED_ERROR;
+    }
+}
+void NetManager::manageHeartBeat()
+{
+    if (!waitingHeartbeat)
+    {
+        heartBeatStartTime =  std::chrono::steady_clock::now();
+        waitingHeartbeat = true;
+        sendPackage("",HEARTBEAT);
+    } else if ( std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - heartBeatStartTime).count() > connectionTimeout)
+    {
+        status = TIMEOUT;
+        connectionIP = "";
+        connectionAddr = {};
+        serverWaitForConnection();
+        std::cout << "<Server> Disconnected from client: " << connectionIP << std::endl;
+    }
+}
+
+void NetManager::serverThread()
+{
+    connectionPassword = "@Milasco13";
+    serverWaitForConnection();
+
     while (status == CONNECTED)
     {
         // Esperar datos en el socket, pero como máximo X ms
         fd_set readfds;
         FD_ZERO(&readfds);
         FD_SET(udpSocket, &readfds);
-        timeval tv{ 0, 10000 }; // 100ms
+        timeval tv{ 0, 1000000*heartbeatInterval }; // 10s
 
         int result = select(0, &readfds, nullptr, nullptr, &tv);
 
@@ -310,12 +328,12 @@ void NetManager::serverThread()
             // Llegó algo -> recvfrom() ya no bloquea, procesar mensaje
             handleIncomingPacket();
         }
-        sendPackage("HOLAA",MESSAGE);
+        manageHeartBeat();
+
     }
 }
 
-
-void NetManager::clientThread()
+void NetManager::clientWaitForConnection()
 {
     while (status != CONNECTED && status != SHUTTING_DOWN)
     {
@@ -416,6 +434,11 @@ void NetManager::clientThread()
         }
 
     }
+}
+
+void NetManager::clientThread()
+{
+    clientWaitForConnection();
     while (status == CONNECTED)
     {
         // Esperar datos en el socket, pero como máximo X ms
@@ -430,7 +453,7 @@ void NetManager::clientThread()
             // Llegó algo -> recvfrom() ya no bloquea, procesar mensaje
             handleIncomingPacket();
         }
-
+        manageHeartBeat();
     }
 }
 
