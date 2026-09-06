@@ -8,6 +8,7 @@
 #include <mutex>
 #include <string>
 #include <vector>
+#include <sodium/sodium.h>
 #include <WinSock2.h>
 #include <chrono>
 #include <thread>
@@ -72,6 +73,9 @@ public:
     std::string getConnectionIP() { return connectionIP; };
     sockaddr_in connectionAddr;
 private:
+    unsigned char pk[crypto_box_PUBLICKEYBYTES]; // 32 bytes
+    unsigned char sk[crypto_box_SECRETKEYBYTES]; // 32 bytes
+
     int heartbeatInterval = 10;
     int heartbeatsMaxTrys = 2;
     int heartbeatsTry = 0;
@@ -89,7 +93,10 @@ private:
     std::string connectionIP;
     SOCKET udpSocket = 0;
     int hostPort = 9000;
-
+    unsigned char rxKey[crypto_kx_SESSIONKEYBYTES]{}; // clave para descifrar lo que recibo
+    unsigned char txKey[crypto_kx_SESSIONKEYBYTES]{}; // clave para cifrar lo que envío
+    uint64_t sendSeq = 0;      // contador de secuencia propio, para el nonce al enviar
+    uint64_t lastRecvSeq = 0;  // último seq aceptado, para rechazar repetidos/viejos
 };
 
 

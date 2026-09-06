@@ -248,16 +248,65 @@ void NetManager::serverWaitForConnection()
         //Transformar el mensaje recibido en string
         PackageHeader clientStatus = extractHeader(buffer, bytesReceived);
         if (clientStatus != PackageHeader::CONNECTION_TRY) continue;
+
+
+        unsigned char passwordKey[crypto_generichash_KEYBYTES];
+        crypto_generichash(passwordKey, sizeof(passwordKey),
+                            reinterpret_cast<const unsigned char*>(connectionPassword.data()), connectionPassword.size(),
+                            nullptr, 0);
+
         std::string payload = extractPayload(buffer, bytesReceived);
-        //Comparar si el mensaje es igual a la contraseña
-        //Si lo es entonces el status pasa a ser conected y se guarda la IP del sender
-        //Si no hay que volveral status de WAITING y a la situacion inicial
-        if (strcmp(connectionPassword.c_str(), payload.c_str()) != 0){
+        if (payload.size() != crypto_box_PUBLICKEYBYTES + crypto_auth_BYTES) {
+            continue; // paquete con tamaño inválido, descartar
+        }
+
+        // Verificar: "¿este tag es válido para este pk, dado que yo conozco el password?"
+        if (crypto_auth_verify(reinterpret_cast<const unsigned char*>(payload.data()+crypto_box_PUBLICKEYBYTES), reinterpret_cast<const unsigned char*>(payload.data()), 32, passwordKey) != 0) {
             //Enviar mensaje diciendo que la contraseña es invalida
             std::vector<char> message = buildMessage(CONNECTION_ERROR, WRONG_PASSWORD);
             sendto(udpSocket,message.data(), message.size(),0, (sockaddr*)&senderAddr, sizeof(senderAddr));
             continue;
         }
+
+        // 1. Extraer el pk del cliente (ya sabemos que el tag es válido, así que este pk es de confianza)
+        unsigned char pkC[crypto_box_PUBLICKEYBYTES];
+        memcpy(pkC, payload.data(), crypto_box_PUBLICKEYBYTES);
+        // 2. Generar MI par de claves efímero (del servidor, para esta conexión)
+        unsigned char pkS[crypto_box_PUBLICKEYBYTES];
+        unsigned char skS[crypto_box_SECRETKEYBYTES];
+        crypto_box_keypair(pkS, skS);
+        // 3. Firmar pkC || pkS juntos (así el cliente sabe que esta respuesta es
+        //    específicamente para SU intento de conexión, no una respuesta vieja reciclada)
+        unsigned char combined[crypto_box_PUBLICKEYBYTES * 2];
+        memcpy(combined, pkC, crypto_box_PUBLICKEYBYTES);
+        memcpy(combined + crypto_box_PUBLICKEYBYTES, pkS, crypto_box_PUBLICKEYBYTES);
+        unsigned char tag2[crypto_auth_BYTES];
+        crypto_auth(tag2, combined, sizeof(combined), passwordKey);
+
+        // 4. Calcular las claves de sesión YA MISMO (aunque el cliente todavía no confirmó nada)
+        if (crypto_kx_server_session_keys(rxKey, txKey, pkS, skS, pkC) != 0) {
+            std::cerr << "Error: clave pública del cliente inválida, abortando handshake." << std::endl;
+            sodium_memzero(skS, sizeof(skS));
+            status = UNEXPECTED_ERROR;
+            continue;
+        }
+        // 5. Armar y mandar la respuesta: pkS (32) + tag2 (32)
+        std::vector<char> responsePayload(crypto_box_PUBLICKEYBYTES + crypto_auth_BYTES);
+        memcpy(responsePayload.data(), pkS, crypto_box_PUBLICKEYBYTES);
+        memcpy(responsePayload.data() + crypto_box_PUBLICKEYBYTES, tag2, crypto_auth_BYTES);
+
+
+        std::vector<char> message = buildMessage(CONNECTION_SUCCESS,  responsePayload.data(),static_cast<int>(responsePayload.size()));
+        //Enviar mensaje diciendo que se permite la conexion
+        int bytesSent = sendto(udpSocket,message.data(), message.size(),0, (sockaddr*)&senderAddr, sizeof(senderAddr));
+        if (bytesSent == SOCKET_ERROR) {
+            std::cerr << "sendto() falló: " << WSAGetLastError() << std::endl;
+            status = UNEXPECTED_ERROR;
+            continue;
+        }
+        // 6. Limpiar la clave privada de memoria, ya no se necesita
+        sodium_memzero(skS, sizeof(skS));
+
         //Obtener la IP de quien sea que se conecto
         char senderIP[INET_ADDRSTRLEN];
 
@@ -267,15 +316,9 @@ void NetManager::serverWaitForConnection()
         senderIP,
         INET_ADDRSTRLEN);
 
+        sendSeq = 0;
+        lastRecvSeq = 0;
 
-        std::vector<char> message = buildMessage(CONNECTION_SUCCESS, "You have been connected.");
-        //Enviar mensaje diciendo que se permite la conexion
-        int bytesSent = sendto(udpSocket,message.data(), message.size(),0, (sockaddr*)&senderAddr, sizeof(senderAddr));
-        if (bytesSent == SOCKET_ERROR) {
-            std::cerr << "sendto() falló: " << WSAGetLastError() << std::endl;
-            status = UNEXPECTED_ERROR;
-            continue;
-        }
         status = CONNECTED;
         connectionIP = senderIP;
         connectionAddr = senderAddr;
@@ -296,6 +339,8 @@ void NetManager::tryConnection(const std::string& ip, const int port, const std:
             std::lock_guard lock(mutex);
             shoulTryConnection = true;
         }
+
+
 
         cv.notify_one();
     }
@@ -377,12 +422,33 @@ void NetManager::clientWaitForConnection()
             return shoulTryConnection;
         });
         shoulTryConnection = false;
+
+        // 1. Generar un par de claves NUEVO, random, solo para esta conexión
+        crypto_box_keypair(pk, sk);
+        // pk = "mi clave pública de esta sesión" (32 bytes random, no es secreto)
+        // sk = "mi clave privada de esta sesión" (32 bytes random, ESTO SÍ es secreto, nunca se manda)
+
+        // 2. Convertir el password en una clave criptográfica de 32 bytes
+        unsigned char passwordKey[crypto_generichash_KEYBYTES];
+        crypto_generichash(passwordKey, sizeof(passwordKey),
+                            reinterpret_cast<const unsigned char*>(connectionPassword.data()), connectionPassword.size(),
+                            nullptr, 0);
+        // passwordKey = una "huella" del password, en el formato que pide crypto_auth
+        // (crypto_auth no acepta un string cualquiera como key, necesita 32 bytes exactos)
+
+        // 3. "Firmar" mi clave pública usando el password como llave de la firma
+        unsigned char tag[crypto_auth_BYTES]; // 32 bytes
+        crypto_auth(tag, pk, sizeof(pk), passwordKey);
+        // tag = prueba de que "yo generé este pk, y conozco el password"
+
         // Despierta cuando el cliente meta en "conectar"
 
         // Manda el mensaje a la IP dada
         status = CONNECTING;
-
-        std::vector<char> message = buildMessage(CONNECTION_TRY, connectionPassword);
+        char payload0[crypto_generichash_KEYBYTES+crypto_box_PUBLICKEYBYTES];
+        memcpy(payload0, pk, crypto_box_PUBLICKEYBYTES);
+        memcpy(payload0+crypto_box_PUBLICKEYBYTES,tag,crypto_box_PUBLICKEYBYTES);
+        std::vector<char> message = buildMessage(CONNECTION_TRY, payload0,crypto_generichash_KEYBYTES+crypto_box_PUBLICKEYBYTES);
         // Dirección de destino
         sockaddr_in destAddr{};
         destAddr.sin_family = AF_INET;
@@ -455,15 +521,39 @@ void NetManager::clientWaitForConnection()
             }
         } else
         {
-            if (payload == "You have been connected.")
-            {
-                status = CONNECTED;
-                connectionAddr = serverAddr;
-            } else
-            {
+            // payload = pkS (32) + tag2 (32)
+            if (payload.size() != crypto_box_PUBLICKEYBYTES + crypto_auth_BYTES) {
                 status = UNEXPECTED_ERROR;
+                continue;
             }
 
+            unsigned char pkS[crypto_box_PUBLICKEYBYTES];
+            memcpy(pkS, payload.data(), crypto_box_PUBLICKEYBYTES);
+
+            // Reconstruir lo mismo que firmó el servidor: pk (mío) || pkS (suyo)
+            unsigned char combined[crypto_box_PUBLICKEYBYTES * 2];
+            memcpy(combined, pk, crypto_box_PUBLICKEYBYTES);
+            memcpy(combined + crypto_box_PUBLICKEYBYTES, pkS, crypto_box_PUBLICKEYBYTES);
+
+            const auto* receivedTag2 = reinterpret_cast<const unsigned char*>(payload.data() + crypto_box_PUBLICKEYBYTES);
+
+            if (crypto_auth_verify(receivedTag2, combined, sizeof(combined), passwordKey) != 0) {
+                std::cerr << "Respuesta del servidor no autenticada, posible ataque." << std::endl;
+                status = UNEXPECTED_ERROR;
+                continue;
+            }
+
+            if (crypto_kx_client_session_keys(rxKey, txKey, pk, sk, pkS) != 0) {
+                std::cerr << "Error: clave pública del servidor inválida." << std::endl;
+                status = UNEXPECTED_ERROR;
+                continue;
+            }
+
+            sodium_memzero(sk, sizeof(sk)); // ya no se necesita, no dejarla en memoria
+            sendSeq = 0;
+            lastRecvSeq = 0;
+            status = CONNECTED;
+            connectionAddr = serverAddr;
         }
 
     }
@@ -503,6 +593,10 @@ bool NetManager::init()
     WSADATA wsaData;
     WSAStartup(MAKEWORD(2,2), &wsaData);
 
+    if (sodium_init() < 0) {
+        std::cerr << "Error: no se pudo inicializar libsodium." << std::endl;
+        return false;
+    }
     // TCP: SOCK_STREAM | UDP: SOCK_DGRAM
     udpSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 

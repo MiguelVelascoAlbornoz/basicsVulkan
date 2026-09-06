@@ -35,20 +35,20 @@ void App::manageEvents() {
                     this->F3Mode = !this->F3Mode;
                     if (F3Mode)
                     {
-                        FrameBuffers::defaultFrameBuffer->addScene(Scenes::renderAxis);
-                        Menus::openMenu(F3_MENU_ID);
+                        //FrameBuffers::defaultFrameBuffer->addScene(Scenes::renderAxis);
+                        //Menus::openMenu(F3_MENU_ID);
                     } else
                     {
-                        FrameBuffers::defaultFrameBuffer->removeScene(Scenes::renderAxis);
-                        Menus::closeMenu(F3_MENU_ID);
+                        //FrameBuffers::defaultFrameBuffer->removeScene(Scenes::renderAxis);
+                        //Menus::closeMenu(F3_MENU_ID);
                     }
                     break;
                 case SDLK_T:
                     if (editorMode) {
-                        SDL_SetWindowRelativeMouseMode(window->window, editorMode);
+                        //SDL_SetWindowRelativeMouseMode(window->window, editorMode);
                         Menus::closeMenu(EDITOR_MENU_ID);
                     } else {
-                        SDL_SetWindowRelativeMouseMode(window->window, editorMode);
+                        //SDL_SetWindowRelativeMouseMode(window->window, editorMode);
                         Menus::openMenu(EDITOR_MENU_ID);
                     }
                     this->editorMode = !this->editorMode;
