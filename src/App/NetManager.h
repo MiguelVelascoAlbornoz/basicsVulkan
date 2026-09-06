@@ -73,7 +73,7 @@ public:
     sockaddr_in connectionAddr;
 private:
     int heartbeatInterval = 10;
-    int heartbeatsMaxTrys = 3;
+    int heartbeatsMaxTrys = 2;
     int heartbeatsTry = 0;
     std::chrono::steady_clock::time_point firstHeartBeatTime;
     std::chrono::steady_clock::time_point lastHeartBeatSendTime;

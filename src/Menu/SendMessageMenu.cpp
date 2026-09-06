@@ -99,11 +99,21 @@ void SendMessageMenu::render()
     {
         if (messageBuffer[0] != '\0')
         {
-            // TODO: reemplazar por el envío cifrado (NetManager/SecureChannel)
-            // app->netManager->sendMessage(messageBuffer);
+            app->netManager->sendPackage(messageBuffer, NetManager::MESSAGE);
             messageBuffer[0] = '\0';
         }
     }
+    if (app->netManager->getStatus() != NetManager::CONNECTED)
+    {
+        shouldClose = true;
+        if (app->type == App::CLIENT)
+        {
+            Menus::openMenu(CONNECT_MENU_ID);
+        } else
+        {
+            Menus::openMenu(LISTENING_MENU_ID);
+        }
 
+    }
     ImGui::End();
 }

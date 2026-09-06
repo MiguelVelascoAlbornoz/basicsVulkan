@@ -135,6 +135,15 @@ void NetManager::handleIncomingPacket()
     }
     if (replyAddr.sin_addr.s_addr != connectionAddr.sin_addr.s_addr ||
         replyAddr.sin_port != connectionAddr.sin_port) {
+        //Obtener la IP de quien sea que se conecto
+        char senderIP[INET_ADDRSTRLEN];
+
+        inet_ntop(
+        AF_INET,
+        &replyAddr.sin_addr,
+        senderIP,
+        INET_ADDRSTRLEN);
+        std::cout << "Package from unknown sender: " <<  senderIP << std::endl;
         return; // respuesta de origen no esperado, descartar
         }
     if (bytesReceived < MAX_UDP_RECEIVE_BUFFER_SIZE)
@@ -159,9 +168,8 @@ void NetManager::handleIncomingPacket()
             std::cout << "ping: " << ping.count() << " ms" << std::endl;
         }
 
-    } else
+    } else if (packageHeader == MESSAGE)
     {
-
         std::cout << connectionIP + ": " << payload << std::endl;
     }
 
@@ -305,7 +313,7 @@ bool NetManager::manageHeartBeat()
 {
     auto now = std::chrono::steady_clock::now();
 
-   if ( std::chrono::duration_cast<std::chrono::seconds>(now - lastHeartBeatSendTime).count())
+   if ( std::chrono::duration_cast<std::chrono::seconds>(now - lastHeartBeatSendTime).count() > heartbeatInterval )
    {
        if (!waitingHeartbeat)
        {
@@ -313,11 +321,13 @@ bool NetManager::manageHeartBeat()
        } else
        {
            heartbeatsTry++;
+           std::cerr << "Missed heartbeat, try count: " << heartbeatsTry << std::endl;
        }
        lastHeartBeatSendTime =  now;
        waitingHeartbeat = true;
+       sendPackage("START",HEARTBEAT);
    }
-    sendPackage("START",HEARTBEAT);
+
     if ( heartbeatsTry > heartbeatsMaxTrys )
     {
         std::cout << "Disconnected from: " << connectionIP << std::endl;
@@ -331,24 +341,27 @@ bool NetManager::manageHeartBeat()
 
 void NetManager::serverThread()
 {
-    connectionPassword = "@Milasco13";
-    serverWaitForConnection();
-
-    while (status == CONNECTED)
+    while (status != SHUTTING_DOWN)
     {
-        // Esperar datos en el socket, pero como máximo X ms
-        fd_set readfds;
-        FD_ZERO(&readfds);
-        FD_SET(udpSocket, &readfds);
-        timeval tv{ 0, 1000000*heartbeatInterval }; // 10s
+        connectionPassword = "@Milasco13";
+        serverWaitForConnection();
+        std::cout << "Connected to client: " << connectionIP << std::endl;
+        while (status == CONNECTED)
+        {
+            // Esperar datos en el socket, pero como máximo X ms
+            fd_set readfds;
+            FD_ZERO(&readfds);
+            FD_SET(udpSocket, &readfds);
+            timeval tv{ 0, 1000000*heartbeatInterval }; // 10s
 
-        int result = select(0, &readfds, nullptr, nullptr, &tv);
+            int result = select(0, &readfds, nullptr, nullptr, &tv);
 
-        if (result > 0 && FD_ISSET(udpSocket, &readfds)) {
-            // Llegó algo -> recvfrom() ya no bloquea, procesar mensaje
-            handleIncomingPacket();
+            if (result > 0 && FD_ISSET(udpSocket, &readfds)) {
+                // Llegó algo -> recvfrom() ya no bloquea, procesar mensaje
+                handleIncomingPacket();
+            }
+            manageHeartBeat();
         }
-       manageHeartBeat();
     }
 }
 
@@ -461,6 +474,7 @@ void NetManager::clientThread()
     while (status != SHUTTING_DOWN)
     {
         clientWaitForConnection();
+        std::cout << "Connected to client: " << connectionIP << std::endl;
         while (status == CONNECTED)
         {
             // Esperar datos en el socket, pero como máximo X ms

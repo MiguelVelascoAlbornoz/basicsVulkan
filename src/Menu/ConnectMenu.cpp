@@ -156,6 +156,8 @@ void ConnectMenu::render()
             resultMessage = "Invalid IP";
         } else if (app->netManager->getStatus() == NetManager::CONNECTED)
         {
+            shouldClose = true;
+            Menus::openMenu(SEND_MESSAGE_MENU_ID);
             resultMessage = "Succesfully connected";
         } else if (app->netManager->getStatus() == NetManager::INVALID_PASSWORD)
         {
