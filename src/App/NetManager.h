@@ -50,6 +50,8 @@ public:
     static std::vector<char> buildMessage(PackageHeader status, const std::string& payload);
     static std::vector<char> buildMessage(PackageHeader header, const char* payload, int bytesCount);
     static PackageHeader extractHeader(const char* buffer, int len);
+    bool decryptMessage(const char* buffer, int len, PackageHeader& outHeader, std::string& outPayload);
+    std::vector<char> buildEncryptedMessage(PackageHeader header, const std::string& payload);
     static std::string extractPayload(const char* buffer, int len);
     void handleIncomingPacket();
     void sendPackage(const std::string& message, PackageHeader header);

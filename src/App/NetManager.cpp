@@ -110,7 +110,77 @@ NetManager::PackageHeader NetManager::extractHeader(const char* buffer, int len)
     }
     return static_cast<PackageHeader>(charArrayToInt(buffer, 0));
 }
+bool NetManager::decryptMessage(const char* buffer, int len, PackageHeader& outHeader, std::string& outPayload)
+{
+    const size_t minSize = STATUS_HEADER_SIZE + crypto_aead_xchacha20poly1305_ietf_NPUBBYTES + crypto_aead_xchacha20poly1305_ietf_ABYTES;
+    if (static_cast<size_t>(len) < minSize) {
+        return false; // paquete demasiado corto para ser válido
+    }
 
+    outHeader = static_cast<PackageHeader>(charArrayToInt(buffer, 0));
+
+    const auto* nonce = reinterpret_cast<const unsigned char*>(buffer + STATUS_HEADER_SIZE);
+    const auto* ciphertext = reinterpret_cast<const unsigned char*>(buffer)
+                              + STATUS_HEADER_SIZE + crypto_aead_xchacha20poly1305_ietf_NPUBBYTES;
+    size_t ciphertextLen = len - STATUS_HEADER_SIZE - crypto_aead_xchacha20poly1305_ietf_NPUBBYTES;
+
+    // Rechazar paquetes repetidos o viejos (replay protection)
+    uint64_t recvSeqBigEndian;
+    memcpy(&recvSeqBigEndian, nonce, sizeof(recvSeqBigEndian));
+    uint64_t recvSeq = _byteswap_uint64(recvSeqBigEndian);
+    if (recvSeq <= lastRecvSeq) {
+        std::cerr << "Paquete repetido o fuera de orden, descartado (seq=" << recvSeq << ")" << std::endl;
+        return false;
+    }
+
+    std::vector<unsigned char> decrypted(ciphertextLen); // sobra espacio (el tag ocupa parte), no importa
+    unsigned long long decryptedLen = 0;
+
+    if (crypto_aead_xchacha20poly1305_ietf_decrypt(
+            decrypted.data(), &decryptedLen, nullptr,
+            ciphertext, ciphertextLen,
+            reinterpret_cast<const unsigned char*>(buffer), STATUS_HEADER_SIZE, // AAD
+            nonce, rxKey) != 0)
+    {
+        std::cerr << "Fallo de autenticación: paquete corrupto o manipulado." << std::endl;
+        return false;
+    }
+
+    lastRecvSeq = recvSeq;
+    outPayload.assign(reinterpret_cast<char*>(decrypted.data()), decryptedLen);
+    return true;
+}
+std::vector<char> NetManager::buildEncryptedMessage(PackageHeader header, const std::string& payload)
+{
+    // 1. Header en claro (va a ser el AAD, autenticado pero no cifrado)
+    char headerBytes[STATUS_HEADER_SIZE];
+    assignIntToCharArray(static_cast<int32_t>(header), headerBytes, 0);
+
+    // 2. Nonce = sendSeq expandido a 24 bytes (los primeros 8 bytes llevan el contador, el resto en 0)
+    unsigned char nonce[crypto_aead_xchacha20poly1305_ietf_NPUBBYTES] = {0};
+    uint64_t seqBigEndian = _byteswap_uint64(sendSeq); // MinGW/Windows: usa esto en vez de htobe64
+    memcpy(nonce, &seqBigEndian, sizeof(seqBigEndian));
+
+    // 3. Encriptar
+    std::vector<unsigned char> ciphertext(payload.size() + crypto_aead_xchacha20poly1305_ietf_ABYTES);
+    unsigned long long ciphertextLen = 0;
+
+    crypto_aead_xchacha20poly1305_ietf_encrypt(
+        ciphertext.data(), &ciphertextLen,
+        reinterpret_cast<const unsigned char*>(payload.data()), payload.size(),
+        reinterpret_cast<const unsigned char*>(headerBytes), STATUS_HEADER_SIZE, // AAD
+        nullptr, nonce, txKey);
+
+    sendSeq++; // avanzar el contador, SIEMPRE, incluso si algo falla después
+
+    // 4. Armar el paquete final: header + nonce + ciphertext
+    std::vector<char> message;
+    message.reserve(STATUS_HEADER_SIZE + sizeof(nonce) + ciphertextLen);
+    message.insert(message.end(), headerBytes, headerBytes + STATUS_HEADER_SIZE);
+    message.insert(message.end(), reinterpret_cast<char*>(nonce), reinterpret_cast<char*>(nonce) + sizeof(nonce));
+    message.insert(message.end(), reinterpret_cast<char*>(ciphertext.data()), reinterpret_cast<char*>(ciphertext.data()) + ciphertextLen);
+    return message;
+}
 std::string NetManager::extractPayload(const char* buffer, int len)
 {
     if (len <= static_cast<int>(STATUS_HEADER_SIZE)) {
@@ -154,8 +224,12 @@ void NetManager::handleIncomingPacket()
         std::cout << "<Mensaje truncado>" << std::endl;
         buffer[MAX_UDP_RECEIVE_BUFFER_SIZE-1] = '\0';
     }
-    std::string payload = extractPayload(buffer, bytesReceived);
-    PackageHeader packageHeader = extractHeader(buffer, bytesReceived);
+    PackageHeader packageHeader;
+    std::string payload;
+    if (!decryptMessage(buffer, bytesReceived, packageHeader, payload)) {
+        std::cout << "Invalid package recivec"<< std::endl;
+        return; // paquete inválido, corrupto, repetido o manipulado — se descarta silenciosamente
+    }
     if (packageHeader == HEARTBEAT)
     {
         if (strcmp(payload.c_str(), "START") == 0)
@@ -181,7 +255,7 @@ void NetManager::sendPackage(const std::string& message, PackageHeader header)
     int trys = 0;
     int maxTrys = 5;
 
-    const std::vector<char> m = buildMessage(header, message);
+    const std::vector<char> m = buildEncryptedMessage(header, message);
     do
     {
         const int bytesSent = sendto(udpSocket,m.data(), m.size(),0,reinterpret_cast<sockaddr*>(&connectionAddr), sizeof(connectionAddr));
