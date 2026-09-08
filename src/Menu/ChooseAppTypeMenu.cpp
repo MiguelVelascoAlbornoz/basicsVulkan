@@ -88,7 +88,7 @@ void ChooseAppTypeMenu::render()
     if (DrawButtonWithShadow("Start Server",ImVec2(viewport->WorkSize.x /2- totalSize/2, y), ImVec2(buttonWidth, buttonHeight),false)) {
         app->startServer();
         shouldClose = true;
-        Menus::openMenu(LISTENING_MENU_ID);
+        //Menus::openMenu(LISTENING_MENU_ID);
     }
 
     if (DrawButtonWithShadow("Connect to Server",ImVec2(viewport->WorkSize.x /2+ spacement/2, y), ImVec2(buttonWidth, buttonHeight),false)) {

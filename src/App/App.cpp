@@ -26,6 +26,7 @@
 
 void App::startServer()
 {
+    CoInitializeEx(nullptr, COINIT_MULTITHREADED);
     type = App::HOST;
     if (desktopDuplicatorManager)
     {
@@ -40,6 +41,7 @@ void App::startServer()
         return;
     }
     videoEncoder = new VideoEncoder();
+    videoEncoder->init(desktopDuplicatorManager->device,desktopDuplicatorManager->context,desktopDuplicatorManager->getWidth(),desktopDuplicatorManager->getHeight());
     desktopImage =Image::importFromD3D11Handle(renderer->getVulkanDevice(),desktopDuplicatorManager->getHandle(),desktopDuplicatorManager->getWidth(),desktopDuplicatorManager->getHeight(),DesktopDuplicatorManager::dxgiToVulkanFormat(desktopDuplicatorManager->getFormat()));
 
 
@@ -111,7 +113,7 @@ App::App(const std::function<void(App*)>& registryCallback) {
 
 
 
-    //Menus::openMenu(CHOOSE_APP_TYPE_MENU_ID);
+    Menus::openMenu(CHOOSE_APP_TYPE_MENU_ID);
 
     //Finally execution loop
     executionLoop();

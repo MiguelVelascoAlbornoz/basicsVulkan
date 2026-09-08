@@ -31,7 +31,7 @@ DesktopDuplicatorManager::~DesktopDuplicatorManager()
 {
     // dstResource depende del device
     if (dstResource)       { dstResource->Release();       dstResource = nullptr; }
-
+    if (frameTexture) {            frameTexture->Release(); frameTexture = nullptr; }
     // outputDuplication depende del device
     if (outputDuplication) { outputDuplication->Release(); outputDuplication = nullptr; }
 
@@ -64,15 +64,14 @@ bool DesktopDuplicatorManager::createDestinyResource()
     textureDesc.BindFlags        = 0; // no necesitás bind si solo la vas a compartir/copiar
     textureDesc.MiscFlags        = D3D11_RESOURCE_MISC_SHARED_NTHANDLE | D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX;
 
-    ID3D11Texture2D* dstTexture = nullptr;
-    if (device->CreateTexture2D(&textureDesc,nullptr,&dstTexture) != S_OK)
+    if (device->CreateTexture2D(&textureDesc,nullptr,&frameTexture) != S_OK)
     {
         std::cerr << "No se pudo crear la textura de destino" << std::endl;
         return false;
     }
     //Castear la textura de destino al resource especifico para copiar
 
-    if (dstTexture->QueryInterface(__uuidof( ID3D11Resource), (void**)&dstResource) != S_OK)
+    if (frameTexture->QueryInterface(__uuidof( ID3D11Resource), (void**)&dstResource) != S_OK)
     {
         std::cerr << "No se pudo obtener el destiny resource" << std::endl;
         dstResource = nullptr;
@@ -130,7 +129,7 @@ bool DesktopDuplicatorManager::writeDestinyResource() const
 
         if (frameResource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)&frameTexture) == S_OK) {
             context->CopyResource(dstResource, frameTexture);
-            frameTexture->Release();
+
         } else {
             std::cerr << "No se pudo obtener la desktop texture" << std::endl;
         }

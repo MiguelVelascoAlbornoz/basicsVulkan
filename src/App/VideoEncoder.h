@@ -19,12 +19,13 @@ class VideoEncoder
 public:
     std::vector<char> encodeFrame(ID3D11Texture2D* bgraFrame, LONGLONG timestamp100ns);
     IMFDXGIDeviceManager* dxgiDeviceManager;
+    bool init(ID3D11Device* device, ID3D11DeviceContext* context, int width, int height);
     VideoEncoder() : dxgiDeviceManager(nullptr), width(0), height(0), encoderMFT(nullptr)
     {
     } ;
     private:
     int width, height;
-    bool init(ID3D11Device* device, ID3D11DeviceContext* context, int width, int height);
+
     bool configureMediaTypes() const;
     IMFTransform * encoderMFT;
     ID3D11VideoDevice* videoDevice = nullptr;

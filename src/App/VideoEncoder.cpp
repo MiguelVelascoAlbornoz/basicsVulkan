@@ -30,24 +30,40 @@ bool VideoEncoder::init(ID3D11Device* device, ID3D11DeviceContext* context, int 
     IMFActivate** activateArray = nullptr;
     UINT32 count = 0;
 
-    MFTEnumEx(MFT_CATEGORY_VIDEO_ENCODER,
-              MFT_ENUM_FLAG_HARDWARE | MFT_ENUM_FLAG_SORTANDFILTER,
-              nullptr, &outputInfo, &activateArray, &count);
-
-    if (count == 0) {
+    HRESULT hr = MFTEnumEx(MFT_CATEGORY_VIDEO_ENCODER,
+          MFT_ENUM_FLAG_HARDWARE | MFT_ENUM_FLAG_SORTANDFILTER,
+          nullptr, &outputInfo, &activateArray, &count);
+    if (FAILED(hr) || count == 0) {
         std::cerr << "No hay encoder H.264 de hardware disponible." << std::endl;
         return false;
     }
 
-    activateArray[0]->ActivateObject(IID_PPV_ARGS(&encoderMFT));
+    hr = activateArray[0]->ActivateObject(IID_PPV_ARGS(&encoderMFT));
     for (UINT32 i = 0; i < count; i++) activateArray[i]->Release();
     CoTaskMemFree(activateArray);
+    if (FAILED(hr) || !encoderMFT) {
+        std::cerr << "ActivateObject falló: 0x" << std::hex << hr << std::endl;
+        return false;
+    }
 
     UINT resetToken = 0;
-    MFCreateDXGIDeviceManager(&resetToken, &dxgiDeviceManager);
-    dxgiDeviceManager->ResetDevice(device, resetToken);
+    hr = MFCreateDXGIDeviceManager(&resetToken, &dxgiDeviceManager);
+    if (FAILED(hr) || !dxgiDeviceManager) {
+        std::cerr << "MFCreateDXGIDeviceManager falló: 0x" << std::hex << hr << std::endl;
+        return false;
+    }
 
-    encoderMFT->ProcessMessage(MFT_MESSAGE_SET_D3D_MANAGER, reinterpret_cast<ULONG_PTR>(dxgiDeviceManager));
+    hr = dxgiDeviceManager->ResetDevice(device, resetToken);
+    if (FAILED(hr)) {
+        std::cerr << "ResetDevice falló: 0x" << std::hex << hr << std::endl;
+        return false;
+    }
+
+    hr = encoderMFT->ProcessMessage(MFT_MESSAGE_SET_D3D_MANAGER, reinterpret_cast<ULONG_PTR>(dxgiDeviceManager));
+    if (FAILED(hr)) {
+        std::cerr << "SET_D3D_MANAGER falló: 0x" << std::hex << hr << std::endl;
+        return false;
+    }
 
     if (!configureMediaTypes()) return false;
 

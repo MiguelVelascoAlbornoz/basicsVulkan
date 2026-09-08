@@ -24,6 +24,7 @@ class DesktopDuplicatorManager
     ~DesktopDuplicatorManager();
 
     [[nodiscard]] bool writeDestinyResource() const;
+    ID3D11Device* device = nullptr;
      [[nodiscard]] HANDLE getHandle() const
     {
         return handle;
@@ -41,6 +42,7 @@ class DesktopDuplicatorManager
         return format;
     };
     ID3D11Texture2D* frameTexture = nullptr;
+    ID3D11DeviceContext* context = nullptr;
 private:
 
     bool initializeID3D11();
@@ -51,8 +53,8 @@ private:
     HANDLE handle = nullptr;
     DXGI_FORMAT format;
     IDXGIKeyedMutex* keyedMutex = nullptr;
-    ID3D11DeviceContext* context = nullptr;
-    ID3D11Device* device = nullptr;
+
+
     IDXGIOutputDuplication* outputDuplication = nullptr;
     ID3D11Resource* dstResource = nullptr;
 
