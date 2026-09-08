@@ -127,7 +127,7 @@ bool DesktopDuplicatorManager::writeDestinyResource() const
     }
 
     if (hr == S_OK) {
-        ID3D11Texture2D* frameTexture = nullptr;
+
         if (frameResource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)&frameTexture) == S_OK) {
             context->CopyResource(dstResource, frameTexture);
             frameTexture->Release();

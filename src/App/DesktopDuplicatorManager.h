@@ -5,15 +5,16 @@
 #ifndef BASICSVULKAN_DESKTOPDUPLICATORMANAGER_H
 #define BASICSVULKAN_DESKTOPDUPLICATORMANAGER_H
 
+#include <d3d11.h>
 #include <windows.h>
-#include <dxgi.h>
-#include <pthread.h>
+
 #include <vulkan/vulkan.h>
 struct ID3D11DeviceContext;
 struct ID3D11Device;
 struct IDXGIOutputDuplication;
 struct ID3D11Resource;
 struct IDXGIKeyedMutex;
+struct ID3D11Texture2D;
 class DesktopDuplicatorManager
 {
 
@@ -39,7 +40,7 @@ class DesktopDuplicatorManager
     {
         return format;
     };
-
+    ID3D11Texture2D* frameTexture = nullptr;
 private:
 
     bool initializeID3D11();
@@ -54,6 +55,7 @@ private:
     ID3D11Device* device = nullptr;
     IDXGIOutputDuplication* outputDuplication = nullptr;
     ID3D11Resource* dstResource = nullptr;
+
  };
 
 

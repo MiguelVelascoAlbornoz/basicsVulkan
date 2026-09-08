@@ -22,6 +22,8 @@
 #include "NetManager.h"
 
 
+class VideoEncoder;
+class VideoDecoder;
 class DesktopDuplicatorManager;
 class Window;
 class Renderer;
@@ -44,10 +46,13 @@ public:
      AppType type = UNDEFINED;
     void startServer();
     void startClient();
+    std::chrono::steady_clock::time_point streamStartTime;
     NetManager* netManager = nullptr;
     Image* desktopImage = nullptr;
     App(const std::function<void(App*)>& registryCallback);
     ~App();
+    VideoEncoder* videoEncoder = nullptr;
+    VideoDecoder* videoDecoder = nullptr;
     Player* player = nullptr;
     bool editorMode = false;
     bool F3Mode = false;

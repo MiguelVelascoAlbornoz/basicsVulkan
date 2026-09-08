@@ -9,7 +9,8 @@
 #include <Ws2tcpip.h>
 
 #include <iphlpapi.h>
-
+#include "VideoDecoder.h"
+#include "VideoEncoder.h"
 #include <imGUI/imgui_impl_sdl3.h>
 #include "../Registry/ImGuiFonts.h"
 #include "DesktopDuplicatorManager.h"
@@ -38,6 +39,7 @@ void App::startServer()
         runnig = false;
         return;
     }
+    videoEncoder = new VideoEncoder();
     desktopImage =Image::importFromD3D11Handle(renderer->getVulkanDevice(),desktopDuplicatorManager->getHandle(),desktopDuplicatorManager->getWidth(),desktopDuplicatorManager->getHeight(),DesktopDuplicatorManager::dxgiToVulkanFormat(desktopDuplicatorManager->getFormat()));
 
 
@@ -54,8 +56,8 @@ void App::startServer()
     Pipelines::defaultPipeline->updateDescriptorSet(cfg.uniformObjects, cfg.images);
 
     renderer->setSharedCaptureImage(desktopImage);
-    //FrameBuffers::turnOnFBO(FrameBuffers::defaultFrameBuffer);
-
+    FrameBuffers::turnOnFBO(FrameBuffers::defaultFrameBuffer);
+     streamStartTime = std::chrono::steady_clock::now();
     if (netManager)
     {
         std::cerr << "StartServer(): A server is already existing." << std::endl;
@@ -109,7 +111,7 @@ App::App(const std::function<void(App*)>& registryCallback) {
 
 
 
-    Menus::openMenu(CHOOSE_APP_TYPE_MENU_ID);
+    //Menus::openMenu(CHOOSE_APP_TYPE_MENU_ID);
 
     //Finally execution loop
     executionLoop();
@@ -124,6 +126,7 @@ App::App(const std::function<void(App*)>& registryCallback) {
 App::~App()
 {
     vkDeviceWaitIdle(renderer->getVulkanDevice()->device);
+
     delete desktopImage;
     ImGuiFonts::freeFonts();
     delete desktopDuplicatorManager;
@@ -188,7 +191,14 @@ void App::executionLoop()
        // + + + + +  VULKAN RENDER + + + + +
         if (type == HOST)
         {
-            desktopDuplicatorManager->writeDestinyResource();
+            if (desktopDuplicatorManager->writeDestinyResource())
+            {
+                auto now = std::chrono::steady_clock::now();
+                auto elapsedNs = std::chrono::duration_cast<std::chrono::nanoseconds>(now - streamStartTime).count();
+                LONGLONG timestamp100ns = elapsedNs / 100;
+                std::vector<char> encodedFrame = videoEncoder->encodeFrame(desktopDuplicatorManager->frameTexture,timestamp100ns);
+            }
+
 
         } else
         {

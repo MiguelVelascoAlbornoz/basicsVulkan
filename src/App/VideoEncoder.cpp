@@ -3,20 +3,29 @@
 //
 
 #include "VideoEncoder.h"
+#include <iostream>      // <-- STL primero, siempre
+#include <vector>
 
+
+
+#define WIN32_LEAN_AND_MEAN
 #include <mfapi.h>
 #include <mftransform.h>
 #include <mferror.h>
 #include <codecapi.h>
-#include <d3d11.h>
-#include <iostream>
 #include "icodecapi.h"
-
 bool VideoEncoder::init(ID3D11Device* device, ID3D11DeviceContext* context, int width, int height)
 {
+    this->d3dDevice = device;
+    this->d3dContext = context;
+    this->width = width;
+    this->height = height;
+
+    constexpr int fps = 60;
+    frameDuration100ns = 10000000LL / fps; // 10,000,000 = 1 segundo en unidades de 100ns
+
     MFStartup(MF_VERSION);
 
-    // 1. Enumerar y activar el primer encoder H.264 de hardware disponible
     MFT_REGISTER_TYPE_INFO outputInfo = { MFMediaType_Video, MFVideoFormat_H264 };
     IMFActivate** activateArray = nullptr;
     UINT32 count = 0;
@@ -34,17 +43,16 @@ bool VideoEncoder::init(ID3D11Device* device, ID3D11DeviceContext* context, int 
     for (UINT32 i = 0; i < count; i++) activateArray[i]->Release();
     CoTaskMemFree(activateArray);
 
-    // 2. Darle acceso al mismo D3D11 device que usa Desktop Duplication
-    //    (esto es lo que evita copias CPU<->GPU)
     UINT resetToken = 0;
     MFCreateDXGIDeviceManager(&resetToken, &dxgiDeviceManager);
     dxgiDeviceManager->ResetDevice(device, resetToken);
 
     encoderMFT->ProcessMessage(MFT_MESSAGE_SET_D3D_MANAGER, reinterpret_cast<ULONG_PTR>(dxgiDeviceManager));
 
-    this->width = width;
-    this->height = height;
-    return configureMediaTypes();
+    if (!configureMediaTypes()) return false;
+
+    // Faltaba: sin esto convertToNV12() truena por punteros nulos.
+    return initColorConverter();
 }
 bool VideoEncoder::configureMediaTypes() const
 {
@@ -97,4 +105,172 @@ bool VideoEncoder::configureMediaTypes() const
     encoderMFT->ProcessMessage(MFT_MESSAGE_NOTIFY_BEGIN_STREAMING, 0);
     encoderMFT->ProcessMessage(MFT_MESSAGE_NOTIFY_START_OF_STREAM, 0);
     return true;
+}
+// VideoEncoder.cpp
+
+bool VideoEncoder::initColorConverter()
+{
+    if (FAILED(d3dDevice->QueryInterface(IID_PPV_ARGS(&videoDevice)))) {
+        std::cerr << "No se pudo obtener ID3D11VideoDevice." << std::endl;
+        return false;
+    }
+    if (FAILED(d3dContext->QueryInterface(IID_PPV_ARGS(&videoContext)))) {
+        std::cerr << "No se pudo obtener ID3D11VideoContext." << std::endl;
+        return false;
+    }
+
+    D3D11_VIDEO_PROCESSOR_CONTENT_DESC contentDesc = {};
+    contentDesc.InputFrameFormat = D3D11_VIDEO_FRAME_FORMAT_PROGRESSIVE;
+    contentDesc.InputWidth  = width;
+    contentDesc.InputHeight = height;
+    contentDesc.OutputWidth  = width;
+    contentDesc.OutputHeight = height;
+    contentDesc.Usage = D3D11_VIDEO_USAGE_PLAYBACK_NORMAL;
+
+    if (FAILED(videoDevice->CreateVideoProcessorEnumerator(&contentDesc, &videoProcessorEnum))) {
+        std::cerr << "No se pudo crear el video processor enumerator." << std::endl;
+        return false;
+    }
+    if (FAILED(videoDevice->CreateVideoProcessor(videoProcessorEnum, 0, &videoProcessor))) {
+        std::cerr << "No se pudo crear el video processor." << std::endl;
+        return false;
+    }
+
+    // Textura destino NV12, la que realmente le entra al encoder
+    D3D11_TEXTURE2D_DESC nv12Desc = {};
+    nv12Desc.Width  = width;
+    nv12Desc.Height = height;
+    nv12Desc.MipLevels = 1;
+    nv12Desc.ArraySize = 1;
+    nv12Desc.Format = DXGI_FORMAT_NV12;
+    nv12Desc.SampleDesc.Count = 1;
+    nv12Desc.Usage = D3D11_USAGE_DEFAULT;
+    nv12Desc.BindFlags = D3D11_BIND_RENDER_TARGET; // el video processor escribe como si fuera un RT
+
+    if (FAILED(d3dDevice->CreateTexture2D(&nv12Desc, nullptr, &nv12Texture))) {
+        std::cerr << "No se pudo crear la textura NV12." << std::endl;
+        return false;
+    }
+    return true;
+}
+
+bool VideoEncoder::convertToNV12(ID3D11Texture2D* bgraSource) const
+{
+    ID3D11VideoProcessorInputView* inputView = nullptr;
+    D3D11_VIDEO_PROCESSOR_INPUT_VIEW_DESC inDesc = {};
+    inDesc.ViewDimension = D3D11_VPIV_DIMENSION_TEXTURE2D;
+    inDesc.Texture2D.MipSlice = 0;
+    if (FAILED(videoDevice->CreateVideoProcessorInputView(bgraSource, videoProcessorEnum, &inDesc, &inputView))) {
+        std::cerr << "No se pudo crear input view del video processor." << std::endl;
+        return false;
+    }
+
+    ID3D11VideoProcessorOutputView* outputView = nullptr;
+    D3D11_VIDEO_PROCESSOR_OUTPUT_VIEW_DESC outDesc = {};
+    outDesc.ViewDimension = D3D11_VPOV_DIMENSION_TEXTURE2D;
+    if (FAILED(videoDevice->CreateVideoProcessorOutputView(nv12Texture, videoProcessorEnum, &outDesc, &outputView))) {
+        std::cerr << "No se pudo crear output view del video processor." << std::endl;
+        inputView->Release();
+        return false;
+    }
+
+    D3D11_VIDEO_PROCESSOR_STREAM stream = {};
+    stream.Enable = TRUE;
+    stream.pInputSurface = inputView;
+
+    HRESULT hr = videoContext->VideoProcessorBlt(videoProcessor, outputView, 0, 1, &stream);
+
+    inputView->Release();
+    outputView->Release();
+
+    if (FAILED(hr)) {
+        std::cerr << "VideoProcessorBlt falló." << std::endl;
+        return false;
+    }
+    return true;
+}
+// VideoEncoder.cpp
+
+std::vector<char> VideoEncoder::encodeFrame(ID3D11Texture2D* bgraFrame, LONGLONG timestamp100ns)
+{
+    std::vector<char> result;
+
+    if (!convertToNV12(bgraFrame)) {
+        return result;
+    }
+
+    // 1. Envolver la textura NV12 (ya en GPU) en un IMFSample, sin copiar a RAM
+    IMFMediaBuffer* buffer = nullptr;
+    if (FAILED(MFCreateDXGISurfaceBuffer(__uuidof(ID3D11Texture2D), nv12Texture, 0, FALSE, &buffer))) {
+        std::cerr << "No se pudo crear el DXGI surface buffer." << std::endl;
+        return result;
+    }
+
+    IMFSample* inputSample = nullptr;
+    MFCreateSample(&inputSample);
+    inputSample->AddBuffer(buffer);
+    inputSample->SetSampleTime(timestamp100ns);
+    inputSample->SetSampleDuration(frameDuration100ns);
+    buffer->Release();
+
+    // 2. Meter el frame al encoder
+    HRESULT hr = encoderMFT->ProcessInput(0, inputSample, 0);
+    inputSample->Release();
+
+    if (FAILED(hr)) {
+        // MF_E_NOTACCEPTING = el encoder está lleno, hay que sacar output primero.
+        // Por baja latencia normalmente no debería pasar, pero conviene loguearlo.
+        std::cerr << "ProcessInput falló: 0x" << std::hex << hr << std::endl;
+        return result;
+    }
+
+    // 3. Sacar todo el output disponible (puede ser 0, 1 o más samples)
+    while (true) {
+        MFT_OUTPUT_STREAM_INFO streamInfo = {};
+        encoderMFT->GetOutputStreamInfo(0, &streamInfo);
+
+        MFT_OUTPUT_DATA_BUFFER outputDataBuffer = {};
+        IMFSample* outputSample = nullptr;
+
+        // Si el MFT no provee sus propias samples, hay que alocar el buffer nosotros
+        if (!(streamInfo.dwFlags & MFT_OUTPUT_STREAM_PROVIDES_SAMPLES)) {
+            IMFMediaBuffer* outBuffer = nullptr;
+            MFCreateMemoryBuffer(streamInfo.cbSize, &outBuffer);
+            MFCreateSample(&outputSample);
+            outputSample->AddBuffer(outBuffer);
+            outBuffer->Release();
+        }
+        outputDataBuffer.pSample = outputSample;
+
+        DWORD status = 0;
+        hr = encoderMFT->ProcessOutput(0, 1, &outputDataBuffer, &status);
+
+        if (hr == MF_E_TRANSFORM_NEED_MORE_INPUT) {
+            if (outputSample) outputSample->Release();
+            break; // no hay más output por ahora, normal
+        }
+        if (FAILED(hr)) {
+            if (outputSample) outputSample->Release();
+            std::cerr << "ProcessOutput falló: 0x" << std::hex << hr << std::endl;
+            break;
+        }
+
+        // 4. Copiar el bitstream comprimido a un vector plano
+        IMFMediaBuffer* dataBuffer = nullptr;
+        outputDataBuffer.pSample->GetBufferByIndex(0, &dataBuffer);
+
+        BYTE* rawData = nullptr;
+        DWORD rawLen = 0;
+        dataBuffer->Lock(&rawData, nullptr, &rawLen);
+
+        size_t offset = result.size();
+        result.resize(offset + rawLen);
+        memcpy(result.data() + offset, rawData, rawLen);
+
+        dataBuffer->Unlock();
+        dataBuffer->Release();
+        outputDataBuffer.pSample->Release();
+    }
+
+    return result;
 }
