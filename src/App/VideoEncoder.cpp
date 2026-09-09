@@ -31,12 +31,18 @@ bool VideoEncoder::init(ID3D11Device* device, ID3D11DeviceContext* context, int 
     UINT32 count = 0;
 
     HRESULT hr = MFTEnumEx(MFT_CATEGORY_VIDEO_ENCODER,
-          MFT_ENUM_FLAG_HARDWARE | MFT_ENUM_FLAG_SORTANDFILTER,
-          nullptr, &outputInfo, &activateArray, &count);
+      MFT_ENUM_FLAG_HARDWARE | MFT_ENUM_FLAG_SORTANDFILTER,
+      nullptr, &outputInfo, &activateArray, &count);
     if (FAILED(hr) || count == 0) {
         std::cerr << "No hay encoder H.264 de hardware disponible." << std::endl;
         return false;
     }
+
+    // Comprobar si este candidato es D3D11-aware ANTES de activarlo
+    UINT32 isD3D11Aware = 0;
+    activateArray[0]->GetUINT32(MF_SA_D3D11_AWARE, &isD3D11Aware);
+
+    activateArray[0]->SetUINT32(MF_TRANSFORM_ASYNC_UNLOCK, TRUE);
 
     hr = activateArray[0]->ActivateObject(IID_PPV_ARGS(&encoderMFT));
     for (UINT32 i = 0; i < count; i++) activateArray[i]->Release();
@@ -59,10 +65,15 @@ bool VideoEncoder::init(ID3D11Device* device, ID3D11DeviceContext* context, int 
         return false;
     }
 
-    hr = encoderMFT->ProcessMessage(MFT_MESSAGE_SET_D3D_MANAGER, reinterpret_cast<ULONG_PTR>(dxgiDeviceManager));
-    if (FAILED(hr)) {
-        std::cerr << "SET_D3D_MANAGER falló: 0x" << std::hex << hr << std::endl;
-        return false;
+    if (isD3D11Aware) {
+        hr = encoderMFT->ProcessMessage(MFT_MESSAGE_SET_D3D_MANAGER, reinterpret_cast<ULONG_PTR>(dxgiDeviceManager));
+        if (FAILED(hr)) {
+            std::cerr << "SET_D3D_MANAGER falló: 0x" << std::hex << hr << std::endl;
+            return false;
+        }
+    } else {
+        std::cerr << "(WARN) El encoder elegido no es D3D11-aware; el pipeline de zero-copy no va a funcionar con este MFT." << std::endl;
+        return false; // o intenta buscar otro candidato en activateArray si count > 1
     }
 
     if (!configureMediaTypes()) return false;
