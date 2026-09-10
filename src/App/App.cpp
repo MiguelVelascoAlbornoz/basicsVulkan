@@ -26,7 +26,7 @@
 
 void App::startServer()
 {
-    CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+
     type = App::HOST;
     if (desktopDuplicatorManager)
     {

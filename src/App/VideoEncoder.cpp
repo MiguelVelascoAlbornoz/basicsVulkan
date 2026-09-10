@@ -37,18 +37,117 @@ bool VideoEncoder::init(ID3D11Device* device, ID3D11DeviceContext* context, int 
         std::cerr << "No hay encoder H.264 de hardware disponible." << std::endl;
         return false;
     }
+    IMFTransform* encoderMFT = nullptr;
+    bool canContinue = false;
 
-    // Comprobar si este candidato es D3D11-aware ANTES de activarlo
+    for (UINT32 i = 0; i < count; ++i)
+    {
+        IMFActivate* candidate = activateArray[i];
+
+        WCHAR name[256] = {};
+        UINT32 len = 0;
+
+        HRESULT hrName = candidate->GetString(
+            MFT_FRIENDLY_NAME_Attribute,
+            name,
+            256,
+            &len
+        );
+
+        if (SUCCEEDED(hrName))
+        {
+            std::wcout << L"MFT encontrado: " << name << std::endl;
+        }
+
+
+
+
+        // Intentar activar ESTE encoder
+        IMFTransform* candidateEncoder = nullptr;
+
+        HRESULT hr = candidate->ActivateObject(
+            IID_PPV_ARGS(&candidateEncoder)
+        );
+
+        if (SUCCEEDED(hr) && candidateEncoder)
+        {
+            std::cout << "Encoder activado correctamente\n";
+
+            encoderMFT = candidateEncoder;
+            canContinue = true;
+
+            break;
+        }
+
+        std::cerr << "ActivateObject fallo: 0x"
+                  << std::hex << hr << std::dec << std::endl;
+    }
+
+    IMFAttributes* attrs = nullptr;
+
+    hr = encoderMFT->GetAttributes(&attrs);
+
+    if (FAILED(hr))
+    {
+        std::cerr << "GetAttributes fallo: 0x"
+                  << std::hex << hr << std::dec << '\n';
+        return false;
+    }
+
     UINT32 isD3D11Aware = 0;
-    activateArray[0]->GetUINT32(MF_SA_D3D11_AWARE, &isD3D11Aware);
 
-    activateArray[0]->SetUINT32(MF_TRANSFORM_ASYNC_UNLOCK, TRUE);
+    hr = attrs->GetUINT32(
+        MF_SA_D3D11_AWARE,
+        &isD3D11Aware
+    );
 
-    hr = activateArray[0]->ActivateObject(IID_PPV_ARGS(&encoderMFT));
-    for (UINT32 i = 0; i < count; i++) activateArray[i]->Release();
+    if (FAILED(hr))
+    {
+        std::cerr << "MF_SA_D3D11_AWARE no disponible: 0x"
+                  << std::hex << hr << std::dec << '\n';
+
+        attrs->Release();
+        return false;
+    }
+
+    std::cout << "Encoder D3D11 aware: "<< isD3D11Aware << '\n';
+
+    UINT32 async = 0;
+
+    hr = attrs->GetUINT32(
+       MF_TRANSFORM_ASYNC,
+       &async
+   );
+
+    /*std::cout << "MF_TRANSFORM_ASYNC = "
+              << async << '\n';
+
+    if (async == 1)
+    {
+        hr = attrs->SetUINT32(
+    MF_TRANSFORM_ASYNC_UNLOCK,
+    TRUE);
+
+        if (FAILED(hr))
+        {
+            std::cerr << "MF_TRANSFORM_ASYNC_UNLOCK fallo: 0x"
+                      << std::hex << hr << std::dec << '\n';
+            return false;
+        }
+    }*/
+
+    attrs->Release();
+    // Ahora sí liberar TODOS los IMFActivate
+    for (UINT32 i = 0; i < count; ++i)
+    {
+        activateArray[i]->Release();
+    }
+
     CoTaskMemFree(activateArray);
-    if (FAILED(hr) || !encoderMFT) {
-        std::cerr << "ActivateObject falló: 0x" << std::hex << hr << std::endl;
+
+    if (!canContinue)
+    {
+        std::cerr << "No se pudo activar ningun encoder\n";
         return false;
     }
 
@@ -58,13 +157,25 @@ bool VideoEncoder::init(ID3D11Device* device, ID3D11DeviceContext* context, int 
         std::cerr << "MFCreateDXGIDeviceManager falló: 0x" << std::hex << hr << std::endl;
         return false;
     }
+    IDXGIDevice* dxgiDevice = nullptr;
 
+     hr = d3dDevice->QueryInterface(
+        IID_PPV_ARGS(&dxgiDevice)
+    );
+
+    std::cout << "ID3D11Device -> IDXGIDevice: 0x"
+              << std::hex << hr << std::dec << '\n';
+
+    if (SUCCEEDED(hr))
+        dxgiDevice->Release();
     hr = dxgiDeviceManager->ResetDevice(device, resetToken);
     if (FAILED(hr)) {
         std::cerr << "ResetDevice falló: 0x" << std::hex << hr << std::endl;
         return false;
     }
-
+    std::cout << "encoderMFT = " << encoderMFT << '\n';
+    std::cout << "dxgiDeviceManager = " << dxgiDeviceManager << '\n';
+    std::cout << "isD3D11Aware = " << isD3D11Aware << '\n';
     if (isD3D11Aware) {
         hr = encoderMFT->ProcessMessage(MFT_MESSAGE_SET_D3D_MANAGER, reinterpret_cast<ULONG_PTR>(dxgiDeviceManager));
         if (FAILED(hr)) {
