@@ -198,7 +198,14 @@ void App::executionLoop()
                 auto now = std::chrono::steady_clock::now();
                 auto elapsedNs = std::chrono::duration_cast<std::chrono::nanoseconds>(now - streamStartTime).count();
                 LONGLONG timestamp100ns = elapsedNs / 100;
-                std::vector<char> encodedFrame = videoEncoder->encodeFrame(desktopDuplicatorManager->frameTexture,timestamp100ns);
+                ID3D11Texture2D* textResource;
+                if (desktopDuplicatorManager->dstResource->QueryInterface(__uuidof( ID3D11Texture2D), (void**)&textResource) == S_OK){
+                    std::vector<char> encodedFrame = videoEncoder->encodeFrame(textResource,timestamp100ns);
+                } else
+                {
+                    std::cout << "Cast before encode failed." << std::endl;
+                }
+
             }
 
 

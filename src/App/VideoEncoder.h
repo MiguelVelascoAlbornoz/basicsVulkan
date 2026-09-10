@@ -17,7 +17,9 @@ class VideoEncoder
 {
 
 public:
-    std::vector<char> encodeFrame(ID3D11Texture2D* bgraFrame, LONGLONG timestamp100ns);
+    std::vector<char> encodeFrame(ID3D11Texture2D* bgraFrame, LONGLONG timestamp100ns) const;
+    void drainEncoderOutput(std::vector<char>& result) const;
+    static void dumpD3D11DebugMessages(ID3D11Device* device);
     IMFDXGIDeviceManager* dxgiDeviceManager;
     bool init(ID3D11Device* device, ID3D11DeviceContext* context, int width, int height);
     VideoEncoder() : dxgiDeviceManager(nullptr), width(0), height(0), encoderMFT(nullptr)
@@ -37,7 +39,7 @@ public:
     ID3D11DeviceContext* d3dContext = nullptr;
     bool initColorConverter();
     bool convertToNV12(ID3D11Texture2D* bgraSource) const;
-
+    ID3D11Texture2D* encoderInputTexture = nullptr; // copia local, no compartida, solo para VideoProcessorBlt
     LONGLONG frameDuration100ns = 0;
 };
 

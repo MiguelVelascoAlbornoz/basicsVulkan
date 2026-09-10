@@ -37,7 +37,7 @@ bool VideoEncoder::init(ID3D11Device* device, ID3D11DeviceContext* context, int 
         std::cerr << "No hay encoder H.264 de hardware disponible." << std::endl;
         return false;
     }
-    IMFTransform* encoderMFT = nullptr;
+    //IMFTransform* encoderMFT = nullptr;
     bool canContinue = false;
 
     for (UINT32 i = 0; i < count; ++i)
@@ -56,7 +56,9 @@ bool VideoEncoder::init(ID3D11Device* device, ID3D11DeviceContext* context, int 
 
         if (SUCCEEDED(hrName))
         {
-            std::wcout << L"MFT encontrado: " << name << std::endl;
+            char narrowName[256] = {};
+            WideCharToMultiByte(CP_UTF8, 0, name, -1, narrowName, sizeof(narrowName), nullptr, nullptr);
+            std::cout << "MFT encontrado: " << narrowName << std::endl;
         }
 
 
@@ -119,7 +121,7 @@ bool VideoEncoder::init(ID3D11Device* device, ID3D11DeviceContext* context, int 
        &async
    );
 
-    /*std::cout << "MF_TRANSFORM_ASYNC = "
+    std::cout << "MF_TRANSFORM_ASYNC = "
               << async << '\n';
 
     if (async == 1)
@@ -134,7 +136,7 @@ bool VideoEncoder::init(ID3D11Device* device, ID3D11DeviceContext* context, int 
                       << std::hex << hr << std::dec << '\n';
             return false;
         }
-    }*/
+    }
 
     attrs->Release();
     // Ahora sí liberar TODOS los IMFActivate
@@ -188,27 +190,31 @@ bool VideoEncoder::init(ID3D11Device* device, ID3D11DeviceContext* context, int 
     }
 
     if (!configureMediaTypes()) return false;
+    if (!configureMediaTypes()) return false;
 
     // Faltaba: sin esto convertToNV12() truena por punteros nulos.
     return initColorConverter();
 }
 bool VideoEncoder::configureMediaTypes() const
 {
-    // ---- OUTPUT type primero (el MFT lo exige en este orden) ----
+    // OUTPUT primero (el MFT lo exige en este orden)
     IMFMediaType* outputType = nullptr;
     MFCreateMediaType(&outputType);
     outputType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video);
     outputType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_H264);
-    outputType->SetUINT32(MF_MT_AVG_BITRATE, 8000000); // 8 Mbps, ajustable
+    outputType->SetUINT32(MF_MT_AVG_BITRATE, 8000000);
     MFSetAttributeSize(outputType, MF_MT_FRAME_SIZE, width, height);
     MFSetAttributeRatio(outputType, MF_MT_FRAME_RATE, 60, 1);
     outputType->SetUINT32(MF_MT_INTERLACE_MODE, MFVideoInterlace_Progressive);
-    outputType->SetUINT32(MF_MT_MPEG2_PROFILE, eAVEncH264VProfile_Base); // baseline, menor latencia
+    outputType->SetUINT32(MF_MT_MPEG2_PROFILE, eAVEncH264VProfile_Base);
 
-    encoderMFT->SetOutputType(0, outputType, 0);
+    HRESULT hrOut = encoderMFT->SetOutputType(0, outputType, 0);
     outputType->Release();
+    if (FAILED(hrOut)) {
+        std::cerr << "SetOutputType fallo: 0x" << std::hex << hrOut << std::dec << std::endl;
+        return false;
+    }
 
-    // ---- INPUT type: NV12 (lo que espera el encoder) ----
     IMFMediaType* inputType = nullptr;
     MFCreateMediaType(&inputType);
     inputType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video);
@@ -217,26 +223,40 @@ bool VideoEncoder::configureMediaTypes() const
     MFSetAttributeRatio(inputType, MF_MT_FRAME_RATE, 60, 1);
     inputType->SetUINT32(MF_MT_INTERLACE_MODE, MFVideoInterlace_Progressive);
 
-    if (FAILED(encoderMFT->SetInputType(0, inputType, 0))) {
-        std::cerr << "El encoder no acepta NV12 directo, revisar formatos soportados." << std::endl;
-        inputType->Release();
+    HRESULT hrIn = encoderMFT->SetInputType(0, inputType, 0);
+    inputType->Release();
+    if (FAILED(hrIn)) {
+        std::cerr << "El encoder no acepta NV12 directo: 0x" << std::hex << hrIn << std::dec << std::endl;
         return false;
     }
-    inputType->Release();
 
-    // ---- Config de baja latencia: sin B-frames, GOP corto ----
+    IMFMediaType* currentOutputType = nullptr;
+    if (SUCCEEDED(encoderMFT->GetOutputCurrentType(0, &currentOutputType))) {
+        UINT32 w = 0, h = 0;
+        MFGetAttributeSize(currentOutputType, MF_MT_FRAME_SIZE, &w, &h);
+        GUID subtype;
+        currentOutputType->GetGUID(MF_MT_SUBTYPE, &subtype);
+        std::cout << "Output type activo: " << w << "x" << h
+                  << " subtype=" << (subtype == MFVideoFormat_H264 ? "H264" : "OTRO") << std::endl;
+        currentOutputType->Release();
+    } else {
+        std::cerr << "GetOutputCurrentType fallo tras SetInputType." << std::endl;
+    }
+
+    MFT_OUTPUT_STREAM_INFO checkInfo = {};
+    encoderMFT->GetOutputStreamInfo(0, &checkInfo);
+    std::cout << "Post-SetOutputType/SetInputType: cbSize=" << checkInfo.cbSize
+              << " dwFlags=0x" << std::hex << checkInfo.dwFlags << std::dec << std::endl;
+
     ICodecAPI* codecApi = nullptr;
     encoderMFT->QueryInterface(IID_PPV_ARGS(&codecApi));
     if (codecApi) {
         VARIANT var;
         var.vt = VT_UI4; var.ulVal = 0;
-        codecApi->SetValue(&CODECAPI_AVEncMPVGOPSize, &var); // o un GOP corto, ej. 60
+        codecApi->SetValue(&CODECAPI_AVEncMPVGOPSize, &var);
 
-        var.vt = VT_BOOL; var.boolVal = VARIANT_FALSE;
+        var.vt = VT_BOOL; var.boolVal = VARIANT_TRUE;
         codecApi->SetValue(&CODECAPI_AVEncCommonLowLatency, &var);
-        var.boolVal = VARIANT_TRUE;
-        codecApi->SetValue(&CODECAPI_AVEncCommonLowLatency, &var);
-
         codecApi->Release();
     }
 
@@ -269,11 +289,27 @@ bool VideoEncoder::initColorConverter()
         std::cerr << "No se pudo crear el video processor enumerator." << std::endl;
         return false;
     }
+    UINT flags = 0;
+    HRESULT hr = videoProcessorEnum->CheckVideoProcessorFormat(DXGI_FORMAT_B8G8R8A8_UNORM, &flags);
+    std::cout << "CheckVideoProcessorFormat hr=0x" << std::hex << hr
+             << " flags=0x" << flags << std::dec << std::endl;
     if (FAILED(videoDevice->CreateVideoProcessor(videoProcessorEnum, 0, &videoProcessor))) {
         std::cerr << "No se pudo crear el video processor." << std::endl;
         return false;
     }
+    RECT rect = { 0, 0, static_cast<LONG>(width), static_cast<LONG>(height) };
+    videoContext->VideoProcessorSetStreamFrameFormat(videoProcessor, 0, D3D11_VIDEO_FRAME_FORMAT_PROGRESSIVE);
+    videoContext->VideoProcessorSetStreamSourceRect(videoProcessor, 0, TRUE, &rect);
+    videoContext->VideoProcessorSetStreamDestRect(videoProcessor, 0, TRUE, &rect);
+    videoContext->VideoProcessorSetOutputTargetRect(videoProcessor, TRUE, &rect);
+    D3D11_VIDEO_PROCESSOR_COLOR_SPACE colorSpace = {};
+    colorSpace.Usage         = 0; // 0 = playback, 1 = video processing
+    colorSpace.RGB_Range     = 0; // 0 = full range [0,255]
+    colorSpace.YCbCr_Matrix  = 1; // 1 = BT.709 (contenido HD), 0 = BT.601
+    colorSpace.Nominal_Range = D3D11_VIDEO_PROCESSOR_NOMINAL_RANGE_0_255;
 
+    videoContext->VideoProcessorSetStreamColorSpace(videoProcessor, 0, &colorSpace);
+    videoContext->VideoProcessorSetOutputColorSpace(videoProcessor, &colorSpace);
     // Textura destino NV12, la que realmente le entra al encoder
     D3D11_TEXTURE2D_DESC nv12Desc = {};
     nv12Desc.Width  = width;
@@ -289,17 +325,37 @@ bool VideoEncoder::initColorConverter()
         std::cerr << "No se pudo crear la textura NV12." << std::endl;
         return false;
     }
+    D3D11_TEXTURE2D_DESC inputDesc = {};
+    inputDesc.Width  = width;
+    inputDesc.Height = height;
+    inputDesc.MipLevels = 1;
+    inputDesc.ArraySize = 1;
+    inputDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM; // mismo formato que el desktop capturado
+    inputDesc.SampleDesc.Count = 1;
+    inputDesc.Usage = D3D11_USAGE_DEFAULT;
+    inputDesc.BindFlags = 0; // suficiente para servir de input view
+    // SIN MiscFlags de shared/keyed mutex
+
+    if (FAILED(d3dDevice->CreateTexture2D(&inputDesc, nullptr, &encoderInputTexture))) {
+        std::cerr << "No se pudo crear la textura de entrada del encoder." << std::endl;
+        return false;
+    }
     return true;
 }
 
 bool VideoEncoder::convertToNV12(ID3D11Texture2D* bgraSource) const
 {
+
+    d3dContext->CopyResource(encoderInputTexture, bgraSource);
+
     ID3D11VideoProcessorInputView* inputView = nullptr;
     D3D11_VIDEO_PROCESSOR_INPUT_VIEW_DESC inDesc = {};
     inDesc.ViewDimension = D3D11_VPIV_DIMENSION_TEXTURE2D;
     inDesc.Texture2D.MipSlice = 0;
-    if (FAILED(videoDevice->CreateVideoProcessorInputView(bgraSource, videoProcessorEnum, &inDesc, &inputView))) {
-        std::cerr << "No se pudo crear input view del video processor." << std::endl;
+    HRESULT hrInput = videoDevice->CreateVideoProcessorInputView(encoderInputTexture, videoProcessorEnum, &inDesc, &inputView);
+    if (FAILED(hrInput)) {
+        std::cerr << "No se pudo crear input view: 0x" << std::hex << hrInput << std::dec << std::endl;
+        dumpD3D11DebugMessages(d3dDevice);
         return false;
     }
 
@@ -322,14 +378,15 @@ bool VideoEncoder::convertToNV12(ID3D11Texture2D* bgraSource) const
     outputView->Release();
 
     if (FAILED(hr)) {
-        std::cerr << "VideoProcessorBlt falló." << std::endl;
+        std::cerr << "VideoProcessorBlt falló: 0x" << std::hex << hr << std::dec << std::endl;
+        dumpD3D11DebugMessages(d3dDevice);
         return false;
     }
     return true;
 }
 // VideoEncoder.cpp
 
-std::vector<char> VideoEncoder::encodeFrame(ID3D11Texture2D* bgraFrame, LONGLONG timestamp100ns)
+std::vector<char> VideoEncoder::encodeFrame(ID3D11Texture2D* bgraFrame, LONGLONG timestamp100ns) const
 {
     std::vector<char> result;
 
@@ -353,16 +410,27 @@ std::vector<char> VideoEncoder::encodeFrame(ID3D11Texture2D* bgraFrame, LONGLONG
 
     // 2. Meter el frame al encoder
     HRESULT hr = encoderMFT->ProcessInput(0, inputSample, 0);
+
+
+    if (hr == MF_E_NOTACCEPTING) {
+        drainEncoderOutput(result);
+        hr = encoderMFT->ProcessInput(0, inputSample, 0);
+    }
+    std::cout << "ProcessInput result: 0x" << std::hex << hr << std::dec << std::endl;
+
     inputSample->Release();
 
     if (FAILED(hr)) {
-        // MF_E_NOTACCEPTING = el encoder está lleno, hay que sacar output primero.
-        // Por baja latencia normalmente no debería pasar, pero conviene loguearlo.
-        std::cerr << "ProcessInput falló: 0x" << std::hex << hr << std::endl;
+        std::cerr << "ProcessInput falló: 0x" << std::hex << hr << std::dec << std::endl;
         return result;
     }
 
     // 3. Sacar todo el output disponible (puede ser 0, 1 o más samples)
+    drainEncoderOutput(result);
+    return result;
+}
+void VideoEncoder::drainEncoderOutput(std::vector<char>& result) const
+{
     while (true) {
         MFT_OUTPUT_STREAM_INFO streamInfo = {};
         encoderMFT->GetOutputStreamInfo(0, &streamInfo);
@@ -370,7 +438,6 @@ std::vector<char> VideoEncoder::encodeFrame(ID3D11Texture2D* bgraFrame, LONGLONG
         MFT_OUTPUT_DATA_BUFFER outputDataBuffer = {};
         IMFSample* outputSample = nullptr;
 
-        // Si el MFT no provee sus propias samples, hay que alocar el buffer nosotros
         if (!(streamInfo.dwFlags & MFT_OUTPUT_STREAM_PROVIDES_SAMPLES)) {
             IMFMediaBuffer* outBuffer = nullptr;
             MFCreateMemoryBuffer(streamInfo.cbSize, &outBuffer);
@@ -381,19 +448,24 @@ std::vector<char> VideoEncoder::encodeFrame(ID3D11Texture2D* bgraFrame, LONGLONG
         outputDataBuffer.pSample = outputSample;
 
         DWORD status = 0;
-        hr = encoderMFT->ProcessOutput(0, 1, &outputDataBuffer, &status);
+        HRESULT hr = encoderMFT->ProcessOutput(0, 1, &outputDataBuffer, &status);
 
+
+        if (FAILED(hr) && hr != MF_E_TRANSFORM_NEED_MORE_INPUT) {
+            std::cerr << "ProcessOutput falló: 0x" << std::hex << hr << std::dec
+                       << " streamInfo.dwFlags=0x" << std::hex << streamInfo.dwFlags
+                       << " cbSize=" << std::dec << streamInfo.cbSize << std::endl;
+        }
         if (hr == MF_E_TRANSFORM_NEED_MORE_INPUT) {
             if (outputSample) outputSample->Release();
-            break; // no hay más output por ahora, normal
+            break;
         }
         if (FAILED(hr)) {
             if (outputSample) outputSample->Release();
-            std::cerr << "ProcessOutput falló: 0x" << std::hex << hr << std::endl;
+            std::cerr << "ProcessOutput falló: 0x" << std::hex << hr << std::dec << std::endl;
             break;
         }
 
-        // 4. Copiar el bitstream comprimido a un vector plano
         IMFMediaBuffer* dataBuffer = nullptr;
         outputDataBuffer.pSample->GetBufferByIndex(0, &dataBuffer);
 
@@ -409,6 +481,23 @@ std::vector<char> VideoEncoder::encodeFrame(ID3D11Texture2D* bgraFrame, LONGLONG
         dataBuffer->Release();
         outputDataBuffer.pSample->Release();
     }
+}
+#include <d3d11sdklayers.h>
 
-    return result;
+void VideoEncoder::dumpD3D11DebugMessages(ID3D11Device* device)
+{
+    ID3D11InfoQueue* infoQueue = nullptr;
+    if (FAILED(device->QueryInterface(IID_PPV_ARGS(&infoQueue)))) return;
+
+    UINT64 numMessages = infoQueue->GetNumStoredMessages();
+    for (UINT64 i = 0; i < numMessages; ++i) {
+        SIZE_T len = 0;
+        infoQueue->GetMessage(i, nullptr, &len);
+        std::vector<char> buffer(len);
+        auto* msg = reinterpret_cast<D3D11_MESSAGE*>(buffer.data());
+        infoQueue->GetMessage(i, msg, &len);
+        std::cerr << "(D3D11 DEBUG) " << msg->pDescription << std::endl;
+    }
+    infoQueue->ClearStoredMessages();
+    infoQueue->Release();
 }

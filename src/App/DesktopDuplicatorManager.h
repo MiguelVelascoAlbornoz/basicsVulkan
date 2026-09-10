@@ -41,10 +41,10 @@ class DesktopDuplicatorManager
     {
         return format;
     };
-    ID3D11Texture2D* frameTexture = nullptr;
+    ID3D11Resource* dstResource = nullptr;
     ID3D11DeviceContext* context = nullptr;
 private:
-
+    ID3D11Texture2D* frameTexture = nullptr;
     bool initializeID3D11();
     bool selectDuplicationOuput();
     bool createDestinyResource();
@@ -56,7 +56,7 @@ private:
 
 
     IDXGIOutputDuplication* outputDuplication = nullptr;
-    ID3D11Resource* dstResource = nullptr;
+
 
  };
 

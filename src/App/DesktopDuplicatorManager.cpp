@@ -80,6 +80,8 @@ bool DesktopDuplicatorManager::createDestinyResource()
     width = outputDesc.ModeDesc.Width;
     height = outputDesc.ModeDesc.Height;
     format = outputDesc.ModeDesc.Format;
+
+    std::cout << "Format: " << static_cast<int>(format) << '\n';
     dstResource->QueryInterface(__uuidof(IDXGIKeyedMutex), (void**)&keyedMutex);
    return  true;
 }
@@ -132,16 +134,18 @@ bool DesktopDuplicatorManager::writeDestinyResource() const
 
         } else {
             std::cerr << "No se pudo obtener la desktop texture" << std::endl;
+            return false;
         }
         frameResource->Release();
         outputDuplication->ReleaseFrame();
     } else if (hr != DXGI_ERROR_WAIT_TIMEOUT) {
         // Timeout (sin cambios en pantalla) es normal, no es un error real.
         std::cerr << "Error obtaining desktop frame: 0x" << std::hex << hr << std::endl;
+        return false;
     }
 
     keyedMutex->ReleaseSync(1);
-    return true;
+    return frameTexture != nullptr;
 }
 
 bool DesktopDuplicatorManager::selectDuplicationOuput()
@@ -213,25 +217,50 @@ bool DesktopDuplicatorManager::selectDuplicationOuput()
 
 bool DesktopDuplicatorManager::initializeID3D11()
 {
-
-
     D3D_FEATURE_LEVEL featureLevel;
+    UINT flags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
+#ifdef _DEBUG
+    flags |= D3D11_CREATE_DEVICE_DEBUG;
+#endif
 
-    if (D3D11CreateDevice(
-            nullptr,
-            D3D_DRIVER_TYPE_HARDWARE,
-            nullptr,
-            D3D11_CREATE_DEVICE_BGRA_SUPPORT,
-            nullptr, 0,
-            D3D11_SDK_VERSION,
-            &device,
-            &featureLevel,
-            &context) != S_OK)
-    {
-        std::cerr << "Failed to initialize d3d11." << std::endl;
+    HRESULT hr = D3D11CreateDevice(
+        nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, flags,
+        nullptr, 0, D3D11_SDK_VERSION,
+        &device, &featureLevel, &context);
+
+#ifdef _DEBUG
+    if (hr == DXGI_ERROR_SDK_COMPONENT_MISSING) {
+        std::cerr << "(D3D11) Debug layer no disponible, reintentando sin el flag. "
+                     "Instala 'Graphics Tools' (Configuracion > Caracteristicas opcionales) para debug." << std::endl;
+        flags &= ~D3D11_CREATE_DEVICE_DEBUG;
+        hr = D3D11CreateDevice(
+            nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, flags,
+            nullptr, 0, D3D11_SDK_VERSION,
+            &device, &featureLevel, &context);
+    }
+#endif
+
+    if (FAILED(hr)) {
+        std::cerr << "Failed to initialize d3d11: 0x" << std::hex << hr << std::dec << std::endl;
         device = nullptr;
         return false;
     }
+
+#ifdef _DEBUG
+    ID3D11Debug* d3dDebug = nullptr;
+    if (SUCCEEDED(device->QueryInterface(__uuidof(ID3D11Debug), (void**)&d3dDebug)))
+    {
+        ID3D11InfoQueue* infoQueue = nullptr;
+        if (SUCCEEDED(d3dDebug->QueryInterface(__uuidof(ID3D11InfoQueue), (void**)&infoQueue)))
+        {
+            // NO usar SetBreakOnSeverity: eso es lo que probablemente
+            // causaba el crash "Unknown signal" (rompe en un breakpoint
+            // que MinGW/gdb no sabe interpretar). Solo vamos a imprimir.
+            infoQueue->Release();
+        }
+        d3dDebug->Release();
+    }
+#endif
     return true;
 }
 
