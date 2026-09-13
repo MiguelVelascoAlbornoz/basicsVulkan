@@ -42,6 +42,7 @@ public:
         CONNECTION_SUCCESS,
         MESSAGE,
         HEARTBEAT,
+        VIDEO_FRAME
     };
     static std::string obtainPublicIP();
     static std::vector<std::string> obtainAllPrivateIPs();

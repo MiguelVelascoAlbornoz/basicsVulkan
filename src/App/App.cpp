@@ -193,22 +193,29 @@ void App::executionLoop()
        // + + + + +  VULKAN RENDER + + + + +
         if (type == HOST)
         {
+            videoEncoder->update(); // procesar eventos ANTES de intentar nada
+
             if (desktopDuplicatorManager->writeDestinyResource())
             {
                 auto now = std::chrono::steady_clock::now();
                 auto elapsedNs = std::chrono::duration_cast<std::chrono::nanoseconds>(now - streamStartTime).count();
                 LONGLONG timestamp100ns = elapsedNs / 100;
-                ID3D11Texture2D* textResource;
-                if (desktopDuplicatorManager->dstResource->QueryInterface(__uuidof( ID3D11Texture2D), (void**)&textResource) == S_OK){
-                    std::vector<char> encodedFrame = videoEncoder->encodeFrame(textResource,timestamp100ns);
-                } else
-                {
+
+                ID3D11Texture2D* textResource = nullptr;
+                if (desktopDuplicatorManager->dstResource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)&textResource) == S_OK) {
+                    videoEncoder->submitFrame(textResource, timestamp100ns);
+                } else {
                     std::cout << "Cast before encode failed." << std::endl;
                 }
-
             }
 
+            std::vector<char> compressedFrame;
+            while (videoEncoder->popEncodedFrame(compressedFrame))
+            {
 
+                std::cout << "FRAME: " << compressedFrame.size() <<std::endl;
+               // netManager->sendPackage(std::string(compressedFrame.data(), compressedFrame.size()), NetManager::MESSAGE);
+            }
         } else
         {
 
