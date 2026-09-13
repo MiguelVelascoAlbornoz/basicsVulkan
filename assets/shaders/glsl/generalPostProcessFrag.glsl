@@ -4,7 +4,7 @@ layout(location = 0) out vec4 outColor;
 #include "random.glsl"
 
 void main() {
-    outColor = vec4(vec3(1.0f,0.0f,0.0f),1.0f);
+    outColor = vec4(vec3(sampleTexture(uv,sceneColor)),1.0f);
 
     float dither = randomFloat(uv.x*124567+uv.y*1456789);
     outColor.rgb += dither*0.001;

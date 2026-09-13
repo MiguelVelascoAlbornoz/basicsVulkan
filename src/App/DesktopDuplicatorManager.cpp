@@ -21,17 +21,23 @@ bool DesktopDuplicatorManager::createDesktopDuplicator(){
     {
         return false;
     }
+    if (!createEncoderCaptureTexture())
+    {
+        return false;
+    }
     if (!createWindowsHandler())
     {
         return false;
     }
     return true;
 }
+
 DesktopDuplicatorManager::~DesktopDuplicatorManager()
 {
     // dstResource depende del device
     if (dstResource)       { dstResource->Release();       dstResource = nullptr; }
     if (frameTexture) {            frameTexture->Release(); frameTexture = nullptr; }
+    if (encoderCaptureTexture) { encoderCaptureTexture->Release(); encoderCaptureTexture = nullptr; }
     // outputDuplication depende del device
     if (outputDuplication) { outputDuplication->Release(); outputDuplication = nullptr; }
 
@@ -41,6 +47,86 @@ DesktopDuplicatorManager::~DesktopDuplicatorManager()
     // OJO con esto, ver punto 2
     if (handle) {  handle = nullptr; }
 }
+
+// ... createDestinyResource() queda exactamente igual ...
+
+bool DesktopDuplicatorManager::createEncoderCaptureTexture()
+{
+    if (width == 0 || height == 0)
+    {
+        std::cerr << "createDestinyResource() should be called before createEncoderCaptureTexture()." << std::endl;
+        return false;
+    }
+
+    D3D11_TEXTURE2D_DESC textureDesc = {};
+    textureDesc.Width            = width;
+    textureDesc.Height           = height;
+    textureDesc.Format           = format;
+    textureDesc.MipLevels        = 1;
+    textureDesc.ArraySize        = 1;
+    textureDesc.SampleDesc.Count = 1;
+    textureDesc.Usage            = D3D11_USAGE_DEFAULT;
+    textureDesc.BindFlags        = 0;
+    textureDesc.MiscFlags        = 0; // <-- SIN shared/keyed mutex, es de uso exclusivo local
+
+    if (device->CreateTexture2D(&textureDesc, nullptr, &encoderCaptureTexture) != S_OK)
+    {
+        std::cerr << "No se pudo crear la textura de captura para el encoder." << std::endl;
+        return false;
+    }
+    return true;
+}
+
+// ... createWindowsHandler() queda igual ...
+
+bool DesktopDuplicatorManager::writeDestinyResource() const
+{
+    DXGI_OUTDUPL_FRAME_INFO frameInfo;
+    IDXGIResource* frameResource = nullptr;
+
+    HRESULT hr = outputDuplication->AcquireNextFrame(500, &frameInfo, &frameResource);
+
+    if (hr == DXGI_ERROR_WAIT_TIMEOUT) {
+        return false; // normal, sin cambios en pantalla
+    }
+    if (hr != S_OK) {
+        std::cerr << "Error obtaining desktop frame: 0x" << std::hex << hr << std::endl;
+        return false;
+    }
+
+    // A partir de acá tenemos SIEMPRE un frameResource pendiente de liberar
+    // (tanto el COM ref como el ReleaseFrame() del duplication object).
+
+    HRESULT mutexResult = keyedMutex->AcquireSync(0, 1000);
+    if (mutexResult != S_OK) {
+        std::cerr << "[RAMA FALLO] antes de ReleaseFrame" << std::endl;
+        frameResource->Release();
+        outputDuplication->ReleaseFrame();
+        std::cerr << "[RAMA FALLO] despues de ReleaseFrame" << std::endl;
+        return false;
+    }
+
+    bool gotFrame = false;
+    ID3D11Texture2D* localFrameTexture = nullptr;
+    if (frameResource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)&localFrameTexture) == S_OK) {
+        context->CopyResource(dstResource, localFrameTexture);
+        context->CopyResource(encoderCaptureTexture, localFrameTexture);
+        localFrameTexture->Release();
+        gotFrame = true;
+    } else {
+        std::cerr << "No se pudo obtener la desktop texture" << std::endl;
+    }
+
+    frameResource->Release();
+    std::cerr << "[RAMA EXITO] antes de ReleaseFrame" << std::endl;
+    outputDuplication->ReleaseFrame();
+    std::cerr << "[RAMA EXITO] despues de ReleaseFrame" << std::endl;
+
+    keyedMutex->ReleaseSync(1); // esto sí corresponde: acá SÍ lo adquirimos arriba
+
+    return gotFrame;
+}
+
 bool DesktopDuplicatorManager::createDestinyResource()
 {
     if (outputDuplication == nullptr)
@@ -111,42 +197,7 @@ bool DesktopDuplicatorManager::createWindowsHandler()
 
 }
 
-bool DesktopDuplicatorManager::writeDestinyResource() const
-{
-    DXGI_OUTDUPL_FRAME_INFO frameInfo;
-    IDXGIResource* frameResource = nullptr;
 
-    HRESULT hr = outputDuplication->AcquireNextFrame(500, &frameInfo, &frameResource);
-
-    // El handshake del mutex debe ocurrir SIEMPRE, haya o no frame nuevo,
-    // porque Vulkan (Renderer::update) va a intentar su acquire/release
-    // con keys fijas en cada frame sin importar esto.
-    if (keyedMutex->AcquireSync(0, INFINITE) != S_OK) {
-        std::cerr << "No se pudo adquirir el keyed mutex (D3D11 side)." << std::endl;
-        if (frameResource) frameResource->Release();
-        return false;
-    }
-
-    if (hr == S_OK) {
-
-        if (frameResource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)&frameTexture) == S_OK) {
-            context->CopyResource(dstResource, frameTexture);
-
-        } else {
-            std::cerr << "No se pudo obtener la desktop texture" << std::endl;
-            return false;
-        }
-        frameResource->Release();
-        outputDuplication->ReleaseFrame();
-    } else if (hr != DXGI_ERROR_WAIT_TIMEOUT) {
-        // Timeout (sin cambios en pantalla) es normal, no es un error real.
-        std::cerr << "Error obtaining desktop frame: 0x" << std::hex << hr << std::endl;
-        return false;
-    }
-
-    keyedMutex->ReleaseSync(1);
-    return frameTexture != nullptr;
-}
 
 bool DesktopDuplicatorManager::selectDuplicationOuput()
 {
@@ -220,7 +271,7 @@ bool DesktopDuplicatorManager::initializeID3D11()
     D3D_FEATURE_LEVEL featureLevel;
     UINT flags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
 #ifdef _DEBUG
-    flags |= D3D11_CREATE_DEVICE_DEBUG;
+    //flags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
     HRESULT hr = D3D11CreateDevice(
@@ -229,15 +280,15 @@ bool DesktopDuplicatorManager::initializeID3D11()
         &device, &featureLevel, &context);
 
 #ifdef _DEBUG
-    if (hr == DXGI_ERROR_SDK_COMPONENT_MISSING) {
+  /*  if (hr == DXGI_ERROR_SDK_COMPONENT_MISSING) {
         std::cerr << "(D3D11) Debug layer no disponible, reintentando sin el flag. "
                      "Instala 'Graphics Tools' (Configuracion > Caracteristicas opcionales) para debug." << std::endl;
         flags &= ~D3D11_CREATE_DEVICE_DEBUG;
         hr = D3D11CreateDevice(
             nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, flags,
             nullptr, 0, D3D11_SDK_VERSION,
-            &device, &featureLevel, &context);
-    }
+            &device, &featureLevel, &context);*/
+    //}
 #endif
 
     if (FAILED(hr)) {

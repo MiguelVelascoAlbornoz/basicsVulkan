@@ -6,6 +6,7 @@
  */
 #include "App.h"
 
+#include <fstream>
 #include <Ws2tcpip.h>
 
 #include <iphlpapi.h>
@@ -124,9 +125,10 @@ App::App(const std::function<void(App*)>& registryCallback) {
 }
 
 
-
+std::ofstream outputFile;
 App::~App()
 {
+    outputFile.close();
     vkDeviceWaitIdle(renderer->getVulkanDevice()->device);
 
     delete desktopImage;
@@ -144,9 +146,10 @@ App::~App()
 
 
 
+
 void App::executionLoop()
 {
-
+    outputFile.open("stream.h264", std::ios::binary);
     Uint64 timeAcc = 0;
     Uint64 lastCycleTimeNS = SDL_GetTicksNS(); // Tiempo del último frame en segundos
 
@@ -201,19 +204,14 @@ void App::executionLoop()
                 auto elapsedNs = std::chrono::duration_cast<std::chrono::nanoseconds>(now - streamStartTime).count();
                 LONGLONG timestamp100ns = elapsedNs / 100;
 
-                ID3D11Texture2D* textResource = nullptr;
-                if (desktopDuplicatorManager->dstResource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)&textResource) == S_OK) {
-                    videoEncoder->submitFrame(textResource, timestamp100ns);
-                } else {
-                    std::cout << "Cast before encode failed." << std::endl;
-                }
+                videoEncoder->submitFrame(desktopDuplicatorManager->getEncoderCaptureTexture(), timestamp100ns);
             }
 
             std::vector<char> compressedFrame;
             while (videoEncoder->popEncodedFrame(compressedFrame))
             {
-
-                std::cout << "FRAME: " << compressedFrame.size() <<std::endl;
+                outputFile.write(compressedFrame.data(), compressedFrame.size());
+                std::cout << "FRAME: " << std::dec << compressedFrame.size() <<std::endl;
                // netManager->sendPackage(std::string(compressedFrame.data(), compressedFrame.size()), NetManager::MESSAGE);
             }
         } else
