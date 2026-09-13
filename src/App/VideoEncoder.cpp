@@ -6,7 +6,7 @@
 #include <iostream>      // <-- STL primero, siempre
 #include <vector>
 
-
+#include <wrl/client.h>
 
 #define WIN32_LEAN_AND_MEAN
 #include <mfapi.h>
@@ -413,20 +413,58 @@ std::vector<char> VideoEncoder::encodeFrame(ID3D11Texture2D* bgraFrame, LONGLONG
 
 
     if (hr == MF_E_NOTACCEPTING) {
-        drainEncoderOutput(result);
-        hr = encoderMFT->ProcessInput(0, inputSample, 0);
+        //drainEncoderOutput(result);
+        //hr = encoderMFT->ProcessInput(0, inputSample, 0);
+        return result;
+    }
+    if (FAILED(hr)) {
+        std::cerr << "ProcessInput falló: 0x" << std::hex << hr << std::dec << std::endl;
+        return result;
     }
     std::cout << "ProcessInput result: 0x" << std::hex << hr << std::dec << std::endl;
 
     inputSample->Release();
 
-    if (FAILED(hr)) {
-        std::cerr << "ProcessInput falló: 0x" << std::hex << hr << std::dec << std::endl;
-        return result;
-    }
+
 
     // 3. Sacar todo el output disponible (puede ser 0, 1 o más samples)
-    drainEncoderOutput(result);
+    //drainEncoderOutput(result);
+    Microsoft::WRL::ComPtr<IMFMediaEventGenerator> eventGenerator;
+
+    hr = encoderMFT->QueryInterface(IID_PPV_ARGS(&eventGenerator));
+
+    if (FAILED(hr)) {
+        std::cerr << "El MFT no expone la interfaz asíncrona: no usar bucle de eventos." << std::endl;
+    }
+    Microsoft::WRL::ComPtr<IMFMediaEvent> event;
+    eventGenerator->GetEvent(0, &event);
+
+    MediaEventType type{};
+    event->GetType(&type);
+
+    if (type == METransformHaveOutput) {
+        MFT_OUTPUT_DATA_BUFFER out{};
+        out.dwStreamID = 0;
+        out.pSample = nullptr; // NVIDIA crea la muestra
+
+        DWORD status = 0;
+        HRESULT hr = encoderMFT->ProcessOutput(0, 1, &out, &status);
+
+        if (SUCCEEDED(hr) && out.pSample) {
+            // out.pSample contiene el bitstream H.264.
+            Microsoft::WRL::ComPtr<IMFMediaBuffer> buffer;
+            out.pSample->ConvertToContiguousBuffer(&buffer);
+
+            BYTE* bytes = nullptr;
+            DWORD maxLength = 0, length = 0;
+            buffer->Lock(&bytes, &maxLength, &length);
+
+            // Usar/escribir `bytes`, con longitud `length`
+
+            buffer->Unlock();
+            out.pSample->Release();
+        }
+    }
     return result;
 }
 void VideoEncoder::drainEncoderOutput(std::vector<char>& result) const
