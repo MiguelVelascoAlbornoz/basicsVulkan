@@ -109,7 +109,6 @@ bool VideoEncoder::init(ID3D11Device* device, ID3D11DeviceContext* context, int 
         }
     }
     attrs->Release();
-
     UINT resetToken = 0;
     hr = MFCreateDXGIDeviceManager(&resetToken, &dxgiDeviceManager);
     if (FAILED(hr) || !dxgiDeviceManager) {
@@ -135,7 +134,7 @@ bool VideoEncoder::init(ID3D11Device* device, ID3D11DeviceContext* context, int 
 
     if (!configureMediaTypes()) return false;
 
-    // ---- Nuevo: engancharse al generador de eventos async del MFT ----
+
     hr = encoderMFT->QueryInterface(IID_PPV_ARGS(&eventGenerator));
     if (FAILED(hr) || !eventGenerator) {
         std::cerr << "No se pudo obtener IMFMediaEventGenerator del encoder: 0x" << std::hex << hr << std::dec << std::endl;

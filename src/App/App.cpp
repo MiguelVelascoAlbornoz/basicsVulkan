@@ -24,6 +24,7 @@
 #include "../Registry/Images.h"
 #include "../Renderer/Image.h"
 #include "../Renderer/Pipeline.h"
+#include "vulkan/vulkan_video.hpp"
 
 void App::startServer()
 {
@@ -43,7 +44,10 @@ void App::startServer()
     }
     videoEncoder = new VideoEncoder();
     videoEncoder->init(desktopDuplicatorManager->device,desktopDuplicatorManager->context,desktopDuplicatorManager->getWidth(),desktopDuplicatorManager->getHeight());
-    desktopImage =Image::importFromD3D11Handle(renderer->getVulkanDevice(),desktopDuplicatorManager->getHandle(),desktopDuplicatorManager->getWidth(),desktopDuplicatorManager->getHeight(),DesktopDuplicatorManager::dxgiToVulkanFormat(desktopDuplicatorManager->getFormat()));
+    videoDecoder = new VideoDecoder();
+    videoDecoder->init(desktopDuplicatorManager->device,desktopDuplicatorManager->context,desktopDuplicatorManager->getWidth(),desktopDuplicatorManager->getHeight());
+
+    desktopImage =Image::importFromD3D11Handle(renderer->getVulkanDevice(),videoDecoder->sharedHandle,desktopDuplicatorManager->getWidth(),desktopDuplicatorManager->getHeight(),DesktopDuplicatorManager::dxgiToVulkanFormat(desktopDuplicatorManager->getFormat()));
 
 
     VkCommandBuffer cmd = renderer->getVulkanDevice()->beginSingleTimeCommands();
@@ -155,7 +159,6 @@ void App::executionLoop()
 
 
 
-
     unsigned int maxTicksUntilOverflow = 5;
 
     Uint64 lastSecond = 0;
@@ -211,7 +214,8 @@ void App::executionLoop()
             while (videoEncoder->popEncodedFrame(compressedFrame))
             {
                 outputFile.write(compressedFrame.data(), compressedFrame.size());
-                std::cout << "FRAME: " << std::dec << compressedFrame.size() <<std::endl;
+                videoDecoder->decodeFrame(compressedFrame.data(), compressedFrame.size());
+                //std::cout << "FRAME: " << std::dec << compressedFrame.size() <<std::endl;
                // netManager->sendPackage(std::string(compressedFrame.data(), compressedFrame.size()), NetManager::MESSAGE);
             }
         } else

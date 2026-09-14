@@ -99,10 +99,10 @@ bool DesktopDuplicatorManager::writeDestinyResource() const
 
     HRESULT mutexResult = keyedMutex->AcquireSync(0, 1000);
     if (mutexResult != S_OK) {
-        std::cerr << "[RAMA FALLO] antes de ReleaseFrame" << std::endl;
+        //std::cerr << "[RAMA FALLO] antes de ReleaseFrame" << std::endl;
         frameResource->Release();
         outputDuplication->ReleaseFrame();
-        std::cerr << "[RAMA FALLO] despues de ReleaseFrame" << std::endl;
+        //std::cerr << "[RAMA FALLO] despues de ReleaseFrame" << std::endl;
         return false;
     }
 
@@ -118,9 +118,9 @@ bool DesktopDuplicatorManager::writeDestinyResource() const
     }
 
     frameResource->Release();
-    std::cerr << "[RAMA EXITO] antes de ReleaseFrame" << std::endl;
+    //std::cerr << "[RAMA EXITO] antes de ReleaseFrame" << std::endl;
     outputDuplication->ReleaseFrame();
-    std::cerr << "[RAMA EXITO] despues de ReleaseFrame" << std::endl;
+    //std::cerr << "[RAMA EXITO] despues de ReleaseFrame" << std::endl;
 
     keyedMutex->ReleaseSync(1); // esto sí corresponde: acá SÍ lo adquirimos arriba
 

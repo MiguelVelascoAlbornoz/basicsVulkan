@@ -3,6 +3,8 @@
 #define BASICSVULKAN_VIDEODECODER_H
 
 #include <d3d11.h>
+#include <string>
+
 #include "mfobjects.h"
 #include "mftransform.h"
 
@@ -18,8 +20,9 @@ public:
 
     bool createSharedOutputTexture();
     ID3D11Texture2D* decodeFrame(const char* data, int size) const;
-
+    std::string decoderName;
 private:
+    IMFMediaEventGenerator* eventGenerator = nullptr;
     IMFTransform* decoderMFT = nullptr;
     IMFDXGIDeviceManager* dxgiDeviceManager = nullptr;
     ID3D11Device* d3dDevice = nullptr;
@@ -33,6 +36,7 @@ private:
 
     int width = 0, height = 0;
     bool configureMediaTypes() const;
+    ~VideoDecoder();
     bool initColorConverter(); // NV12 -> BGRA, inverso del encoder
     ID3D11Texture2D* convertNV12ToBGRA(ID3D11Texture2D* nv12Source) const;
 };
