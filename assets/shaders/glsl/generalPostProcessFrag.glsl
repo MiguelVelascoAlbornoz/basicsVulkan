@@ -6,6 +6,6 @@ layout(location = 0) out vec4 outColor;
 void main() {
     outColor = vec4(vec3(sampleTexture(uv,sceneColor)),1.0f);
 
-    float dither = randomFloat(uv.x*124567+uv.y*1456789);
-    outColor.rgb += dither*0.001;
+    //float dither = randomFloat(uv.x*124567+uv.y*1456789);
+    //outColor.rgb += dither*0.001;
 }

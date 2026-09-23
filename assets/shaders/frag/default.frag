@@ -9,7 +9,7 @@ layout(binding = 1) uniform sampler2D image;
 
 #include "../glsl/CameraUBO.glsl"
 
-vec3 lightPos = vec3(0.0f,10.0f,0);
+vec3 lightPos = vec3(2.0f,10.0f,0);
 
 void main() {
     vec3 color = texture(image,worldPos.xz).xyz;
@@ -33,7 +33,7 @@ void main() {
     float finalSpecular = specular;
 
     //Aplicacion de lightning
-    vec3 ambLightning = vec3(1.0f,1.0f,0.0f);
+    vec3 ambLightning = vec3(.1f,.1f,0.1f);
     vec3 postLightningColor = color * (ambLightning + diffuse) + finalSpecular;
     outColor = vec4(postLightningColor, 1.0);
 }
