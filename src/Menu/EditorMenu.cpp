@@ -110,6 +110,20 @@ void EditorMenu::render()
 			//Pipelines::defaultPipeline->updateMSAASamples(cameraSettings.MSAAsamples);
 			Pipelines::updatePostProcessPipelinesDescriptors(cameraSettings.MSAAsamples > 0);
 		}
+		ImGui::Text("Bits per channel:"); ImGui::SameLine();
+		int bitsPerChannel = cameraSettings.bitsPerChannel;
+		if (InputInt("##bitsPerChannel", &bitsPerChannel, 1))
+		{
+			if (bitsPerChannel < 0)
+			{
+				bitsPerChannel = 0;
+			} else if (bitsPerChannel > 2)
+			{
+				bitsPerChannel = 2;
+			}
+			cameraSettings.bitsPerChannel = static_cast<Player::PlayerCameraSettings::BitsPerChannel>(bitsPerChannel);
+			player->setPlayerCameraSettings(cameraSettings);
+		}
 		Unindent();
 	}
 	if (CollapsingHeader("Movement: ")) {

@@ -17,6 +17,8 @@ public:
     static void initMeshes(const App* app);
     static void initMenus(const App * app);
     static void initFramebuffers(const App* app);
+    static void initImages(const App* app);
+    static void initComputePipelines(const App* app);
 
     static void registryCallback(const App* app);
 };

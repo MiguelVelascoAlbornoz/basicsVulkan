@@ -35,8 +35,11 @@ public:
     {
         enum Fields
         {
+
             VIEW_PROJECTION_MATRIX,
-            TIME
+            TIME,
+            VIEW_POS,
+            VIEW_DIR
         };
     };
 

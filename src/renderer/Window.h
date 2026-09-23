@@ -40,7 +40,6 @@ public:
     };
     int getWidth() const { return width; }   /**< @brief Get the width of the window. */
     int getHeight() const { return height; } /**< @brief Get the height of the window. */
-    int getEventState(EventType event) const { return flags[static_cast<int>(event)]; } /**< @brief Get the state of a specific event. */
     SDL_Window* window; /**< @brief SDL window pointer. */
     VkSurfaceKHR surface; /**< @brief Vulkan surface pointer, used for rendering with Vulkan. */
     void toggleFullscreen();
@@ -48,10 +47,7 @@ private:
     void inicializeSDL(); /**< @brief Initializes SDL and sets the application metadata. */
     void createWindow(int width, int height); /**< @brief Creates the SDL window with the specified width and height. */
     bool fullscreen = false; /**< @brief Flag to indicate if the window is in fullscreen mode. */
-    unsigned int extensionCount; /**< @brief Count of Vulkan instance extensions required by SDL. */
     const char* const* extensions; /**< @brief Array of Vulkan instance extensions required by SDL. */
-    int setState(EventType event, bool state) { return flags[static_cast<int>(event)] = state; } /**< @brief Set the state of a specific event. */
-    bool flags[256]; /**< @brief Array to store the state of different events. */
 
     int error = false; /**< @brief Flag to indicate if there was an error during initialization. */
     int width,height; /**< @brief Window dimensions. */

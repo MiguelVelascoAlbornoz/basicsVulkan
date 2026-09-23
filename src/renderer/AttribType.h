@@ -29,11 +29,7 @@ public:
 
         static const AttribType* getAttribFromInputType(INPUT_TYPES input);
 
-        struct SendableField {
-          void* const data;
-          const AttribType::INPUT_TYPES inputType;
-          const int index;
-    };
+        
 };
 
 #endif // ATTRIB_TYPE_H

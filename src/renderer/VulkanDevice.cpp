@@ -24,6 +24,16 @@ VulkanDevice::~VulkanDevice()
      vkDestroyDevice(device, nullptr);
     }
 }
+// Agregar a VulkanDevice
+void VulkanDevice::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) {
+    VkCommandBuffer cmd = beginSingleTimeCommands();
+    VkBufferImageCopy region{};
+    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    region.imageSubresource.layerCount = 1;
+    region.imageExtent = { width, height, 1 };
+    vkCmdCopyBufferToImage(cmd, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+    endSingleTimeCommands(cmd);
+}
 ImGui_ImplVulkan_InitInfo VulkanDevice::getImGuiInfo(VkDescriptorPool& imguiDescriptorPool, VkInstance instance, int imageCount) const {
     // Descriptor pool dedicado para ImGui
     VkDescriptorPoolSize poolSizes[] = { { .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = 100 } };

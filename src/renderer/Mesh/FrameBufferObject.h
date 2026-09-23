@@ -15,15 +15,15 @@ public:
     [[nodiscard]] VkSampler getColorSampler() const { return colorSampler; }
     FrameBufferObject(VulkanDevice* device, uint32_t width, uint32_t height,
                        VkFormat colorFormat = VK_FORMAT_R8G8B8A8_UNORM,
-                       bool useDepth = true, bool createDepthSampler = false, int multiSamplerPower = 0);
+                       bool useDepth = true, bool depthSamplerEnabled = false, int multiSamplerPower = 0);
     void createResources();
     void destroyResources();
     ~FrameBufferObject();
 
     void beginRenderPass(VkCommandBuffer cmd);
-    void endRenderPass(VkCommandBuffer cmd);
+    static void endRenderPass(VkCommandBuffer cmd);
 
-    void saveColorImageToPNG(const std::string& filename);
+    void saveColorImageToPNG(const std::string& filename) const;
 
     [[nodiscard]] VkRenderPass getRenderPass() const { return renderPass; }
     // Con MSAA activo, esta view apunta al resolve attachment (samples=1), sampleable normalmente.
@@ -64,14 +64,14 @@ private:
     void createDepthResources();
     void createRenderPass();
     void createFramebuffer();
-    VkFormat findDepthFormat() const;
+    [[nodiscard]] VkFormat findDepthFormat() const;
     VkSampler colorSampler = VK_NULL_HANDLE;
     VkSampler depthSampler = VK_NULL_HANDLE;
     VulkanDevice* device = nullptr;
     uint32_t width = 0;
     uint32_t height = 0;
     VkFormat colorFormat;
-    bool createDepthSampler;
+    bool depthSamplerEnabled;
     bool useDepth;
     int multiSamplerPower;
     VkImage colorImage = VK_NULL_HANDLE;

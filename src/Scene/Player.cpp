@@ -31,6 +31,7 @@ Player::Player(int id) : playerID(id) {
         {&cameraSettings.maxTicksPerSecond, "imaxTicksPerSecond"},
         {&cameraSettings.fboResolutionMultiplier, "ffboResolutionMultiplier"},
            {&cameraSettings.sampleShadding,"bsampleShadding"},
+{&cameraSettings.bitsPerChannel, "ibitsPerChannel"},
     {&cameraSettings.MSAAsamples,"iMSAAsamples"}});
 
     camera->setPosition(position);

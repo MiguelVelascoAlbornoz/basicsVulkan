@@ -9,7 +9,9 @@
 #include "Uniforms.h"
 
 #include "../Scene/Model.h"
-#include "SDL3/SDL.h"
+#include "../Renderer/Image.h"
+
+
 #include "../Renderer/Mesh/Mesh.h"
 
 
@@ -49,7 +51,7 @@ void Scenes::renderTest(const VkCommandBuffer commandBuffer) {
     Model cubeModel;
     cubeModel.mesh = Meshes::cubeMesh;
     cubeModel.setTranslation(vec3(0.0f,0.0f,0.0f));
-    cubeModel.setRotation(vec3(324,424,0.0f));
+   // cubeModel.setRotation(vec3(324,424,0.0f));
     cubeModel.setScale(vec3(1.0f,1.0f,1.0f));
 
     Pipeline* testPipeline = Pipelines::getPipeline(TEST_PIPELINE_ID);

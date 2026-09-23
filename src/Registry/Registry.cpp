@@ -4,6 +4,7 @@
 #include "../App/App.h"
 #include "Registry.h"
 
+#include "ComputePipelines.h"
 #include "Scenes.h"
 #include "../Menu/F3GUI.h"
 #include "../Renderer/Renderer.h"
@@ -12,17 +13,20 @@
 #include "../Renderer/Pipeline.h"
 #include "../Renderer/Camera.h"
 #include "../Renderer/UniformBuffer.h"
-#include "../Renderer/VulkanDevice.h"
+#include "Images.h"
+#include "../Renderer/Image.h"
 #include "../Renderer/Mesh/Mesh.h"
 #include "../Menu/EditorMenu.h"
 #include "../renderer/Window.h"
+#include "../Renderer/ComputePipeline.h"
+
 
 void Registry::registryCallback(const App* app)
-{
+{   Registry::initImages(app);
     Registry::initFramebuffers(app);
     Registry::initUniforms(app);
     Registry::initPipelines(app);
-
+    Registry::initComputePipelines(app);
     Registry::initMeshes(app);
     Registry::initMenus(app);
 };
@@ -37,7 +41,9 @@ void Registry::initUniforms(const App* app)
 
     std::vector<std::pair<const void*,AttribType::INPUT_TYPES>> inputsMap = {
         {player->camera->getViewProjectionMatrix(),AttribType::MAT4},
-        {&app->tickDeltaTimeNS,AttribType::FLOAT}
+        {&app->tickDeltaTimeNS,AttribType::FLOAT},
+    {player->camera->getPosition(),AttribType::VEC3},
+        {player->camera->getViewDirection(),AttribType::VEC3},
     };
     Uniforms::cameraUniform = Uniforms::registerUniform(CAMERA_UNIFORM_ID, new UniformBuffer(device,inputsMap));
 
@@ -53,6 +59,15 @@ void Registry::initPipelines(const App* app)
     pipelineConfigDefault.pushConstantsSize = sizeof(Model::ModelUBO);
     pipelineConfigDefault.uniformObjects = {
                 {Uniforms::cameraUniform, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT },
+    };
+    pipelineConfigDefault.images = {
+        {
+            .image = Images::missingImage->getView(),
+            .sampler = Images::missingImage->getSampler(),
+            .layout = Images::missingImage->getCurrentLayout(),
+            .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT
+        }
     };
     pipelineConfigDefault.multisamplerSamples = app->player->getPlayerCameraSettings()->MSAAsamples;
     pipelineConfigDefault.sampleShadding = app->player->getPlayerCameraSettings()->sampleShadding;
@@ -179,6 +194,12 @@ void Registry::initMeshes(const App* app)
         2, 3, 0
     };
     Meshes::quadMesh = Meshes::registerMesh(QUAD_MESH_ID, new Mesh(device,quadVertices.data(),sizeof(float)*8,4,quadIndices));
+
+    std::vector<float> planeMeshVertices;
+    std::vector<uint32_t> planeMeshIndices;
+    int resolution = 1000;
+    Meshes::generatePlaneMesh(planeMeshVertices,planeMeshIndices,resolution);
+    Meshes::registerMesh("plane_mesh", new Mesh(device,planeMeshVertices.data(),sizeof(float)*6,resolution*resolution,planeMeshIndices));
 }
 
 void Registry::initMenus(const App* app)
@@ -186,6 +207,20 @@ void Registry::initMenus(const App* app)
     //Registers
     Menus::editorMenu = dynamic_cast<EditorMenu*>(Menus::registerMenu(EDITOR_MENU_ID,new EditorMenu(app)));
     Menus::F3Menu = dynamic_cast<F3GUI*>(Menus::registerMenu(F3_MENU_ID,new F3GUI(app)));
+}
+
+VkFormat getFormatByBits(Player::PlayerCameraSettings::BitsPerChannel bitPerChannel)
+{
+    switch (bitPerChannel)
+    {
+
+    case Player::PlayerCameraSettings::BitsPerChannel::BITS_16:
+        return VK_FORMAT_R16G16B16A16_SFLOAT;
+    case Player::PlayerCameraSettings::BitsPerChannel::BITS_32:
+        return VK_FORMAT_R32G32B32A32_SFLOAT;
+    default:
+        return VK_FORMAT_R8G8B8A8_UNORM;
+    }
 }
 
 void Registry::initFramebuffers(const App* app)
@@ -196,11 +231,22 @@ void Registry::initFramebuffers(const App* app)
             app->renderer->getVulkanDevice(),
             app->window->getWidth()*app->player->getPlayerCameraSettings()->fboResolutionMultiplier,
             app->window->getHeight()*app->player->getPlayerCameraSettings()->fboResolutionMultiplier,
-            VK_FORMAT_R8G8B8A8_UNORM,
+            getFormatByBits(app->player->getPlayerCameraSettings()->bitsPerChannel),
             true,
             true,app->player->getPlayerCameraSettings()->MSAAsamples
         )
     );
     FrameBuffers::defaultFrameBuffer->addScene(Scenes::renderTest);
 
+}
+
+void Registry::initImages(const App* app)
+{
+
+    Images::missingImage = Images::registerImages(MISSING_IMAGE_ID,
+        Image::loadFromFile(app->renderer->getVulkanDevice(),"assets/Textures/missing_texture.png",VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT));
+}
+void Registry::initComputePipelines(const App* app)
+{
+    app->player->getPosition();//EVITAR WARNINGS
 }

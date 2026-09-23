@@ -8,6 +8,7 @@ class VulkanDevice {
 public:
     VulkanDevice(VkInstance instance, VkSurfaceKHR surface);
     ~VulkanDevice();
+    void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 
     ImGui_ImplVulkan_InitInfo getImGuiInfo(VkDescriptorPool& imguiDescriptorPool, VkInstance instance, int imageCount) const;
     bool error = false;

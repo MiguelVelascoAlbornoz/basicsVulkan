@@ -6,7 +6,6 @@
 #include "../Renderer/Pipeline.h"
 #include "FrameBuffers.h"
 #include "../Renderer/Mesh/FrameBufferObject.h"
-#include "../Renderer/Pipeline.h"
 
 std::unordered_map<std::string, Pipeline*> Pipelines::pipelines;
 

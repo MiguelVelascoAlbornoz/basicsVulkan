@@ -5,6 +5,7 @@
 #include "VulkanDevice.h"
 #include "Swapchain.h"
 
+
 bool Renderer::createVulkanInstance(){
 
     /**
@@ -92,12 +93,16 @@ bool Renderer::getRenderPassFromSurface(VkSurfaceFormatKHR* chosenFormat)
     }
     *chosenFormat = formats[0]; // fallback
     for (const auto& f : formats) {
-        if (f.format == VK_FORMAT_B8G8R8A8_SRGB &&
+        if (f.format == VK_FORMAT_A2B10G10R10_UNORM_PACK32 &&
             f.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
             *chosenFormat = f;
             break;
         }
     }
+    //*chosenFormat = formats[0]; // fallback
+    #ifdef _DEBUG
+    std::cout << "(VULKAN) Chossen surface format: " << static_cast<int>(chosenFormat->format) << std::endl;
+    #endif
 
     // Descripción del color attachment (la imagen de la swapchain)
     VkAttachmentDescription colorAttachment{};

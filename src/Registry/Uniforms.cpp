@@ -19,6 +19,7 @@ UniformBuffer* Uniforms::cameraUniform;
 void Uniforms::onPlayerRenderUpdate() {
 
         Uniforms::cameraUniform->addIndexToQueue(CameraUBO::VIEW_PROJECTION_MATRIX);
+        Uniforms::cameraUniform->addIndexToQueue(CameraUBO::VIEW_POS);
 
 }
 

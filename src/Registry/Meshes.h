@@ -10,6 +10,9 @@
 #ifndef BASICSVULKAN_MESHES_H
 #define BASICSVULKAN_MESHES_H
 
+#include <stdint.h>
+#include <vector>
+
 #include "../App/Utilitys.h"
 class Mesh;
 #define LINE_MESH_ID "line_mesh"
@@ -29,6 +32,7 @@ public:
 
 
     static void freeMeshes();
+    static void generatePlaneMesh(std::vector<float>& vertices, std::vector<uint32_t>& indices, uint32_t resolution);
 };
 
 
