@@ -1,3 +1,4 @@
+#v1.0.0.1
 from pathlib import Path
 from datetime import datetime
 import subprocess
@@ -162,13 +163,19 @@ def getIncludedHeaders(file: Path):
 #Se algum desses ficheiros .h tiver uma data de modificação mais recente do que a data de modificação do ficheiro compilado,
 #então este ficheiro .cpp deve ser compilado
 compilationSuccess = True
+import json
+compdb = []
 for file, time in pFilesTimes.items():
     #Inicialiar variaveis
     fileStem = file.stem #Nome do ficheiro cpp
     pStems.append(fileStem) #Adicionar o nome do ficheiro cpp à lista de nomes dos ficheiros do projeto, para depois eliminar os ficheiros compilados que já não existem no projeto
     compilationTime = 0 #Data de modificação do ficheiro compilado
     cppCompilatedPath = compilatedFilesPath / f"{fileStem}.{compilatedFilesExtension}" #Path do ficheiro compilado correspondente a este ficheiro cpp
-    
+    compdb.append({
+        "directory": str(Path.cwd()),
+        "arguments": [*compileCommand, str(file), "-o", str(cppCompilatedPath)],
+        "file": str(file),
+    })
     #Analize de se é necessario compilar este ficheiro cpp
     if cppCompilatedPath.exists(): #Caso o ficheiro .o exista, obtemos a data de modificação do ficheiro compilado
         compilationTime =cppCompilatedPath.stat().st_mtime
@@ -208,6 +215,10 @@ for file, time in pFilesTimes.items():
     else:
         print(f"Compilated: {file.name} in {(datetime.now()-initialTime).total_seconds()}s")
     print("")
+
+with open("compile_commands.json", "w") as f:
+    json.dump(compdb, f, indent=2)
+
 if (compilationSuccess == False):
     exit(1)
 
