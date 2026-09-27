@@ -1,3 +1,6 @@
+#v1.0.2
+#Implementado el flag -e para ejecutar automaticamente el ejecutable compilado
+#Implementada la forma para pasar argumentos al ejecutar el ejecutable compilados
 #v1.0.0.1
 #ahora se escribe un archivo compile_commands.json
 from pathlib import Path
@@ -6,7 +9,8 @@ import subprocess
 import os
 import argparse
 import ctypes
-
+import platform
+import subprocess
 import ctypes
 import sys
 
@@ -34,9 +38,13 @@ def verifyArguments(compilationMode: str, especificFlags: dict):
 
 parser = argparse.ArgumentParser()
 parser.add_argument("compilation_mode");
+parser.add_argument("-e", "--execute", action="store_true", help="Ejecutar tras compilar");
+parser.add_argument("program_args", nargs="*", help="Argumentos para el programa a ejecutar")
 args = parser.parse_args()
-compilationMode = args.compilation_mode.lower()
 
+compilationMode = args.compilation_mode.lower()
+flagExecute = args.execute
+programArgs = args.program_args  # lista de strings
 
 
 #Configurações do projeto
@@ -261,4 +269,12 @@ if (result.returncode != 0):
     ctypes.windll.user32.MessageBoxW(0, f"Error linking {projectName}.exe", "Linking Error", 0)
     print(f"Error linking {projectName}.exe")
     exit(1)
-else: print(f"linked in {(datetime.now()-initialTime).total_seconds()}s")
+else:
+    print(f"linked in {(datetime.now()-initialTime).total_seconds()}s")
+    if flagExecute:
+        exePath = finalBuildPath / f"{projectName}.exe"
+        if platform.system() == "Windows":
+          subprocess.Popen([str(exePath)] + programArgs, creationflags=subprocess.CREATE_NEW_CONSOLE)
+        else:  # Linux (o macOS con adaptación)
+            #print(["./"+str(exePath)] + programArgs)
+            subprocess.run(["./"+str(exePath)] + programArgs)
