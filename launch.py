@@ -1,4 +1,5 @@
 #v1.0.0.1
+#ahora se escribe un archivo compile_commands.json
 from pathlib import Path
 from datetime import datetime
 import subprocess
