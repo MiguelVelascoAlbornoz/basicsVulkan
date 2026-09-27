@@ -41,7 +41,7 @@ void main() {
         if (r2 < particlesRadius * particlesRadius) { outColor = vec4(1,0,0,1); return; }
         pot += particles[i].charge * inversesqrt(r2);
         //psi += particles[i].charge * atan(directionToParticle.y, directionToParticle.x);     // ángulo visto desde ESTA carga
-        psi += particles[i].charge * directionToParticle.x * inversesqrt(dot(directionToParticle, directionToParticle));
+        psi += particles[i].charge * directionToParticle.x * inversesqrt(r2);
     }
 
 
