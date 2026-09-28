@@ -329,6 +329,16 @@ ID3D11Texture2D* VideoDecoder::decodeFrame(const char* data, int size) const
 
     return sharedOutputTexture; // el caller ya no necesita tocar bgraOutputTexture directamente
 }
+
+void VideoDecoder::skipMutex()
+{
+    HRESULT  hr = keyedMutex->AcquireSync(0, 1000);
+    if (hr != S_OK) {
+        std::cerr << "(DECODER) keyedMutex->AcquireSync fallo: 0x" << std::hex << hr << std::dec << std::endl;
+        return;   // sin lock no hay nada que soltar
+    }
+    keyedMutex->ReleaseSync(1);
+}
 // VideoDecoder.cpp
 
 bool VideoDecoder::initColorConverter()

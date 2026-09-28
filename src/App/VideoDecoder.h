@@ -20,6 +20,7 @@ public:
 
     bool createSharedOutputTexture();
     ID3D11Texture2D* decodeFrame(const char* data, int size) const;
+    void skipMutex();
     std::string decoderName;
 private:
     IMFMediaEventGenerator* eventGenerator = nullptr;

@@ -97,14 +97,14 @@ bool DesktopDuplicatorManager::writeDestinyResource() const
     // A partir de acá tenemos SIEMPRE un frameResource pendiente de liberar
     // (tanto el COM ref como el ReleaseFrame() del duplication object).
 
-    HRESULT mutexResult = keyedMutex->AcquireSync(0, 1000);
-    if (mutexResult != S_OK) {
+    //HRESULT mutexResult = keyedMutex->AcquireSync(0, 1000);
+    //if (mutexResult != S_OK) {
         //std::cerr << "[RAMA FALLO] antes de ReleaseFrame" << std::endl;
-        frameResource->Release();
-        outputDuplication->ReleaseFrame();
+    //    frameResource->Release();
+     //   outputDuplication->ReleaseFrame();
         //std::cerr << "[RAMA FALLO] despues de ReleaseFrame" << std::endl;
-        return false;
-    }
+    //    return false;
+    //}
 
     bool gotFrame = false;
     ID3D11Texture2D* localFrameTexture = nullptr;
@@ -122,7 +122,7 @@ bool DesktopDuplicatorManager::writeDestinyResource() const
     outputDuplication->ReleaseFrame();
     //std::cerr << "[RAMA EXITO] despues de ReleaseFrame" << std::endl;
 
-    keyedMutex->ReleaseSync(1); // esto sí corresponde: acá SÍ lo adquirimos arriba
+    //keyedMutex->ReleaseSync(1); // esto sí corresponde: acá SÍ lo adquirimos arriba
 
     return gotFrame;
 }

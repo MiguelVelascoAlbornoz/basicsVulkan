@@ -343,6 +343,7 @@ void Renderer::update()
     uint32_t imageIndex;
     
     if (!swapChain->acquireNextImage(imageAvailableSemaphores[currentFrame], &imageIndex)){
+        std::cout << "[DBG] update(): sin submit (acquire falso)" << std::endl;
         return;
     }
 

@@ -214,10 +214,11 @@ void App::executionLoop()
             while (videoEncoder->popEncodedFrame(compressedFrame))
             {
                 outputFile.write(compressedFrame.data(), compressedFrame.size());
-                videoDecoder->decodeFrame(compressedFrame.data(), compressedFrame.size());
+                //videoDecoder->decodeFrame(compressedFrame.data(), compressedFrame.size());
                 //std::cout << "FRAME: " << std::dec << compressedFrame.size() <<std::endl;
                // netManager->sendPackage(std::string(compressedFrame.data(), compressedFrame.size()), NetManager::MESSAGE);
             }
+            videoDecoder->skipMutex();
         } else
         {
 
