@@ -153,7 +153,7 @@ App::~App()
 
 void App::executionLoop()
 {
-    outputFile.open("stream.h264", std::ios::binary);
+    //outputFile.open("stream.h264", std::ios::binary);
     Uint64 timeAcc = 0;
     Uint64 lastCycleTimeNS = SDL_GetTicksNS(); // Tiempo del último frame en segundos
 
