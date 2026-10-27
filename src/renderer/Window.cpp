@@ -6,6 +6,7 @@
 #include "Window.h"
 #include <imGUI/imgui_impl_sdl3.h>
 #include <iostream>
+#include "../App/Logger.h"
 
 
 void Window::toggleFullscreen()
@@ -80,7 +81,7 @@ void Window::createWindow(int width, int height) {
     }
 
     #ifdef _DEBUG
-    std::cout << "Window created successfully." << std::endl;
+    stdout_logger.log("Window created successfully.");
 
     #endif
 

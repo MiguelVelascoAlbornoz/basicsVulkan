@@ -1,5 +1,6 @@
 #include "Meshes.h"
 #include  "../Renderer/Mesh/Mesh.h"
+#include "../App/Logger.h"
 std::unordered_map<std::string, Mesh*> Meshes::meshes;
 
 void Meshes::freeMeshes() {
@@ -27,7 +28,7 @@ void Meshes::generatePlaneMesh(std::vector<float>& vertices,
     int size = 1.0f;
     if (resolution < 2)
     {
-        std::cerr << "generatePlaneMesh(): resolution debe ser >= 2" << std::endl;
+        stderr_logger.log("generatePlaneMesh(): resolution debe ser >= 2");
         return;
     }
 
@@ -83,7 +84,6 @@ void Meshes::generatePlaneMesh(std::vector<float>& vertices,
     }
 
     #ifdef _DEBUG
-    std::cout << "(MESH) Plano generado: " << vertexCount << " vertices, "
-              << indices.size() / 3 << " triangulos." << std::endl;
+    stdout_logger.log("(MESH) Plano generado: ", vertexCount, " vertices, ", indices.size() / 3, " triangulos.");
     #endif
 }

@@ -2,15 +2,16 @@
 #include <unordered_map>
 #include <string>
 #include <iostream>
+#include "Logger.h"
 
 template<typename T>
 static T* registerObject(const std::string& id, T* object, std::unordered_map<std::string, T*>& objectsMap) {
     if (objectsMap.count(id) == 1) {
-        std::cout << "Registering function with id \"" << id << "\" is already registered." << std::endl;
+        stdout_logger.log("Registering function with id \"", id, "\" is already registered.");
         return object;
     }
 #ifdef _DEBUG
-    std::cout << "Making register with id: " << id << std::endl;
+    stdout_logger.log("Making register with id: ", id);
 #endif
     objectsMap.emplace(id, object);
     return object;

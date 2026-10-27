@@ -11,6 +11,7 @@
 
 #include "stbImage/stb_image_write.h"
 #include <glm/glm.hpp>
+#include "../App/Logger.h"
 
 struct FormatInfo {
     int bytesPerTexel;
@@ -30,7 +31,7 @@ static FormatInfo getFormatInfo(VkFormat format) {
     case VK_FORMAT_R32G32_SFLOAT:       return {8, 2, true};
     case VK_FORMAT_R32G32B32A32_SFLOAT: return {16, 4, true};
     default:
-        std::cerr << "(IMAGE) Formato no soportado en saveColorImageToPNG" << std::endl;
+        stderr_logger.log("(IMAGE) Formato no soportado en saveColorImageToPNG");
         return {0, 0, false};
     }
 }
@@ -85,7 +86,7 @@ bool Image::create()
     imageInfo.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
 
     if (vkCreateImage(dev, &imageInfo, nullptr, &image) != VK_SUCCESS) {
-        std::cerr << "(IMAGE) Error: no se pudo crear la imagen." << std::endl;
+        stderr_logger.log("(IMAGE) Error: no se pudo crear la imagen.");
         return false;
     }
 
@@ -98,7 +99,7 @@ bool Image::create()
     allocInfo.memoryTypeIndex = device->findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     if (vkAllocateMemory(dev, &allocInfo, nullptr, &memory) != VK_SUCCESS) {
-        std::cerr << "(IMAGE) Error: no se pudo alocar memoria para la imagen." << std::endl;
+        stderr_logger.log("(IMAGE) Error: no se pudo alocar memoria para la imagen.");
         return false;
     }
     vkBindImageMemory(dev, image, memory, 0);
@@ -117,7 +118,7 @@ bool Image::create()
     viewInfo.subresourceRange.layerCount     = 1;
 
     if (vkCreateImageView(dev, &viewInfo, nullptr, &view) != VK_SUCCESS) {
-        std::cerr << "(IMAGE) Error: no se pudo crear el image view." << std::endl;
+        stderr_logger.log("(IMAGE) Error: no se pudo crear el image view.");
         return false;
     }
 
@@ -153,7 +154,7 @@ void Image::resize(uint32_t newWidth, uint32_t newHeight)
 
     if (!create()) {
         error = true;
-        std::cerr << "(IMAGE) Error: fallo al recrear la imagen en resize()." << std::endl;
+        stderr_logger.log("(IMAGE) Error: fallo al recrear la imagen en resize().");
     }
 }
 void Image::transitionLayout(VkCommandBuffer cmd, VkImageLayout newLayout,
@@ -266,7 +267,7 @@ void Image::saveColorImageToPNG(const std::string& filename) const
     vkUnmapMemory(dev, stagingMemory);
     vkDestroyBuffer(dev, stagingBuffer, nullptr);
     vkFreeMemory(dev, stagingMemory, nullptr);
-    std::cout << "Imagen guardada en: " << filename << std::endl;
+    stdout_logger.log("Imagen guardada en: ", filename);
 }
 
 Image::Image(VulkanDevice* device, ImportTag) : device(device) {}
@@ -304,7 +305,7 @@ Image* Image::importFromD3D11Handle(VulkanDevice* device, HANDLE sharedHandle, u
     imageInfo.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
 
     if (vkCreateImage(dev, &imageInfo, nullptr, &img->image) != VK_SUCCESS) {
-        std::cerr << "(IMAGE) Error: no se pudo crear el VkImage para el import." << std::endl;
+        stderr_logger.log("(IMAGE) Error: no se pudo crear el VkImage para el import.");
         img->error = true;
         return img;
     }
@@ -321,7 +322,7 @@ Image* Image::importFromD3D11Handle(VulkanDevice* device, HANDLE sharedHandle, u
 
     uint32_t validBits = memReq.memoryTypeBits & handleProps.memoryTypeBits;
     if (validBits == 0) {
-        std::cerr << "(IMAGE) Error: no hay memory types compatibles entre la imagen y el handle importado." << std::endl;
+        stderr_logger.log("(IMAGE) Error: no hay memory types compatibles entre la imagen y el handle importado.");
         img->error = true;
         return img;
     }
@@ -343,7 +344,7 @@ Image* Image::importFromD3D11Handle(VulkanDevice* device, HANDLE sharedHandle, u
     allocInfo.memoryTypeIndex = device->findMemoryType(memReq.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     if (vkAllocateMemory(dev, &allocInfo, nullptr, &img->memory) != VK_SUCCESS) {
-        std::cerr << "(IMAGE) Error: no se pudo importar la memoria D3D11." << std::endl;
+        stderr_logger.log("(IMAGE) Error: no se pudo importar la memoria D3D11.");
         img->error = true;
         return img;
     }
@@ -367,7 +368,7 @@ Image* Image::importFromD3D11Handle(VulkanDevice* device, HANDLE sharedHandle, u
     viewInfo.subresourceRange.layerCount     = 1;
 
     if (vkCreateImageView(dev, &viewInfo, nullptr, &img->view) != VK_SUCCESS) {
-        std::cerr << "(IMAGE) Error: no se pudo crear el image view importado." << std::endl;
+        stderr_logger.log("(IMAGE) Error: no se pudo crear el image view importado.");
         img->error = true;
         return img;
     }
@@ -382,7 +383,7 @@ Image* Image::loadFromFile(VulkanDevice* device, const std::string& path, VkImag
     int w, h, channels;
     stbi_uc* pixels = stbi_load(path.c_str(), &w, &h, &channels, 4);
 
-    if (!pixels) { std::cerr << "(IMAGE) No se pudo cargar: " << path << std::endl; return nullptr; }
+    if (!pixels) { stderr_logger.log("(IMAGE) No se pudo cargar: ", path); return nullptr; }
     channels = channels == 3? 4 : channels;
     VkDeviceSize size = w * h * channels;
     VkBuffer staging; VkDeviceMemory stagingMem;
@@ -411,7 +412,7 @@ Image* Image::loadFromFile(VulkanDevice* device, const std::string& path, VkImag
         format = VK_FORMAT_R8G8B8A8_UNORM;
         break;
     default:
-        std::cout << "Error finding image format: " << path << std::endl;
+        stdout_logger.log("Error finding image format: ", path);
         return nullptr;
     }
     auto* img = new Image(device, w, h, format,usage,VK_IMAGE_ASPECT_COLOR_BIT,config,0);

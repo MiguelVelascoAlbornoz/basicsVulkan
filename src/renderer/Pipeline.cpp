@@ -6,6 +6,7 @@
 #include "VulkanDevice.h"
 #include "VertexLayout.h"
 #include "UniformBuffer.h"
+#include "../App/Logger.h"
 
 
 
@@ -185,7 +186,7 @@ void Pipeline::buildPipeline()
     pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
 
     if (vkCreatePipelineLayout(vulkanDevice->device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
-        std::cout << "(VULKAN) Error in buildPipeline(): No se pudo crear el pipeline layout." << std::endl;
+        stdout_logger.log("(VULKAN) Error in buildPipeline(): No se pudo crear el pipeline layout.");
         error = true;
         vkDestroyShaderModule(vulkanDevice->device, fragShaderModule, nullptr);
         vkDestroyShaderModule(vulkanDevice->device, vertShaderModule, nullptr);
@@ -218,7 +219,7 @@ void Pipeline::buildPipeline()
 
 
     if (vkCreateGraphicsPipelines(vulkanDevice->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
-        std::cout << "(VULKAN) Error in buildPipeline(): No se pudo crear el graphics pipeline." << std::endl;
+        stdout_logger.log("(VULKAN) Error in buildPipeline(): No se pudo crear el graphics pipeline.");
         error = true;
         vkDestroyShaderModule(vulkanDevice->device, fragShaderModule, nullptr);
         vkDestroyShaderModule(vulkanDevice->device, vertShaderModule, nullptr);
@@ -229,7 +230,7 @@ void Pipeline::buildPipeline()
     vkDestroyShaderModule(vulkanDevice->device, vertShaderModule, nullptr);
 
     #ifdef _DEBUG
-    std::cout << "(VULKAN) Pipeline gráfico creado correctamente." << std::endl;
+    stdout_logger.log("(VULKAN) Pipeline gráfico creado correctamente.");
     #endif
 
     updateDescriptorSet(config.uniformObjects, config.images);

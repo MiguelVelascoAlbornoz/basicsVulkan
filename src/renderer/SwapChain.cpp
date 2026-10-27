@@ -3,6 +3,7 @@
 #include <algorithm>
 #include "Window.h"
 #include "VulkanDevice.h"
+#include "../App/Logger.h"
 
 SwapChain::SwapChain(VulkanDevice* vulkanDevice,Window* window,VkRenderPass renderPass,VkSurfaceFormatKHR chosenFormat )
 
@@ -174,7 +175,7 @@ bool SwapChain::createSwapChain(Window *window, VkRenderPass renderPass)
     createInfo.oldSwapchain     = VK_NULL_HANDLE;
 
     if (vkCreateSwapchainKHR(vulkanDevice->device, &createInfo, nullptr, &swapchain) != VK_SUCCESS) {
-        std::cout << "(VULKAN) Error in createSwapChain(): No se pudo crear el swapchain." << std::endl;
+        stdout_logger.log("(VULKAN) Error in createSwapChain(): No se pudo crear el swapchain.");
     
         return false;
     }
@@ -190,7 +191,7 @@ bool SwapChain::createSwapChain(Window *window, VkRenderPass renderPass)
     swapchainExtent = extent;
 
     #ifdef _DEBUG
-    std::cout << "(VULKAN) Swapchain creado: " << extent.width << "x" << extent.height << ", " << imageCount << " imagenes" << std::endl;
+    stdout_logger.log("(VULKAN) Swapchain creado: ", extent.width, "x", extent.height, ", ", imageCount, " imagenes");
     #endif
 
 
@@ -219,7 +220,7 @@ bool SwapChain::acquireNextImage(VkSemaphore imageAvailableSemaphore, uint32_t *
         imageAvailableSemaphore, VK_NULL_HANDLE, pImageIndex);
     if (result == VK_ERROR_OUT_OF_DATE_KHR) return false;
     if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-        std::cout << "(VULKAN) Error in acquireNextImage(): No se pudo adquirir la siguiente imagen del swapchain." << std::endl;
+        stdout_logger.log("(VULKAN) Error in acquireNextImage(): No se pudo adquirir la siguiente imagen del swapchain.");
         return false;
     }
     return true;

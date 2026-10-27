@@ -4,6 +4,7 @@
 #include <SDL3/SDL_vulkan.h>
 #include "VulkanDevice.h"
 #include "Swapchain.h"
+#include "../App/Logger.h"
 
 
 bool Renderer::createVulkanInstance(){
@@ -21,7 +22,7 @@ vkEnumerateInstanceLayerProperties(&layerCount, layers.data());
     std::vector<const char*> validationLayers;
 #ifdef _DEBUG
 for (const auto& layer : layers) {
-    std::cout << "(VULKAN) Available layer: " << layer.layerName << std::endl;
+    stdout_logger.log("(VULKAN) Available layer: ", layer.layerName);
     if (layer.layerName == std::string("VK_LAYER_KHRONOS_validation")) {
         validationLayers.push_back(layer.layerName);
     }
@@ -31,9 +32,9 @@ for (const auto& layer : layers) {
     Uint32 extensionCount = 0;
     const char* const* extensions = SDL_Vulkan_GetInstanceExtensions(&extensionCount);
     #ifdef _DEBUG
-        std::cout << "(VULKAN) Extensions:" << std::endl;
+        stdout_logger.log("(VULKAN) Extensions:");
     for (unsigned int i = 0; i < extensionCount; ++i) {
-        std::cout << " - " << extensions[i] << std::endl;
+        stdout_logger.log(" - ", extensions[i]);
     }
     #endif
 
@@ -64,10 +65,10 @@ createInfo.ppEnabledLayerNames =
     VkResult result = vkCreateInstance(&createInfo, nullptr, &instance);
     if (result == VK_SUCCESS) {
         #ifdef _DEBUG
-        std::cout << "(VULKAN) Vulkan está disponible!\n";
+        stdout_logger.log("(VULKAN) Vulkan está disponible!");
         #endif
     } else {
-        std::cout << "(VULKAN) Vulkan no está disponible. Código: " << result << "\n";
+        stdout_logger.log("(VULKAN) Vulkan no está disponible. Código: ", result);
         return false;
     }
     return true;
@@ -82,16 +83,16 @@ bool Renderer::getRenderPassFromSurface(VkSurfaceFormatKHR* chosenFormat)
     vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, formats.data());
 
      #ifdef _DEBUG
-    std::cout << "(VULKAN) Supported surface formats:" << std::endl;
+    stdout_logger.log("(VULKAN) Supported surface formats:");
     for (const auto&[format, colorSpace] : formats) {
-        std::cout << " - Format: " << format << ", Color Space: " << colorSpace << std::endl;
+        stdout_logger.log(" - Format: ", format, ", Color Space: ", colorSpace);
     }
     
     #endif
 
     // Elegir formato (preferir BGRA8 con SRGB)
     if (formats.empty()) {
-        std::cout << "(VULKAN) Error in createRenderPass(): No se encontraron formatos de superficie compatibles." << std::endl;
+        stdout_logger.log("(VULKAN) Error in createRenderPass(): No se encontraron formatos de superficie compatibles.");
  
         return false;
     }
@@ -105,7 +106,7 @@ bool Renderer::getRenderPassFromSurface(VkSurfaceFormatKHR* chosenFormat)
     }
     //*chosenFormat = formats[0]; // fallback
     #ifdef _DEBUG
-    std::cout << "(VULKAN) Chossen surface format: " << static_cast<int>(chosenFormat->format) << std::endl;
+    stdout_logger.log("(VULKAN) Chossen surface format: ", static_cast<int>(chosenFormat->format));
     #endif
 
     // Descripción del color attachment (la imagen de la swapchain)
@@ -169,12 +170,12 @@ bool Renderer::getRenderPassFromSurface(VkSurfaceFormatKHR* chosenFormat)
 
     VkDevice device = vulkanDevice->device;
     if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
-        std::cout << ("(VULKAN) Error in createRenderPass(): No se pudo crear el render pass.")<< std::endl;
+        stdout_logger.log(("(VULKAN) Error in createRenderPass(): No se pudo crear el render pass."));
         return false;
     }
 
     #ifdef _DEBUG
-    std::cout << ("(VULKAN) Render pass creado correctamente.") << std::endl;
+    stdout_logger.log(("(VULKAN) Render pass creado correctamente."));
     #endif
 
     return true;
@@ -203,26 +204,26 @@ bool Renderer::createSyncObjects()
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         bool result = vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]);
         if (result != VK_SUCCESS) {
-            std::cout <<"(VULKAN) Error in createSyncObjects(): No se pudo crear el semaphore imageAvailable del frame " << static_cast<int>(i) << std::endl;
+            stdout_logger.log("(VULKAN) Error in createSyncObjects(): No se pudo crear el semaphore imageAvailable del frame ", static_cast<int>(i));
             return false;
         }
         result = vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[i]);
         if (result != VK_SUCCESS) {
-            std::cout << "(VULKAN) Error in createSyncObjects(): No se pudo crear el fence inFlight del frame " << static_cast<int>(i) << std::endl ;
+            stdout_logger.log("(VULKAN) Error in createSyncObjects(): No se pudo crear el fence inFlight del frame ", static_cast<int>(i));
             return false;
         }
     }
     for (size_t i = 0; i < renderFinishedSemaphores.size(); i++) {
         bool result = vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]);
         if (result != VK_SUCCESS) {
-            std::cout << "(VULKAN) Error in createSyncObjects(): No se pudo crear el semaphore renderFinished del frame " << static_cast<int>(i)<< std::endl;
+            stdout_logger.log("(VULKAN) Error in createSyncObjects(): No se pudo crear el semaphore renderFinished del frame ", static_cast<int>(i));
             return false;
         }
     }
     
 
     #ifdef _DEBUG
-    std::cout << "(VULKAN) Objetos de sincronizacion creados correctamente." << std::endl;
+    stdout_logger.log("(VULKAN) Objetos de sincronizacion creados correctamente.");
     #endif
 
     return true;

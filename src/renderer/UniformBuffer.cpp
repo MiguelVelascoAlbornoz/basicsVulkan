@@ -2,6 +2,7 @@
 #include "UniformBuffer.h"
 #include <iostream>
 #include "VulkanDevice.h"
+#include "../App/Logger.h"
 
 
 UniformBuffer::~UniformBuffer() {
@@ -70,9 +71,9 @@ void UniformBuffer::setRaw(const UniformField* uniformField) {
     if (!uniformField->dataPointer) {
         void* tempMemory = calloc(1,uniformField->size);
         memcpy(static_cast<char*>(mappedMemory) + uniformField->offsetInUniform,tempMemory, uniformField->size);
-        std::cout << "Error in setRaw(): Null pointer in uniform field. " << std::endl;
+        stdout_logger.log("Error in setRaw(): Null pointer in uniform field. ");
         std:: cout << "Data offset: " << uniformField->offsetInUniform << std::endl;
-        std::cout << "Data type: " << uniformField->type << std::endl;
+        stdout_logger.log("Data type: ", uniformField->type);
         free(tempMemory);
     } else {
         memcpy(static_cast<char*>(mappedMemory) + uniformField->offsetInUniform, uniformField->dataPointer, uniformField->size);
@@ -82,7 +83,7 @@ void UniformBuffer::setRaw(const UniformField* uniformField) {
 /** @param index Numero del campos que se pretende actualizar. Ex: COLOR;POISITION;NORMAL, 0 es el campo color y 2 atuazliaria el de la normal**/
 void UniformBuffer::setRaw(size_t index) {
     if (index >= fields.size()) {
-        std::cerr << "Índice de uniform fuera de rango: " << index << std::endl;
+        stderr_logger.log("Índice de uniform fuera de rango: ", index);
         return;
     }
     const UniformField* field = fields[index];

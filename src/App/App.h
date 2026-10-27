@@ -13,12 +13,13 @@
 #include "../Registry/Menus.h"
 #include "../Registry/Meshes.h"
 #include "../Registry/FrameBuffers.h"
-
+#include <corecrt_wstdio.h>
 
 #include "../Scene/Player.h"
 #include <SDL3/SDL.h>
 #
 
+#include "Logger.h"
 #include "NetManager.h"
 
 
@@ -40,7 +41,6 @@ public:
         CLIENT,
         UNDEFINED
     };
-
     Window* window = nullptr; /**< window pointer, must be deleted must be deleted and end*/
     Renderer* renderer = nullptr; /**< renderer pointer, must be deleted at end */
      AppType type = UNDEFINED;

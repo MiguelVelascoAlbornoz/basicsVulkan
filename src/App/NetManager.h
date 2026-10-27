@@ -12,7 +12,9 @@
 #include <WinSock2.h>
 #include <chrono>
 #include <thread>
+#include <ws2ipdef.h>
 
+#include "Message.h"
 #define MAX_UDP_RECEIVE_BUFFER_SIZE 65536
 #define WRONG_PASSWORD "Wrong password."
 class NetManager
@@ -20,8 +22,7 @@ class NetManager
 
 
 public:
-    /** @brief Bytes que ocupa el status al inicio de cada mensaje. */
-    static constexpr size_t STATUS_HEADER_SIZE = sizeof(int32_t);
+
     enum ConexionStatus
     {
         UNEXPECTED_ERROR,
@@ -34,16 +35,7 @@ public:
         TIMEOUT,
         INVALID_PASSWORD
     };
-    enum PackageHeader
-    {
-        CONNECTION_TRY,
-        UNEXPECTED_HEADER,
-        CONNECTION_ERROR,
-        CONNECTION_SUCCESS,
-        MESSAGE,
-        HEARTBEAT,
-        VIDEO_FRAME
-    };
+
     static std::string obtainPublicIP();
     static std::vector<std::string> obtainAllPrivateIPs();
     static void assignIntToCharArray(int32_t value, char* buffer, size_t offset);
@@ -51,16 +43,32 @@ public:
     static std::vector<char> buildMessage(PackageHeader status, const std::string& payload);
     static std::vector<char> buildMessage(PackageHeader header, const char* payload, int bytesCount);
     static PackageHeader extractHeader(const char* buffer, int len);
-    bool decryptMessage(const char* buffer, int len, PackageHeader& outHeader, std::string& outPayload);
-    std::vector<char> buildEncryptedMessage(PackageHeader header, const std::string& payload);
-    static std::string extractPayload(const char* buffer, int len);
-    void handleIncomingPacket();
-    void sendPackage(const std::string& message, PackageHeader header);
-    void sendHeartbeat();
-    bool init();
+    static const char* extractPayload(const char* buffer, int len);
+    Message decryptMessage(MessageView& cryptedMessage);
+
     bool initServer();
     bool initClient();
     ~NetManager();
+
+private:
+    std::vector<char> buildEncryptedMessage(PackageHeader header, const std::string& payload);
+
+    void handleIncomingPacket();
+    void sendPackage(const std::string& message, PackageHeader header);
+    /**
+     *
+     * @param messageIn
+     * @param pkS
+     * @param tag2
+     * @param skS
+     * @param senderAddr
+     * @return true if password is correct and was possible to generate skS
+     * @brief If password is not correct this function answers to the sender
+     */
+    bool tryAuth(MessageView& messageIn, unsigned char* pkS, unsigned char* tag2, unsigned char* skS, sockaddr_in
+                 & senderAddr);
+    void sendHeartbeat();
+
     void sendFrame();
     void serverWaitForConnection();
     void startClient();
@@ -75,14 +83,14 @@ public:
     bool manageHeartBeat();
     std::string getConnectionIP() { return connectionIP; };
     sockaddr_in connectionAddr;
-private:
+    bool init();
     unsigned char pk[crypto_box_PUBLICKEYBYTES]; // 32 bytes
     unsigned char sk[crypto_box_SECRETKEYBYTES]; // 32 bytes
 
     int heartbeatInterval = 10;
     int heartbeatsMaxTrys = 2;
     int heartbeatsTry = 0;
-    std::chrono::steady_clock::time_point firstHeartBeatTime;
+
     std::chrono::steady_clock::time_point lastHeartBeatSendTime;
     bool waitingHeartbeat = false;
     ConexionStatus status = UNDEFINED;

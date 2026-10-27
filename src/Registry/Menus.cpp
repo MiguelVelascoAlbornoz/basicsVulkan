@@ -5,6 +5,7 @@
  */
 #include "Menus.h"
 #include "../App/Utilitys.h"
+#include "../App/Logger.h"
 
 
 std::unordered_map<std::string,Menu*> Menus::openMenus;
@@ -25,7 +26,7 @@ void Menus::openMenu(const std::string& menuID) {
     if (menuToOpen) {
         Menus::openMenus.emplace(menuID,menuToOpen);
     } else {
-        std::cerr << "Error in openMenu(): Menu with name \"" << menuID << "\" does not exist." << std::endl;
+        stderr_logger.log("Error in openMenu(): Menu with name \"", menuID, "\" does not exist.");
         Menus::menus.erase(menuID);
     }
 
@@ -35,7 +36,7 @@ void Menus::closeMenu(const std::string& menuID) {
     if (menuToClose) {
         Menus::openMenus.erase(menuID);
     } else {
-        std::cerr << "Error in closeMenu(): Menu with id \"" << menuID << "\" does not exist or is not open." << std::endl;
+        stderr_logger.log("Error in closeMenu(): Menu with id \"", menuID, "\" does not exist or is not open.");
         Menus::openMenus.erase(menuID);
     }
 }

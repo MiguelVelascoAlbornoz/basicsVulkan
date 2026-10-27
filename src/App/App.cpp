@@ -32,7 +32,7 @@ void App::startServer()
     type = App::HOST;
     if (desktopDuplicatorManager)
     {
-        std::cerr << "StartServer(): A server is already existing." << std::endl;
+        stderr_logger.log("StartServer(): A server is already existing.");
         runnig = false;
         return;
     }
@@ -53,7 +53,7 @@ void App::startServer()
     VkCommandBuffer cmd = renderer->getVulkanDevice()->beginSingleTimeCommands();
     desktopImage->transitionLayout(cmd,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
     renderer->getVulkanDevice()->endSingleTimeCommands(cmd);
-    desktopImage->setKeyedMutexSync(/*acquireKey=*/1, /*releaseKey=*/0);
+    desktopImage->setKeyedMutexSync(/*acquireKey=*/0, /*releaseKey=*/0);
 
 
     auto cfg = Pipelines::defaultPipeline->getConfig();
@@ -67,7 +67,7 @@ void App::startServer()
      streamStartTime = std::chrono::steady_clock::now();
     if (netManager)
     {
-        std::cerr << "StartServer(): A server is already existing." << std::endl;
+        stderr_logger.log("StartServer(): A server is already existing.");
         runnig = false;
         return;
     }
@@ -83,7 +83,7 @@ void App::startClient()
     type = AppType::CLIENT;
     if (netManager)
     {
-        std::cerr << "startClient(): A client is already existing." << std::endl;
+        stderr_logger.log("startClient(): A client is already existing.");
         runnig = false;
         return;
     }
@@ -94,20 +94,21 @@ void App::startClient()
     }
 }
 App::App(const std::function<void(App*)>& registryCallback) {
+
     //Initizialise window
     window = new Window();
     if (window->isError()) {
-        std::cerr << "Failed to initialize window." << std::endl;
+        stderr_logger.log("Failed to initialize window.");
         return;
     }
     //Initialize renderer
     renderer = new Renderer(window);
     if (renderer->error) {
-        std::cerr << "Failed to initialize renderer." << std::endl;
+        stderr_logger.log("Failed to initialize renderer.");
         return;
     }
     #ifdef _DEBUG
-    std::cout << "Renderer initialized successfully." << std::endl;
+    stdout_logger.log("Renderer initialized successfully.");
     #endif
 
     player = new Player(0);
@@ -153,7 +154,7 @@ App::~App()
 
 void App::executionLoop()
 {
-    //outputFile.open("stream.h264", std::ios::binary);
+    outputFile.open("stream.h264", std::ios::binary);
     Uint64 timeAcc = 0;
     Uint64 lastCycleTimeNS = SDL_GetTicksNS(); // Tiempo del último frame en segundos
 
@@ -199,29 +200,21 @@ void App::executionLoop()
        // + + + + +  VULKAN RENDER + + + + +
         if (type == HOST)
         {
-            videoEncoder->update(); // procesar eventos ANTES de intentar nada
+            videoEncoder->update();
 
             if (desktopDuplicatorManager->writeDestinyResource())
             {
                 auto now = std::chrono::steady_clock::now();
                 auto elapsedNs = std::chrono::duration_cast<std::chrono::nanoseconds>(now - streamStartTime).count();
-                LONGLONG timestamp100ns = elapsedNs / 100;
-
-                videoEncoder->submitFrame(desktopDuplicatorManager->getEncoderCaptureTexture(), timestamp100ns);
+                videoEncoder->submitFrame(desktopDuplicatorManager->getEncoderCaptureTexture(), elapsedNs / 100);
             }
 
             std::vector<char> compressedFrame;
             while (videoEncoder->popEncodedFrame(compressedFrame))
             {
-                outputFile.write(compressedFrame.data(), compressedFrame.size());
-                //videoDecoder->decodeFrame(compressedFrame.data(), compressedFrame.size());
-                //std::cout << "FRAME: " << std::dec << compressedFrame.size() <<std::endl;
-               // netManager->sendPackage(std::string(compressedFrame.data(), compressedFrame.size()), NetManager::MESSAGE);
+                outputFile.write(compressedFrame.data(), static_cast<std::streamsize>(compressedFrame.size()));
+                videoDecoder->decodeFrame(compressedFrame.data(), static_cast<int>(compressedFrame.size()));
             }
-            videoDecoder->skipMutex();
-        } else
-        {
-
         }
 
         renderer->update();
@@ -256,6 +249,7 @@ void App::executionLoop()
         }
 
     }
+    outputFile.close();
     //debugTestFBO(this);
 
 }

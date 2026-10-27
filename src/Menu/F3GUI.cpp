@@ -8,6 +8,7 @@
 #include <imGUI/imgui.h>
 #include "../App/App.h"
 #include "../Renderer/Camera.h"
+#include "../App/Logger.h"
 void F3GUI::render()
 {
     Player* player = app->player;
@@ -34,5 +35,5 @@ void F3GUI::render()
     ImGui::Text(("Cycles per second: " +std::to_string(app->cyclesPerSecond)).c_str());
     //ImGui::Text("Direction Vector: (%.5f, %.5f, %.5f)", directionVector->x, directionVector->y, directionVector->z, "%.5f");
     ImGui::End();
-    //std::cout << *deltaTime << std::endl;
+    //stdout_logger.log(*deltaTime);
 }

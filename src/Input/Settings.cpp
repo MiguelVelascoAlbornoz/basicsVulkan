@@ -3,6 +3,7 @@
 #include <fstream>
 #include <iostream>
 #include <filesystem>
+#include "../App/Logger.h"
 
 
 /**
@@ -17,7 +18,7 @@ Settings::Settings(const std::string name,std::vector<std::pair<void*,std::strin
 	json data;
 	std::ifstream inputFile(SETTINGS_DIRECTORY +"/"+name+".json");
 	if (!inputFile.is_open()) {
-		std::cout << "Error in loadSettings(): Problem while trying to load settings \"" << name << "\"." << std::endl;
+		stdout_logger.log("Error in loadSettings(): Problem while trying to load settings \"", name, "\".");
 		return;
 	}
 	inputFile >> data;
@@ -55,7 +56,7 @@ Settings::Settings(const std::string name,std::vector<std::pair<void*,std::strin
 			(*objectPointer) = variableData.get<bool>();
 		}
 		else {
-			std::cout << "Error in loadSettings(): .json \"" << name << "\" have invalid field: \"" << variableName << "\"." << std::endl;
+			stdout_logger.log("Error in loadSettings(): .json \"", name, "\" have invalid field: \"", variableName, "\".");
 		}
 
 	}
@@ -83,8 +84,8 @@ void Settings::saveSettings()
 	try {
 		std::filesystem::create_directory(SETTINGS_DIRECTORY);
 	} catch (const std::filesystem::filesystem_error& e) {
-		std::cerr << "Error in saveSettings(): " << e.what() << "\n";
-		std::cerr << "Código: " << e.code().message() << "\n";
+		stderr_logger.log("Error in saveSettings(): ", e.what());
+		stderr_logger.log("Código: ", e.code().message());
 	}
 
 

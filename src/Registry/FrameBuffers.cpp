@@ -7,6 +7,7 @@
 #include "Uniforms.h"
 #include "../Renderer/Mesh/FrameBufferObject.h"
 #include <algorithm>
+#include "../App/Logger.h"
 std::unordered_map<std::string, FrameBufferObject*> FrameBuffers::frameBuffers;
 std::vector<FrameBufferObject*> FrameBuffers::activeFBOs;
 FrameBufferObject* FrameBuffers::defaultFrameBuffer;
@@ -32,7 +33,7 @@ void FrameBuffers::turnOffFBO(FrameBufferObject* fbo)
         FrameBuffers::activeFBOs.erase(it);
     } else
     {
-        std::cerr << "Scene not active" << std::endl;
+        stderr_logger.log("Scene not active");
     }
 };
 

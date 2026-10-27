@@ -3,17 +3,18 @@
 
 #include "../Registry/Registry.h"
 #include "../App/App.h"
+#include "../App/Logger.h"
 
 int main() {
     HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
-    std::cout << "CoInitializeEx: 0x" << std::hex << hr << std::endl;
+    stdout_logger.log("CoInitializeEx: 0x", std::hex, hr);
     #ifdef _DEBUG
-    std::cout << "Project: " << PROJECT_NAME << std::endl;
-    std::cout << "Version: " << PROJECT_VERSION << std::endl;
-    std::cout << "Engine Version: " << ENGINE_VERSION << std::endl;
-    std::cout << "Debug Mode" << std::endl;
+    stdout_logger.log("Project: ", PROJECT_NAME);
+    stdout_logger.log("Version: ", PROJECT_VERSION);
+    stdout_logger.log("Engine Version: ", ENGINE_VERSION);
+    stdout_logger.log("Debug Mode");
     #else
-    std::cout << "Release Mode" << std::endl;
+    stdout_logger.log("Release Mode");
     #endif
 
     auto app = App(Registry::registryCallback);

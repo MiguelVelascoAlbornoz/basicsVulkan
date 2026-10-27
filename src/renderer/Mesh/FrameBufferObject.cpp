@@ -8,6 +8,7 @@
 #include <stbImage/stb_image_write.h>
 #include <algorithm>
 #include "../PipelineUtils.h"
+#include "../../App/Logger.h"
 
 FrameBufferObject::FrameBufferObject(VulkanDevice* device, uint32_t width, uint32_t height,
                                      VkFormat colorFormat, bool useDepth, bool depthSamplerEnabled, int multiSamplerPower)
@@ -39,7 +40,7 @@ void FrameBufferObject::createFramebuffer()
     framebufferInfo.layers          = 1;
 
     if (vkCreateFramebuffer(device->device, &framebufferInfo, nullptr, &framebuffer) != VK_SUCCESS) {
-        std::cerr << "(FBO) Error: no se pudo crear el framebuffer." << std::endl;
+        stderr_logger.log("(FBO) Error: no se pudo crear el framebuffer.");
         error = true;
     }
 }
@@ -59,7 +60,7 @@ VkFormat FrameBufferObject::findDepthFormat() const
             return format;
         }
     }
-    std::cerr << "(FBO) Error: no se encontro un formato de depth soportado." << std::endl;
+    stderr_logger.log("(FBO) Error: no se encontro un formato de depth soportado.");
     return VK_FORMAT_UNDEFINED;
 }
 
@@ -232,7 +233,7 @@ void FrameBufferObject::createRenderPass()
     renderPassInfo.pDependencies   = dependencies.data();
 
     if (vkCreateRenderPass(device->device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
-        std::cerr << "(FBO) Error: no se pudo crear el render pass." << std::endl;
+        stderr_logger.log("(FBO) Error: no se pudo crear el render pass.");
         error = true;
     }
 }
@@ -291,7 +292,7 @@ void FrameBufferObject::removeScene(SceneFunction scene)
         scenes.erase(it);
     } else
     {
-        std::cerr << "Scene not active" << std::endl;
+        stderr_logger.log("Scene not active");
     }
 }
 void FrameBufferObject::renderScenes(VkCommandBuffer cmd)

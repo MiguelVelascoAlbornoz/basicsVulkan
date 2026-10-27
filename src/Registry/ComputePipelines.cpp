@@ -4,13 +4,14 @@
 
 #include "ComputePipelines.h"
 #include "../Renderer/ComputePipeline.h"
+#include "../App/Logger.h"
 
 std::unordered_map<std::string, ComputePipeline*> ComputePipelines::computePipelines;
 
 ComputePipeline* ComputePipelines::registerPipelines(const std::string &pipelineID, ComputePipeline* pipeline){
     if (pipeline->error) {
 
-        std::cout << "Pipeline with ID \"" << pipelineID << "\" unsuccesfully initialized."<< std::endl;
+        stdout_logger.log("Pipeline with ID \"", pipelineID, "\" unsuccesfully initialized.");
     }
     return registerObject(pipelineID,pipeline,computePipelines);
 }

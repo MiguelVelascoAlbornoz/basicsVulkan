@@ -7,6 +7,7 @@
 #include <dxgi1_2.h>
 #include <iostream>
 #include <vector>
+#include "Logger.h"
 
 bool DesktopDuplicatorManager::createDesktopDuplicator(){
     if (!initializeID3D11())
@@ -54,7 +55,7 @@ bool DesktopDuplicatorManager::createEncoderCaptureTexture()
 {
     if (width == 0 || height == 0)
     {
-        std::cerr << "createDestinyResource() should be called before createEncoderCaptureTexture()." << std::endl;
+        stderr_logger.log("createDestinyResource() should be called before createEncoderCaptureTexture().");
         return false;
     }
 
@@ -71,7 +72,7 @@ bool DesktopDuplicatorManager::createEncoderCaptureTexture()
 
     if (device->CreateTexture2D(&textureDesc, nullptr, &encoderCaptureTexture) != S_OK)
     {
-        std::cerr << "No se pudo crear la textura de captura para el encoder." << std::endl;
+        stderr_logger.log("No se pudo crear la textura de captura para el encoder.");
         return false;
     }
     return true;
@@ -90,7 +91,7 @@ bool DesktopDuplicatorManager::writeDestinyResource() const
         return false; // normal, sin cambios en pantalla
     }
     if (hr != S_OK) {
-        std::cerr << "Error obtaining desktop frame: 0x" << std::hex << hr << std::endl;
+        stderr_logger.log("Error obtaining desktop frame: 0x", std::hex, hr);
         return false;
     }
 
@@ -99,10 +100,10 @@ bool DesktopDuplicatorManager::writeDestinyResource() const
 
     //HRESULT mutexResult = keyedMutex->AcquireSync(0, 1000);
     //if (mutexResult != S_OK) {
-        //std::cerr << "[RAMA FALLO] antes de ReleaseFrame" << std::endl;
+        //stderr_logger.log("[RAMA FALLO] antes de ReleaseFrame");
     //    frameResource->Release();
      //   outputDuplication->ReleaseFrame();
-        //std::cerr << "[RAMA FALLO] despues de ReleaseFrame" << std::endl;
+        //stderr_logger.log("[RAMA FALLO] despues de ReleaseFrame");
     //    return false;
     //}
 
@@ -114,13 +115,13 @@ bool DesktopDuplicatorManager::writeDestinyResource() const
         localFrameTexture->Release();
         gotFrame = true;
     } else {
-        std::cerr << "No se pudo obtener la desktop texture" << std::endl;
+        stderr_logger.log("No se pudo obtener la desktop texture");
     }
 
     frameResource->Release();
-    //std::cerr << "[RAMA EXITO] antes de ReleaseFrame" << std::endl;
+    //stderr_logger.log("[RAMA EXITO] antes de ReleaseFrame");
     outputDuplication->ReleaseFrame();
-    //std::cerr << "[RAMA EXITO] despues de ReleaseFrame" << std::endl;
+    //stderr_logger.log("[RAMA EXITO] despues de ReleaseFrame");
 
     //keyedMutex->ReleaseSync(1); // esto sí corresponde: acá SÍ lo adquirimos arriba
 
@@ -131,7 +132,7 @@ bool DesktopDuplicatorManager::createDestinyResource()
 {
     if (outputDuplication == nullptr)
     {
-        std::cerr << "selectOutputDuplication() should be called before." << std::endl;
+        stderr_logger.log("selectOutputDuplication() should be called before.");
         return false;
     }
 
@@ -152,14 +153,14 @@ bool DesktopDuplicatorManager::createDestinyResource()
 
     if (device->CreateTexture2D(&textureDesc,nullptr,&frameTexture) != S_OK)
     {
-        std::cerr << "No se pudo crear la textura de destino" << std::endl;
+        stderr_logger.log("No se pudo crear la textura de destino");
         return false;
     }
     //Castear la textura de destino al resource especifico para copiar
 
     if (frameTexture->QueryInterface(__uuidof( ID3D11Resource), (void**)&dstResource) != S_OK)
     {
-        std::cerr << "No se pudo obtener el destiny resource" << std::endl;
+        stderr_logger.log("No se pudo obtener el destiny resource");
         dstResource = nullptr;
         return false;
     }
@@ -167,7 +168,7 @@ bool DesktopDuplicatorManager::createDestinyResource()
     height = outputDesc.ModeDesc.Height;
     format = outputDesc.ModeDesc.Format;
 
-    std::cout << "Format: " << static_cast<int>(format) << '\n';
+    stdout_logger.log("Format: ", static_cast<int>(format));
     dstResource->QueryInterface(__uuidof(IDXGIKeyedMutex), (void**)&keyedMutex);
    return  true;
 }
@@ -176,21 +177,21 @@ bool DesktopDuplicatorManager::createWindowsHandler()
 {
     if (!dstResource)
     {
-        std::cerr << "createDestinyResource() should be called before." << std::endl;
+        stderr_logger.log("createDestinyResource() should be called before.");
         return false;
     }
     IDXGIResource1* dstResource1 = nullptr;
 
     if (dstResource->QueryInterface(__uuidof( IDXGIResource1), (void**)&dstResource1) != S_OK)
     {
-        std::cerr << "No se pudo obtener el destiny resource1" << std::endl;
+        stderr_logger.log("No se pudo obtener el destiny resource1");
 
         return false;
     }
     //Obtener handle
     if (dstResource1->CreateSharedHandle(nullptr, DXGI_SHARED_RESOURCE_READ  , nullptr,&this->handle) != S_OK)
     {
-        std::cerr << "No se pudo obtener el handle" << std::endl;
+        stderr_logger.log("No se pudo obtener el handle");
         return false;
     }
     return true;
@@ -203,14 +204,14 @@ bool DesktopDuplicatorManager::selectDuplicationOuput()
 {
     if (!device)
     {
-        std::cerr << "initializeID3D11() should be called before" << std::endl;
+        stderr_logger.log("initializeID3D11() should be called before");
         return false;
     }
     // Create a DXGIFactory object.
     IDXGIFactory* pFactory = nullptr;
     if(FAILED(CreateDXGIFactory(__uuidof(IDXGIFactory) ,(void**)&pFactory)))
     {
-        std::cerr << "Failed to create factory" << std::endl;
+        stderr_logger.log("Failed to create factory");
         return false;
     }
     //Obtainig adapters
@@ -225,7 +226,7 @@ bool DesktopDuplicatorManager::selectDuplicationOuput()
     //Selecting adapter
     if (vAdapters.empty())
     {
-        std::cerr << "Not available adapters" << std::endl;
+        stderr_logger.log("Not available adapters");
         return false;
     }
     pAdapter = *vAdapters.data();
@@ -242,14 +243,14 @@ bool DesktopDuplicatorManager::selectDuplicationOuput()
     //Selecting outputs
     if (vOutputs.empty())
     {
-        std::cerr << "Not available outputs" << std::endl;
+        stderr_logger.log("Not available outputs");
         return false;
     }
     pOutput = *vOutputs.data(); //Just use first output (probabily the only one);
     IDXGIOutput1* output1 = nullptr;
     if (FAILED( pOutput->QueryInterface(__uuidof(IDXGIOutput1), (void**)&output1)) || output1 == nullptr)
     {
-        std::cerr << "No se pudo obtener IDXGIOutput1" << std::endl;
+        stderr_logger.log("No se pudo obtener IDXGIOutput1");
         output1 = nullptr;
         return false;
     }
@@ -257,7 +258,7 @@ bool DesktopDuplicatorManager::selectDuplicationOuput()
 
     if (FAILED(output1->DuplicateOutput(device,&outputDuplication)))
     {
-        std::cerr << "Error obtaining duplicated output" << std::endl;
+        stderr_logger.log("Error obtaining duplicated output");
         outputDuplication = nullptr;
         return false;
     }
@@ -281,8 +282,8 @@ bool DesktopDuplicatorManager::initializeID3D11()
 
 #ifdef _DEBUG
   /*  if (hr == DXGI_ERROR_SDK_COMPONENT_MISSING) {
-        std::cerr << "(D3D11) Debug layer no disponible, reintentando sin el flag. "
-                     "Instala 'Graphics Tools' (Configuracion > Caracteristicas opcionales) para debug." << std::endl;
+        stderr_logger.log("(D3D11) Debug layer no disponible, reintentando sin el flag. "
+                     "Instala 'Graphics Tools' (Configuracion > Caracteristicas opcionales) para debug.");
         flags &= ~D3D11_CREATE_DEVICE_DEBUG;
         hr = D3D11CreateDevice(
             nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, flags,
@@ -292,7 +293,7 @@ bool DesktopDuplicatorManager::initializeID3D11()
 #endif
 
     if (FAILED(hr)) {
-        std::cerr << "Failed to initialize d3d11: 0x" << std::hex << hr << std::dec << std::endl;
+        stderr_logger.log("Failed to initialize d3d11: 0x", std::hex, hr, std::dec);
         device = nullptr;
         return false;
     }
@@ -325,7 +326,7 @@ VkFormat DesktopDuplicatorManager::dxgiToVulkanFormat(DXGI_FORMAT dxgiFormat)
     case DXGI_FORMAT_R16G16B16A16_FLOAT:    return VK_FORMAT_R16G16B16A16_SFLOAT;
     case DXGI_FORMAT_R10G10B10A2_UNORM:     return VK_FORMAT_A2B10G10R10_UNORM_PACK32;
     default:
-        std::cerr << "(PIPELINE) Formato DXGI no soportado: " << static_cast<int>(dxgiFormat) << std::endl;
+        stderr_logger.log("(PIPELINE) Formato DXGI no soportado: ", static_cast<int>(dxgiFormat));
         return VK_FORMAT_UNDEFINED;
     }
 }

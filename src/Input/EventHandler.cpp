@@ -9,6 +9,7 @@
 #include "../renderer/VulkanDevice.h"
 #include "../renderer/Mesh/FrameBufferObject.h"
 #include "../renderer/Pipeline.h"
+#include "../App/Logger.h"
 
 void App::manageEvents() {
     SDL_Event event;
@@ -57,13 +58,13 @@ void App::manageEvents() {
                     break;
             }
         } else if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED) {
-            std::cout << "Window close requested." << std::endl;
+            stdout_logger.log("Window close requested.");
             runnig = false;
         } else if (event.type == SDL_EVENT_WINDOW_RESIZED) {
             onFBOResolutionChange();
             if (!renderer->onWindowResized(window)) {
 
-                std::cerr << "Failed to handle window resize event." << std::endl;
+                stderr_logger.log("Failed to handle window resize event.");
                 runnig = false;
             }
         }  if (event.type == SDL_EVENT_MOUSE_MOTION) {

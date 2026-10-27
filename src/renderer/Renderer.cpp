@@ -30,6 +30,7 @@
 #include "Mesh/FrameBufferObject.h"
 
 #include "../Registry/Meshes.h"
+#include "../App/Logger.h"
 
 
 
@@ -41,7 +42,7 @@ class Menu;
 void Renderer::initGUI(const Window* window)
 {
     if (!ImGui::CreateContext()) {
-        std::cerr << "Error: No se pudo crear el contexto de ImGui in initGUI()." << std::endl;
+        stderr_logger.log("Error: No se pudo crear el contexto de ImGui in initGUI().");
         error = true;
         return;
     }   
@@ -55,16 +56,16 @@ void Renderer::initGUI(const Window* window)
     info.PipelineInfoMain.MSAASamples  = VK_SAMPLE_COUNT_1_BIT;
 
     if ( !ImGui_ImplVulkan_Init(&info)) {
-        std::cerr << "Error in initGUI(): ImGui no se inicializó correctamente in initGUI." << std::endl;
+        stderr_logger.log("Error in initGUI(): ImGui no se inicializó correctamente in initGUI.");
         error = true;
     } 
     #ifdef _DEBUG 
     ImGuiIO& io = ImGui::GetIO();
     io.IniFilename = nullptr;
-    std::cout << "ImGui version: " << ImGui::GetVersion() << std::endl;
-    std::cout << "Backend Renderer: " << (io.BackendRendererName ? io.BackendRendererName : "null") << std::endl;
-    std::cout << "Backend Platform: " << (io.BackendPlatformName ? io.BackendPlatformName : "null") << std::endl;
-    std::cout << "Display size: " << io.DisplaySize.x << " x " << io.DisplaySize.y << std::endl;
+    stdout_logger.log("ImGui version: ", ImGui::GetVersion());
+    stdout_logger.log("Backend Renderer: ", (io.BackendRendererName ? io.BackendRendererName : "null"));
+    stdout_logger.log("Backend Platform: ", (io.BackendPlatformName ? io.BackendPlatformName : "null"));
+    stdout_logger.log("Display size: ", io.DisplaySize.x, " x ", io.DisplaySize.y);
     
     #endif
 
@@ -82,13 +83,13 @@ void Renderer::initVulkan(Window* window)  {
      * Attach Vulkan surface to SDL window
      */
     if (!SDL_Vulkan_CreateSurface(window->window, instance, nullptr, &surface)) {
-        std::cout << "(VULKAN) Failed to create surface in initVulkan(): " << SDL_GetError() << "\n";
+        stdout_logger.log("(VULKAN) Failed to create surface in initVulkan(): ", SDL_GetError());
         error = true;
         return;
     }
 
     #ifndef _DEBUG
-    std::cout << "(VULKAN) Vulkan surface created successfully.\n";
+    stdout_logger.log("(VULKAN) Vulkan surface created successfully.");
     #endif
 
     window->surface = surface;
@@ -180,11 +181,11 @@ Renderer::Renderer(Window *window)
 
     
     #ifdef _DEBUG
-    std::cout << "(SDL) Available render drivers:" << std::endl;
+    stdout_logger.log("(SDL) Available render drivers:");
     int numDrivers = SDL_GetNumRenderDrivers();
     for (int i = 0; i < numDrivers; ++i) {
         const char* info = SDL_GetRenderDriver(i);
-        std::cout << " - " << info << std::endl;
+        stdout_logger.log(" - ", info);
     }
     #endif
 
@@ -343,7 +344,7 @@ void Renderer::update()
     uint32_t imageIndex;
     
     if (!swapChain->acquireNextImage(imageAvailableSemaphores[currentFrame], &imageIndex)){
-        std::cout << "[DBG] update(): sin submit (acquire falso)" << std::endl;
+        stdout_logger.log("[DBG] update(): sin submit (acquire falso)");
         return;
     }
 

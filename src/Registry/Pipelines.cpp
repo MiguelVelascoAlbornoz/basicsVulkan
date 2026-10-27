@@ -6,6 +6,7 @@
 #include "../Renderer/Pipeline.h"
 #include "FrameBuffers.h"
 #include "../Renderer/Mesh/FrameBufferObject.h"
+#include "../App/Logger.h"
 
 std::unordered_map<std::string, Pipeline*> Pipelines::pipelines;
 
@@ -51,7 +52,7 @@ void Pipelines::updatePostProcessPipelinesDescriptors(bool MSAA)
 Pipeline* Pipelines::registerPipelines(const std::string &pipelineID, Pipeline* pipeline){
     if (pipeline->error) {
 
-        std::cout << "Pipeline with ID \"" << pipelineID << "\" unsuccesfully initialized."<< std::endl;
+        stdout_logger.log("Pipeline with ID \"", pipelineID, "\" unsuccesfully initialized.");
     }
     return registerObject(pipelineID,pipeline,pipelines);
 }

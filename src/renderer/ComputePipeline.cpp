@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include "UniformBuffer.h"
+#include "../App/Logger.h"
 
 
 ComputePipeline::ComputePipeline(VulkanDevice* device, VkDescriptorPool descriptorPool, ComputePipelineConfig& config) :
@@ -58,7 +59,7 @@ void ComputePipeline::buildPipeline()
     layoutInfo.bindingCount = static_cast<uint32_t>(layoutBindings.size());
     layoutInfo.pBindings = layoutBindings.data();
     if (vkCreateDescriptorSetLayout(vulkanDevice->device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
-        std::cout << "(VULKAN) Error in buildPipeline(): No se pudo crear el descriptor set layout." << std::endl;
+        stdout_logger.log("(VULKAN) Error in buildPipeline(): No se pudo crear el descriptor set layout.");
         error = true;
         return;
     }
@@ -69,7 +70,7 @@ void ComputePipeline::buildPipeline()
     allocInfo.descriptorSetCount = 1;
     allocInfo.pSetLayouts = &descriptorSetLayout;
     if (vkAllocateDescriptorSets(vulkanDevice->device, &allocInfo, &descriptorSet) != VK_SUCCESS) {
-        std::cout << "(VULKAN) Error in buildPipeline(): No se pudo alocar el descriptor set." << std::endl;
+        stdout_logger.log("(VULKAN) Error in buildPipeline(): No se pudo alocar el descriptor set.");
         error = true;
         return;
     }
@@ -91,7 +92,7 @@ void ComputePipeline::buildPipeline()
     pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
 
     if (vkCreatePipelineLayout(vulkanDevice->device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
-        std::cout << "(VULKAN) Error in buildPipeline(): No se pudo crear el pipeline layout." << std::endl;
+        stdout_logger.log("(VULKAN) Error in buildPipeline(): No se pudo crear el pipeline layout.");
         error = true;
         return;
     }
@@ -124,7 +125,7 @@ void ComputePipeline::buildPipeline()
         &createInfo,
         nullptr,
         &pipeline) != VK_SUCCESS) {
-        std::cout << "(VULKAN) Error in buildPipeline(): No se pudo crear el compute pipeline." << std::endl;
+        stdout_logger.log("(VULKAN) Error in buildPipeline(): No se pudo crear el compute pipeline.");
         error = true;
         vkDestroyShaderModule(vulkanDevice->device, shaderModule, nullptr);
         return;
@@ -133,7 +134,7 @@ void ComputePipeline::buildPipeline()
     vkDestroyShaderModule(vulkanDevice->device, shaderModule, nullptr);
 
     #ifdef _DEBUG
-    std::cout << "(VULKAN) Compute pipeline creado correctamente." << std::endl;
+    stdout_logger.log("(VULKAN) Compute pipeline creado correctamente.");
     #endif
     updateDescriptorSet();
 }
@@ -234,7 +235,7 @@ void ComputePipeline::bind(VkCommandBuffer cmd) const
 void ComputePipeline::pushConstants(VkCommandBuffer cmd, const void* data, uint32_t size, uint32_t offset) const
 {
     if (config.pushConstantsSize == 0) {
-        std::cout << "(VULKAN) Warning in pushConstants(): este pipeline no tiene push constants configuradas." << std::endl;
+        stdout_logger.log("(VULKAN) Warning in pushConstants(): este pipeline no tiene push constants configuradas.");
         return;
     }
     vkCmdPushConstants(cmd, pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, offset, size, data);

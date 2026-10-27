@@ -10,6 +10,7 @@
 #include <iphlpapi.h>
 #include <winhttp.h>
 #include <Ws2tcpip.h>
+#include "Logger.h"
 
 std::string NetManager::obtainPublicIP() {
     std::string result;
@@ -73,20 +74,7 @@ std::string NetManager::obtainPublicIP() {
     }
     return ips;
 }
-void NetManager::assignIntToCharArray(int32_t value, char* buffer, size_t offset)
-{
-    // htonl para que el formato en el cable sea el mismo sin importar el
-    // endianness de cada máquina (importante en una conexión entre dos PCs distintos).
-    const uint32_t netValue = htonl(static_cast<uint32_t>(value));
-    memcpy(buffer + offset, &netValue, sizeof(netValue));
-}
 
-int32_t NetManager::charArrayToInt(const char* buffer, size_t offset)
-{
-    uint32_t netValue;
-    memcpy(&netValue, buffer + offset, sizeof(netValue));
-    return static_cast<int32_t>(ntohl(netValue));
-}
 
 
 std::vector<char> NetManager::buildMessage(PackageHeader header, const std::string& payload)
@@ -99,56 +87,46 @@ std::vector<char> NetManager::buildMessage(PackageHeader header, const std::stri
 std::vector<char> NetManager::buildMessage(PackageHeader header, const char* payload, int bytesCount)
 {
     std::vector<char> message(STATUS_HEADER_SIZE + bytesCount);
-    assignIntToCharArray(static_cast<int32_t>(header), message.data(), 0);
+
     memcpy(message.data() + STATUS_HEADER_SIZE, payload, bytesCount);
     return message;
 }
-NetManager::PackageHeader NetManager::extractHeader(const char* buffer, int len)
+
+Message NetManager::decryptMessage(MessageView& cryptedMessage)
 {
-    if (len < static_cast<int>(STATUS_HEADER_SIZE)) {
-        return UNEXPECTED_HEADER;
-    }
-    return static_cast<PackageHeader>(charArrayToInt(buffer, 0));
-}
-bool NetManager::decryptMessage(const char* buffer, int len, PackageHeader& outHeader, std::string& outPayload)
-{
-    const size_t minSize = STATUS_HEADER_SIZE + crypto_aead_xchacha20poly1305_ietf_NPUBBYTES + crypto_aead_xchacha20poly1305_ietf_ABYTES;
-    if (static_cast<size_t>(len) < minSize) {
-        return false; // paquete demasiado corto para ser válido
+    const size_t minSize = crypto_aead_xchacha20poly1305_ietf_NPUBBYTES + crypto_aead_xchacha20poly1305_ietf_ABYTES;
+    if (static_cast<size_t>(cryptedMessage.getPayloadSize()) < minSize) {
+        return Message(PackageHeader::UNEXPECTED_HEADER,0); // paquete demasiado corto para ser válido
     }
 
-    outHeader = static_cast<PackageHeader>(charArrayToInt(buffer, 0));
 
-    const auto* nonce = reinterpret_cast<const unsigned char*>(buffer + STATUS_HEADER_SIZE);
-    const auto* ciphertext = reinterpret_cast<const unsigned char*>(buffer)
-                              + STATUS_HEADER_SIZE + crypto_aead_xchacha20poly1305_ietf_NPUBBYTES;
-    size_t ciphertextLen = len - STATUS_HEADER_SIZE - crypto_aead_xchacha20poly1305_ietf_NPUBBYTES;
-
+    const auto* nonce = reinterpret_cast<const unsigned char*>(cryptedMessage.getPayload());
     // Rechazar paquetes repetidos o viejos (replay protection)
     uint64_t recvSeqBigEndian;
     memcpy(&recvSeqBigEndian, nonce, sizeof(recvSeqBigEndian));
     uint64_t recvSeq = _byteswap_uint64(recvSeqBigEndian);
     if (recvSeq <= lastRecvSeq) {
-        std::cerr << "Paquete repetido o fuera de orden, descartado (seq=" << recvSeq << ")" << std::endl;
-        return false;
+        stderr_logger.log("Paquete repetido o fuera de orden, descartado (seq=", recvSeq, ")");
+        return Message(PackageHeader::UNEXPECTED_HEADER,0);
     }
 
-    std::vector<unsigned char> decrypted(ciphertextLen); // sobra espacio (el tag ocupa parte), no importa
-    unsigned long long decryptedLen = 0;
+    const auto* ciphertext = reinterpret_cast<const unsigned char*>(cryptedMessage.getPayload()) + crypto_aead_xchacha20poly1305_ietf_NPUBBYTES;
+    Message out(cryptedMessage.getHeader(),cryptedMessage.getPayloadSize() - crypto_aead_xchacha20poly1305_ietf_NPUBBYTES);
 
+    unsigned long long decryptedLen = 0;
     if (crypto_aead_xchacha20poly1305_ietf_decrypt(
-            decrypted.data(), &decryptedLen, nullptr,
-            ciphertext, ciphertextLen,
-            reinterpret_cast<const unsigned char*>(buffer), STATUS_HEADER_SIZE, // AAD
+            reinterpret_cast<unsigned char*>(out.getPayload()), &decryptedLen, nullptr,
+            ciphertext, out.getPayloadSize(),
+            reinterpret_cast<const unsigned char*>(cryptedMessage.getData()), STATUS_HEADER_SIZE, // AAD
             nonce, rxKey) != 0)
     {
-        std::cerr << "Fallo de autenticación: paquete corrupto o manipulado." << std::endl;
-        return false;
+        stderr_logger.log("Fallo de autenticación: paquete corrupto o manipulado.");
+        return Message(PackageHeader::UNEXPECTED_HEADER,0);
     }
 
     lastRecvSeq = recvSeq;
-    outPayload.assign(reinterpret_cast<char*>(decrypted.data()), decryptedLen);
-    return true;
+    out.setFilledSize(decryptedLen);
+    return out;
 }
 std::vector<char> NetManager::buildEncryptedMessage(PackageHeader header, const std::string& payload)
 {
@@ -181,12 +159,12 @@ std::vector<char> NetManager::buildEncryptedMessage(PackageHeader header, const 
     message.insert(message.end(), reinterpret_cast<char*>(ciphertext.data()), reinterpret_cast<char*>(ciphertext.data()) + ciphertextLen);
     return message;
 }
-std::string NetManager::extractPayload(const char* buffer, int len)
+const char* NetManager::extractPayload(const char* buffer, int len)
 {
     if (len <= static_cast<int>(STATUS_HEADER_SIZE)) {
         return {};
     }
-    return { buffer + STATUS_HEADER_SIZE, static_cast<size_t>(len) - STATUS_HEADER_SIZE };
+    return buffer+STATUS_HEADER_SIZE;
 }
 
 void NetManager::handleIncomingPacket()
@@ -213,7 +191,7 @@ void NetManager::handleIncomingPacket()
         &replyAddr.sin_addr,
         senderIP,
         INET_ADDRSTRLEN);
-        std::cout << "Package from unknown sender: " <<  senderIP << std::endl;
+        stdout_logger.log("Package from unknown sender: ", senderIP);
         return; // respuesta de origen no esperado, descartar
         }
     if (bytesReceived < MAX_UDP_RECEIVE_BUFFER_SIZE)
@@ -221,13 +199,12 @@ void NetManager::handleIncomingPacket()
         buffer[bytesReceived] = '\0';
     } else
     {
-        std::cout << "<Mensaje truncado>" << std::endl;
+        stdout_logger.log("<Mensaje truncado>");
         buffer[MAX_UDP_RECEIVE_BUFFER_SIZE-1] = '\0';
     }
-    PackageHeader packageHeader;
-    std::string payload;
-    if (!decryptMessage(buffer, bytesReceived, packageHeader, payload)) {
-        std::cout << "Invalid package recivec"<< std::endl;
+    MessageView messageIn = MessageView(buffer, bytesReceived);
+    if (!decryptMessage(TODO)) {
+        stdout_logger.log("Invalid package recivec");
         return; // paquete inválido, corrupto, repetido o manipulado — se descarta silenciosamente
     }
     if (packageHeader == HEARTBEAT)
@@ -239,12 +216,12 @@ void NetManager::handleIncomingPacket()
         {
             waitingHeartbeat = false;
             auto ping = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now()- lastHeartBeatSendTime);
-            std::cout << "ping: " << ping.count() << " ms" << std::endl;
+            stdout_logger.log("ping: ", ping.count(), " ms");
         }
 
     } else if (packageHeader == MESSAGE)
     {
-        std::cout << connectionIP + ": " << payload << std::endl;
+        stdout_logger.log(connectionIP + ": ", payload);
     }
 
 }
@@ -261,14 +238,58 @@ void NetManager::sendPackage(const std::string& message, PackageHeader header)
         const int bytesSent = sendto(udpSocket,m.data(), m.size(),0,reinterpret_cast<sockaddr*>(&connectionAddr), sizeof(connectionAddr));
 
         if (bytesSent == SOCKET_ERROR) {
-            std::cerr << "sendto() falló: " << WSAGetLastError() << std::endl;
+            stderr_logger.log("sendto() falló: ", WSAGetLastError());
         } else if (bytesSent != static_cast<int>(m.size())) {
-            std::cout << "Message has been fragmented." << std::endl;
+            stdout_logger.log("Message has been fragmented.");
         } else {
             result = true; // envío exitoso a nivel de socket
         }
         trys++;
     } while (!result  && trys < maxTrys);
+}
+
+bool NetManager::tryAuth(MessageView& messageIn,unsigned char* pkS,unsigned char* tag2,unsigned char* skS,sockaddr_in& senderAddr)
+{
+    unsigned char passwordKey[crypto_generichash_KEYBYTES];
+    crypto_generichash(passwordKey, sizeof(passwordKey),
+                        reinterpret_cast<const unsigned char*>(connectionPassword.data()), connectionPassword.size(),
+                        nullptr, 0);
+
+
+    if (messageIn.getPayloadSize() != crypto_box_PUBLICKEYBYTES + crypto_auth_BYTES) {
+        return false; // paquete con tamaño inválido, descartar
+    }
+    // Verificar: "¿este tag es válido para este pk, dado que yo conozco el password?"
+    if (crypto_auth_verify(reinterpret_cast<const unsigned char*>(messageIn.getPayload()+crypto_box_PUBLICKEYBYTES), reinterpret_cast<const unsigned char*>(messageIn.getPayload()), 32, passwordKey) != 0) {
+        //Enviar mensaje diciendo que la contraseña es invalida
+        std::vector<char> message = buildMessage(CONNECTION_ERROR, WRONG_PASSWORD);
+        sendto(udpSocket,message.data(), message.size(),0, (sockaddr*)&senderAddr, sizeof(senderAddr));
+        return false;
+    }
+
+    // 1. Extraer el pk del cliente (ya sabemos que el tag es válido, así que este pk es de confianza)
+    unsigned char pkC[crypto_box_PUBLICKEYBYTES];
+    memcpy(pkC, messageIn.getPayload(), crypto_box_PUBLICKEYBYTES);
+    // 2. Generar MI par de claves efímero (del servidor, para esta conexión)
+
+
+    crypto_box_keypair(pkS, skS);
+    // 3. Firmar pkC || pkS juntos (así el cliente sabe que esta respuesta es
+    //    específicamente para SU intento de conexión, no una respuesta vieja reciclada)
+    unsigned char combined[crypto_box_PUBLICKEYBYTES * 2];
+    memcpy(combined, pkC, crypto_box_PUBLICKEYBYTES);
+    memcpy(combined + crypto_box_PUBLICKEYBYTES, pkS, crypto_box_PUBLICKEYBYTES);
+
+    crypto_auth(tag2, combined, sizeof(combined), passwordKey);
+
+    // 4. Calcular las claves de sesión YA MISMO (aunque el cliente todavía no confirmó nada)
+    if (crypto_kx_server_session_keys(rxKey, txKey, pkS, skS, pkC) != 0) {
+        stderr_logger.log("Error: clave pública del cliente inválida, abortando handshake.");
+        sodium_memzero(skS, sizeof(skS));
+        status = UNEXPECTED_ERROR;
+        return false;
+    }
+    return true;
 }
 
 void NetManager::sendFrame()
@@ -291,7 +312,7 @@ void NetManager::sendFrame()
     );
 
     if (bytesSent == SOCKET_ERROR) {
-        std::cerr << "sendto() falló: " << WSAGetLastError() << std::endl;
+        stderr_logger.log("sendto() falló: ", WSAGetLastError());
     } else {
         // bytesSent == messageLen si se envió completo (UDP no fragmenta la llamada)
     }
@@ -315,66 +336,26 @@ void NetManager::serverWaitForConnection()
 
         //Una vez recibida valida si fue exitosa
         if (bytesReceived == SOCKET_ERROR || bytesReceived >= MAX_UDP_RECEIVE_BUFFER_SIZE) {
-            std::cerr << "recvfrom() falló: " << WSAGetLastError() << std::endl;
+            stderr_logger.log("recvfrom() falló: ", WSAGetLastError());
             continue;
         }
 
-        //Transformar el mensaje recibido en string
-        PackageHeader clientStatus = extractHeader(buffer, bytesReceived);
-        if (clientStatus != PackageHeader::CONNECTION_TRY) continue;
+        MessageView messageIn(buffer, bytesReceived);
+        if (messageIn.getHeader() != PackageHeader::CONNECTION_TRY) continue;
 
 
-        unsigned char passwordKey[crypto_generichash_KEYBYTES];
-        crypto_generichash(passwordKey, sizeof(passwordKey),
-                            reinterpret_cast<const unsigned char*>(connectionPassword.data()), connectionPassword.size(),
-                            nullptr, 0);
-
-        std::string payload = extractPayload(buffer, bytesReceived);
-        if (payload.size() != crypto_box_PUBLICKEYBYTES + crypto_auth_BYTES) {
-            continue; // paquete con tamaño inválido, descartar
-        }
-
-        // Verificar: "¿este tag es válido para este pk, dado que yo conozco el password?"
-        if (crypto_auth_verify(reinterpret_cast<const unsigned char*>(payload.data()+crypto_box_PUBLICKEYBYTES), reinterpret_cast<const unsigned char*>(payload.data()), 32, passwordKey) != 0) {
-            //Enviar mensaje diciendo que la contraseña es invalida
-            std::vector<char> message = buildMessage(CONNECTION_ERROR, WRONG_PASSWORD);
-            sendto(udpSocket,message.data(), message.size(),0, (sockaddr*)&senderAddr, sizeof(senderAddr));
-            continue;
-        }
-
-        // 1. Extraer el pk del cliente (ya sabemos que el tag es válido, así que este pk es de confianza)
-        unsigned char pkC[crypto_box_PUBLICKEYBYTES];
-        memcpy(pkC, payload.data(), crypto_box_PUBLICKEYBYTES);
-        // 2. Generar MI par de claves efímero (del servidor, para esta conexión)
-        unsigned char pkS[crypto_box_PUBLICKEYBYTES];
         unsigned char skS[crypto_box_SECRETKEYBYTES];
-        crypto_box_keypair(pkS, skS);
-        // 3. Firmar pkC || pkS juntos (así el cliente sabe que esta respuesta es
-        //    específicamente para SU intento de conexión, no una respuesta vieja reciclada)
-        unsigned char combined[crypto_box_PUBLICKEYBYTES * 2];
-        memcpy(combined, pkC, crypto_box_PUBLICKEYBYTES);
-        memcpy(combined + crypto_box_PUBLICKEYBYTES, pkS, crypto_box_PUBLICKEYBYTES);
-        unsigned char tag2[crypto_auth_BYTES];
-        crypto_auth(tag2, combined, sizeof(combined), passwordKey);
-
-        // 4. Calcular las claves de sesión YA MISMO (aunque el cliente todavía no confirmó nada)
-        if (crypto_kx_server_session_keys(rxKey, txKey, pkS, skS, pkC) != 0) {
-            std::cerr << "Error: clave pública del cliente inválida, abortando handshake." << std::endl;
-            sodium_memzero(skS, sizeof(skS));
-            status = UNEXPECTED_ERROR;
+        Message messageOut(CONNECTION_SUCCESS,crypto_box_PUBLICKEYBYTES + crypto_auth_BYTES);
+        unsigned char*  pkS = reinterpret_cast<unsigned char*>(messageOut.getPayload());
+        unsigned char* tag2 = reinterpret_cast<unsigned char*>(messageOut.getPayload() + crypto_box_PUBLICKEYBYTES);
+        if (!tryAuth(messageIn,pkS,tag2,skS, senderAddr))
+        {
             continue;
         }
-        // 5. Armar y mandar la respuesta: pkS (32) + tag2 (32)
-        std::vector<char> responsePayload(crypto_box_PUBLICKEYBYTES + crypto_auth_BYTES);
-        memcpy(responsePayload.data(), pkS, crypto_box_PUBLICKEYBYTES);
-        memcpy(responsePayload.data() + crypto_box_PUBLICKEYBYTES, tag2, crypto_auth_BYTES);
-
-
-        std::vector<char> message = buildMessage(CONNECTION_SUCCESS,  responsePayload.data(),static_cast<int>(responsePayload.size()));
         //Enviar mensaje diciendo que se permite la conexion
-        int bytesSent = sendto(udpSocket,message.data(), message.size(),0, (sockaddr*)&senderAddr, sizeof(senderAddr));
+        int bytesSent = sendto(udpSocket,messageOut.getData(), messageOut.getSize(),0, (sockaddr*)&senderAddr, sizeof(senderAddr));
         if (bytesSent == SOCKET_ERROR) {
-            std::cerr << "sendto() falló: " << WSAGetLastError() << std::endl;
+            stderr_logger.log("sendto() falló: ", WSAGetLastError());
             status = UNEXPECTED_ERROR;
             continue;
         }
@@ -434,13 +415,11 @@ bool NetManager::manageHeartBeat()
 
    if ( std::chrono::duration_cast<std::chrono::seconds>(now - lastHeartBeatSendTime).count() > heartbeatInterval )
    {
-       if (!waitingHeartbeat)
-       {
-           firstHeartBeatTime = now;
-       } else
+       if (waitingHeartbeat)
        {
            heartbeatsTry++;
-           std::cerr << "Missed heartbeat, try count: " << heartbeatsTry << std::endl;
+           stderr_logger.log("Missed heartbeat, try count: ", heartbeatsTry);
+
        }
        lastHeartBeatSendTime =  now;
        waitingHeartbeat = true;
@@ -449,7 +428,7 @@ bool NetManager::manageHeartBeat()
 
     if ( heartbeatsTry > heartbeatsMaxTrys )
     {
-        std::cout << "Disconnected from: " << connectionIP << std::endl;
+        stdout_logger.log("Disconnected from: ", connectionIP);
         status = TIMEOUT;
         connectionIP = "";
         connectionAddr = {};
@@ -464,7 +443,7 @@ void NetManager::serverThread()
     {
         connectionPassword = "@Milasco13";
         serverWaitForConnection();
-        std::cout << "Connected to client: " << connectionIP << std::endl;
+        stdout_logger.log("Connected to client: ", connectionIP);
         while (status == CONNECTED)
         {
             // Esperar datos en el socket, pero como máximo X ms
@@ -532,13 +511,13 @@ void NetManager::clientWaitForConnection()
         const int bytesSent = sendto(udpSocket,message.data(), message.size(),0,(sockaddr*)&destAddr, sizeof(destAddr));
 
         if (bytesSent == SOCKET_ERROR) {
-            std::cerr << "sendto() falló: " << WSAGetLastError() << std::endl;
+            stderr_logger.log("sendto() falló: ", WSAGetLastError());
             status = UNEXPECTED_ERROR;
             continue;
         }
         // bytesSent == messageLen si se envió completo (UDP no fragmenta la llamada)
         if (bytesSent != static_cast<int>(message.size())){
-            std::cout << "Message has been fragmented." << std::endl;
+            stdout_logger.log("Message has been fragmented.");
             status = UNEXPECTED_ERROR;
             continue;
         }
@@ -612,13 +591,13 @@ void NetManager::clientWaitForConnection()
             const auto* receivedTag2 = reinterpret_cast<const unsigned char*>(payload.data() + crypto_box_PUBLICKEYBYTES);
 
             if (crypto_auth_verify(receivedTag2, combined, sizeof(combined), passwordKey) != 0) {
-                std::cerr << "Respuesta del servidor no autenticada, posible ataque." << std::endl;
+                stderr_logger.log("Respuesta del servidor no autenticada, posible ataque.");
                 status = UNEXPECTED_ERROR;
                 continue;
             }
 
             if (crypto_kx_client_session_keys(rxKey, txKey, pk, sk, pkS) != 0) {
-                std::cerr << "Error: clave pública del servidor inválida." << std::endl;
+                stderr_logger.log("Error: clave pública del servidor inválida.");
                 status = UNEXPECTED_ERROR;
                 continue;
             }
@@ -638,7 +617,7 @@ void NetManager::clientThread()
     while (status != SHUTTING_DOWN)
     {
         clientWaitForConnection();
-        std::cout << "Connected to client: " << connectionIP << std::endl;
+        stdout_logger.log("Connected to client: ", connectionIP);
         while (status == CONNECTED)
         {
             // Esperar datos en el socket, pero como máximo X ms
@@ -668,7 +647,7 @@ bool NetManager::init()
     WSAStartup(MAKEWORD(2,2), &wsaData);
 
     if (sodium_init() < 0) {
-        std::cerr << "Error: no se pudo inicializar libsodium." << std::endl;
+        stderr_logger.log("Error: no se pudo inicializar libsodium.");
         return false;
     }
     // TCP: SOCK_STREAM | UDP: SOCK_DGRAM
@@ -680,7 +659,7 @@ bool NetManager::init()
     serverAddr.sin_port = htons(hostPort);         // puerto elegido
 
     if (bind(udpSocket, (sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
-        std::cerr << "bind() falló: " << WSAGetLastError() << std::endl;
+        stderr_logger.log("bind() falló: ", WSAGetLastError());
         closesocket(udpSocket);
         udpSocket = INVALID_SOCKET;
         WSACleanup();

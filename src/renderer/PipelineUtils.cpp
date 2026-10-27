@@ -8,6 +8,7 @@
 #include <memory>
 #include <iostream>
 #include "VulkanDevice.h"
+#include "../App/Logger.h"
 /**
  * @brief Reads a binary file and stores its contents in a buffer.
  * @param filename The path to the binary file to read.
@@ -57,7 +58,7 @@ VkShaderModule PipelineUtils::createShaderModule(const std::vector<char> &code, 
 
     VkShaderModule shaderModule;
     if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
-        std::cout << ("createShaderModule(): No se pudo crear el shader module.") << std::endl;
+        stdout_logger.log(("createShaderModule(): No se pudo crear el shader module."));
         return VK_NULL_HANDLE;
     }
     return shaderModule;
@@ -71,31 +72,31 @@ bool PipelineUtils::loadShader(std::string shaderName, VkShaderModule &shaderMod
     const std::string shaderPathSPV = std::string("assets/shaders/compilated/") + shaderName + "."+shaderType+".spv";
 
 #ifdef _DEBUG
-    std::cout << "(VULKAN) Compilando shader: " << shaderPath << std::endl;
+    stdout_logger.log("(VULKAN) Compilando shader: ", shaderPath);
 #endif
     std::string cmd = "glslc ";
     if (macros.size() % 2 != 0 || macros.size() == 1) {
-        std::cout << "Formato del string de macros no respetado." << std::endl;
+        stdout_logger.log("Formato del string de macros no respetado.");
     }
     for (size_t i = 0; i < macros.size(); i+=2) {
         cmd = cmd +" -D"+macros[i]+"="+macros[i+1];
     }
     cmd = cmd + " " + shaderPath + " -o " + shaderPathSPV;
     #ifdef _DEBUG
-    std::cout << "(SHADER) Comando: " << cmd << std::endl;
+    stdout_logger.log("(SHADER) Comando: ", cmd);
     #endif
     const std::string commandOut = PipelineUtils::execCommand(cmd);
 
-    std::cout << commandOut << std::endl;
+    stdout_logger.log(commandOut);
 
     // if (result) {
-    //     std::cout << ("(VULKAN) Error in loadShaders(): Error al ejecutar el compilador del shader: "+std::string(shaderName))+"."+shaderType << std::endl;
+    //     stdout_logger.log(("(VULKAN) Error in loadShaders(): Error al ejecutar el compilador del shader: "+std::string(shaderName))+"."+shaderType);
     //     return false;
     // }
 
     std::vector<char> shaderCode;
     if (const bool result = PipelineUtils::readFile(shaderPathSPV, shaderCode); !result) {
-        std::cout << ("(VULKAN) Error in loadShaders(): Shader \""+ std::string(shaderName) +"\" no compilado.") << std::endl;
+        stdout_logger.log(("(VULKAN) Error in loadShaders(): Shader \""+ std::string(shaderName) +"\" no compilado."));
         return false;
     }
     shaderModule = PipelineUtils::createShaderModule(shaderCode,device);
@@ -125,7 +126,7 @@ bool PipelineUtils::createImage(VulkanDevice* device,
     imageInfo.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
 
     if (vkCreateImage(dev, &imageInfo, nullptr, &image) != VK_SUCCESS) {
-        std::cerr << "(FBO) Error: no se pudo crear la imagen de color." << std::endl;
+        stderr_logger.log("(FBO) Error: no se pudo crear la imagen de color.");
         return false;
     }
 
@@ -138,7 +139,7 @@ bool PipelineUtils::createImage(VulkanDevice* device,
     allocInfo.memoryTypeIndex = device->findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     if (vkAllocateMemory(dev, &allocInfo, nullptr, &memory) != VK_SUCCESS) {
-        std::cerr << "(FBO) Error: no se pudo alocar memoria para la imagen de color." << std::endl;
+        stderr_logger.log("(FBO) Error: no se pudo alocar memoria para la imagen de color.");
         return false;
     }
     vkBindImageMemory(dev, image, memory, 0);
@@ -157,7 +158,7 @@ bool PipelineUtils::createImage(VulkanDevice* device,
     viewInfo.subresourceRange.layerCount     = 1;
 
     if (vkCreateImageView(dev, &viewInfo, nullptr, &imageView) != VK_SUCCESS) {
-        std::cerr << "(FBO) Error: no se pudo crear el image view de color." << std::endl;
+        stderr_logger.log("(FBO) Error: no se pudo crear el image view de color.");
         return false;
     }
     return true;

@@ -8,6 +8,16 @@
 #Implementada la forma para pasar argumentos al ejecutar el ejecutable compilados
 #v1.0.0.1
 #ahora se escribe un archivo compile_commands.json
+
+includeDirs = ["-Iexternal/includes"] #Lista de dirs a incluir, cada dir tem de ser precedido por -I
+libsDirs = ["-Lexternal/libs"] #Lista de dirs de libs, cada dir tem de ser precedido por -L
+libs = {
+    "debug": [],
+    "release": ["-static-libgcc", "-static-libstdc++"],
+    "all": ["-lavcodec","-lavutil","-lswscale","-limGUI_SDL3_Vulkan","-lSDL3","-lvulkan-1","-lstb_image","-ld3d11","-ldxgi","-lws2_32","-liphlpapi","-lwinhttp","-lpthread","-lsodium","-lmfplat","-lmfuuid","-lole32"]
+}
+
+
 from pathlib import Path
 from datetime import datetime
 import subprocess
@@ -19,6 +29,16 @@ import subprocess
 import ctypes
 import sys
 import re
+
+#Configurações de paths, extensões, libs e flags
+compilationPath = Path("compilationFiles") #Path onde fica todo o relacionado com a compilação
+sourcePath = Path("src") #Path onde estão os ficheiros cpp
+filesExtension = "cpp" #Extensão dos ficheiros do projeto
+compilatedFilesExtension = "o" #Extensão dos ficheiros compilados
+buildPath = Path("out") #Path onde ficam os executáveis finais
+compilator = "g++" #Compilador a usar, deve estar no PATH do sistema
+generatedPath = Path("build/generated")
+resourcesPath = Path("resources")
 
 if sys.platform == "win32":
     import ctypes
@@ -87,22 +107,7 @@ flags = {
     ]
 }
 verifyArguments(compilationMode, flags)
-includeDirs = ["-Iexternal/includes"] #Lista de dirs a incluir, cada dir tem de ser precedido por -I
-libsDirs = ["-Lexternal/libs"] #Lista de dirs de libs, cada dir tem de ser precedido por -L
-libs = {
-    "debug": [],
-    "release": ["-static-libgcc", "-static-libstdc++"],
-    "all": ["-limGUI_SDL3_Vulkan","-lSDL3","-lvulkan-1","-lstb_image","-ld3d11","-ldxgi","-lws2_32","-liphlpapi","-lwinhttp","-lpthread","-lsodium","-lmfplat","-lmfuuid","-lole32"]
-}
-#Configurações de paths, extensões, libs e flags
-compilationPath = Path("compilationFiles") #Path onde fica todo o relacionado com a compilação
-sourcePath = Path("src") #Path onde estão os ficheiros cpp
-filesExtension = "cpp" #Extensão dos ficheiros do projeto
-compilatedFilesExtension = "o" #Extensão dos ficheiros compilados
-buildPath = Path("out") #Path onde ficam os executáveis finais
-compilator = "g++" #Compilador a usar, deve estar no PATH do sistema
-generatedPath = Path("build/generated")
-resourcesPath = Path("resources")
+
 
 #Paths onde ficam os ficheiros compilados e os executáveis finais, cada um tem uma subpasta para cada modo de compilação   
 compilatedFilesPath = compilationPath / compilationMode

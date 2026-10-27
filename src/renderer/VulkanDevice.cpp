@@ -1,5 +1,6 @@
 #include "VulkanDevice.h"
 #include <iostream>
+#include "../App/Logger.h"
 
 
 
@@ -73,11 +74,11 @@ bool VulkanDevice::pickPhysicalDevice(VkInstance instance)
     vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 
     #ifdef _DEBUG
-    std::cout << "(VULKAN) Available physical devices:" << std::endl;
+    stdout_logger.log("(VULKAN) Available physical devices:");
     for (const auto& device : devices) {
         VkPhysicalDeviceProperties deviceProperties;
         vkGetPhysicalDeviceProperties(device, &deviceProperties);
-        std::cout << " - " << deviceProperties.deviceName << std::endl;
+        stdout_logger.log(" - ", deviceProperties.deviceName);
     }
     #endif
 
@@ -100,25 +101,25 @@ bool VulkanDevice::pickPhysicalDevice(VkInstance instance)
         if (!devices.empty()) {
             physicalDevice = devices[0];
         } else {
-            std::cerr << "(VULKAN) Error in pickPhysicalDevive(): No se encontraron dispositivos físicos compatibles con Vulkan." << std::endl;
+            stderr_logger.log("(VULKAN) Error in pickPhysicalDevive(): No se encontraron dispositivos físicos compatibles con Vulkan.");
             return false; // Retorna false si no se encuentra un dispositivo físico
         }
     }
     #ifdef _DEBUG
     VkPhysicalDeviceProperties selectedProps{};
     vkGetPhysicalDeviceProperties(physicalDevice, &selectedProps);
-    std::cout << "(VULKAN) Selected physical device: " << selectedProps.deviceName << std::endl;
-    std::cout << "(VULKAN) Device type: " << (selectedProps.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU ? "Discrete GPU" : "Integrated GPU") << std::endl;
-    std::cout << "(VULKAN) API version: " << VK_VERSION_MAJOR(selectedProps.apiVersion) << "." << VK_VERSION_MINOR(selectedProps.apiVersion) << "." << VK_VERSION_PATCH(selectedProps.apiVersion) << std::endl;
-    std::cout << "(VULKAN) Driver version: " << selectedProps.driverVersion << std::endl;
-    std::cout << "(VULKAN) Vendor ID: " << selectedProps.vendorID << std::endl;
-    std::cout << "(VULKAN) Device ID: " << selectedProps.deviceID << std::endl;
-    std::cout << "(VULKAN) Max image dimension 2D: " << selectedProps.limits.maxImageDimension2D << std::endl;
-    std::cout << "(VULKAN) Max uniform buffer range: " << selectedProps.limits.maxUniformBufferRange << std::endl;
-    std::cout << "(VULKAN) Max storage buffer range: " << selectedProps.limits.maxStorageBufferRange << std::endl;
-    std::cout << "(VULKAN) Max push constants size: " << selectedProps.limits.maxPushConstantsSize << std::endl;
-    std::cout << "(VULKAN) Max memory allocation count: " << selectedProps.limits.maxMemoryAllocationCount << std::endl;
-    std::cout << "(VULKAN) Max sampler allocation count: " << selectedProps.limits.maxSamplerAllocationCount << std::endl;
+    stdout_logger.log("(VULKAN) Selected physical device: ", selectedProps.deviceName);
+    stdout_logger.log("(VULKAN) Device type: ", (selectedProps.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU ? "Discrete GPU" : "Integrated GPU"));
+    stdout_logger.log("(VULKAN) API version: ", VK_VERSION_MAJOR(selectedProps.apiVersion), ".", VK_VERSION_MINOR(selectedProps.apiVersion), ".", VK_VERSION_PATCH(selectedProps.apiVersion));
+    stdout_logger.log("(VULKAN) Driver version: ", selectedProps.driverVersion);
+    stdout_logger.log("(VULKAN) Vendor ID: ", selectedProps.vendorID);
+    stdout_logger.log("(VULKAN) Device ID: ", selectedProps.deviceID);
+    stdout_logger.log("(VULKAN) Max image dimension 2D: ", selectedProps.limits.maxImageDimension2D);
+    stdout_logger.log("(VULKAN) Max uniform buffer range: ", selectedProps.limits.maxUniformBufferRange);
+    stdout_logger.log("(VULKAN) Max storage buffer range: ", selectedProps.limits.maxStorageBufferRange);
+    stdout_logger.log("(VULKAN) Max push constants size: ", selectedProps.limits.maxPushConstantsSize);
+    stdout_logger.log("(VULKAN) Max memory allocation count: ", selectedProps.limits.maxMemoryAllocationCount);
+    stdout_logger.log("(VULKAN) Max sampler allocation count: ", selectedProps.limits.maxSamplerAllocationCount);
     
     #endif
     return true; // Retorna true si se selecciona un dispositivo físico correctamente
@@ -157,16 +158,16 @@ bool VulkanDevice::createLogicalDevice(VkSurfaceKHR surface)
 
     // Ahora sí verificar errores
     if (graphicsFamily == 0xFFFFFFFF) {
-        std::cerr << "(VULKAN) Error in createLogicalDevice(): No se encontró familia de colas con soporte de gráficos." << std::endl;
+        stderr_logger.log("(VULKAN) Error in createLogicalDevice(): No se encontró familia de colas con soporte de gráficos.");
         return false;
             return false;
     }
     if (presentFamily == 0xFFFFFFFF) {
-        std::cerr << "(VULKAN) Error in createLogicalDevice(): No se encontró familia de colas con soporte de presentación." << std::endl;
+        stderr_logger.log("(VULKAN) Error in createLogicalDevice(): No se encontró familia de colas con soporte de presentación.");
         return false;
     }
     if (presentFamily != graphicsFamily) {
-        std::cerr << "(VULKAN) Error in createLogicalDevice(): La familia de colas de gráficos y presentación no coincide." << std::endl;
+        stderr_logger.log("(VULKAN) Error in createLogicalDevice(): La familia de colas de gráficos y presentación no coincide.");
         return false;
     }
     
@@ -200,11 +201,11 @@ bool VulkanDevice::createLogicalDevice(VkSurfaceKHR surface)
      // <-- nuevo
 
     if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {
-        std::cerr << "(VULKAN) Error in createLogicalDevice(): No se pudo crear el dispositivo lógico." << std::endl;
+        stderr_logger.log("(VULKAN) Error in createLogicalDevice(): No se pudo crear el dispositivo lógico.");
        return false;
     }
         #ifdef _DEBUG
-        std::cout << "(VULKAN) Dispositivo lógico creado correctamente." << std::endl;
+        stdout_logger.log("(VULKAN) Dispositivo lógico creado correctamente.");
         #endif
 
     vkGetDeviceQueue(device, graphicsFamily, 0, &graphicsQueue);
@@ -219,7 +220,7 @@ bool VulkanDevice::createLogicalDevice(VkSurfaceKHR surface)
         vkGetDeviceProcAddr(device, "vkGetMemoryWin32HandlePropertiesKHR"));
 
     if (!pfnGetMemoryWin32HandlePropertiesKHR) {
-        std::cerr << "(VULKAN) Error: no se pudo cargar vkGetMemoryWin32HandlePropertiesKHR." << std::endl;
+        stderr_logger.log("(VULKAN) Error: no se pudo cargar vkGetMemoryWin32HandlePropertiesKHR.");
         return false;
     }
     return true;
@@ -228,14 +229,14 @@ bool VulkanDevice::getMemoryWin32HandleProperties(HANDLE handle, VkExternalMemor
                                                    VkMemoryWin32HandlePropertiesKHR& outProps) const
 {
     if (!pfnGetMemoryWin32HandlePropertiesKHR) {
-        std::cerr << "(VULKAN) Error: vkGetMemoryWin32HandlePropertiesKHR no está cargada." << std::endl;
+        stderr_logger.log("(VULKAN) Error: vkGetMemoryWin32HandlePropertiesKHR no está cargada.");
         return false;
     }
     outProps.sType = VK_STRUCTURE_TYPE_MEMORY_WIN32_HANDLE_PROPERTIES_KHR;
     outProps.pNext = nullptr;
 
     if (pfnGetMemoryWin32HandlePropertiesKHR(device, handleType, handle, &outProps) != VK_SUCCESS) {
-        std::cerr << "(VULKAN) Error: fallo vkGetMemoryWin32HandlePropertiesKHR." << std::endl;
+        stderr_logger.log("(VULKAN) Error: fallo vkGetMemoryWin32HandlePropertiesKHR.");
         return false;
     }
     return true;
@@ -243,7 +244,7 @@ bool VulkanDevice::getMemoryWin32HandleProperties(HANDLE handle, VkExternalMemor
 bool VulkanDevice::queueSubmit(const VkSubmitInfo *submitInfo, VkFence fence)
 {
      if ( vkQueueSubmit(graphicsQueue, 1, submitInfo, fence) != VK_SUCCESS) {
-        std::cerr << "(VULKAN) Error in queueSubmit(): No se pudo enviar el command buffer a la cola." << std::endl;
+        stderr_logger.log("(VULKAN) Error in queueSubmit(): No se pudo enviar el command buffer a la cola.");
         return false;
      } 
      return true;
@@ -258,7 +259,7 @@ bool VulkanDevice::presentKHR(VkPresentInfoKHR *presentInfo)
         return false;
     }
     if (result != VK_SUCCESS) {
-        std::cerr << "(VULKAN) Error in presentKHR(): fallo al presentar la imagen." << std::endl;
+        stderr_logger.log("(VULKAN) Error in presentKHR(): fallo al presentar la imagen.");
         return false;
     }
     return true;
@@ -271,12 +272,12 @@ bool VulkanDevice::createCommandPool()
     poolInfo.queueFamilyIndex = graphicsQueueFamilyIndex; // el índice que guardaste al elegir el physical device
     
     if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
-        std::cerr << "(VULKAN) Error in createCommandPool(): No se pudo crear el command pool." << std::endl;
+        stderr_logger.log("(VULKAN) Error in createCommandPool(): No se pudo crear el command pool.");
         return false;
     }
 
     #ifdef _DEBUG
-    std::cout << "(VULKAN) Command pool creado correctamente." << std::endl;
+    stdout_logger.log("(VULKAN) Command pool creado correctamente.");
     #endif
 
     return true;
@@ -293,12 +294,12 @@ bool VulkanDevice::createCommandBuffers(std::vector<VkCommandBuffer> &commandBuf
     allocInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
 
     if (vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data()) != VK_SUCCESS) {
-        std::cerr << "(VULKAN) Error in createCommandBuffers(): No se pudo asignar los command buffers." << std::endl;
+        stderr_logger.log("(VULKAN) Error in createCommandBuffers(): No se pudo asignar los command buffers.");
         return false;
     }
 
     #ifdef _DEBUG
-    std::cout << "(VULKAN) " << commandBuffers.size() << " command buffers creados correctamente." << std::endl;
+    stdout_logger.log("(VULKAN) ", commandBuffers.size(), " command buffers creados correctamente.");
     #endif
 
     return true;
