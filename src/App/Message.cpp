@@ -17,7 +17,7 @@ int AbstractMessage::charArrayToInt(const char* buffer, size_t offset)
     }
     return ret;
 }
-PackageHeader AbstractMessage::getHeader()
+PackageHeader AbstractMessage::getPackageHeader() const
 {
 
     return static_cast<PackageHeader>(charArrayToInt(data, 0));

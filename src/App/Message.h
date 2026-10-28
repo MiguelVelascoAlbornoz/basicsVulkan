@@ -4,6 +4,7 @@
 
 #ifndef BASICSVULKAN_MESSAGE_H
 #define BASICSVULKAN_MESSAGE_H
+#include <cstdint>
 #include <cstring>
 #include <stdexcept>
 
@@ -24,12 +25,12 @@ class AbstractMessage
 {
 public:
     virtual ~AbstractMessage();
-    PackageHeader getHeader();
-    size_t getSize() {return size;};
+    PackageHeader getPackageHeader() const;
+    size_t getSize() const {return size;};
     /**
      * @return Devolve o numero de bytes da mensagem sem o header
      */
-    size_t getPayloadSize() {return size-STATUS_HEADER_SIZE;};
+    size_t getPayloadSize() const {return size-STATUS_HEADER_SIZE;};
     static void intToCharArray(int value, char* buffer, size_t offset);
     static int charArrayToInt(const char* buffer, size_t offset);;
 protected:
@@ -47,6 +48,16 @@ public:
         intToCharArray(static_cast<int32_t>(header), data, 0);
         filledSize = payloadSize;
     };
+    /*
+     * @brief altamente ineficiente mas pratico
+     */
+    Message(PackageHeader header,std::string& payload) : AbstractMessage(payload.size())
+    {
+        data = new char[payload.size() + STATUS_HEADER_SIZE];
+        intToCharArray(static_cast<int32_t>(header), data, 0);
+        memcpy(getPayload(), payload.data(), payload.size());
+        filledSize = payload.size();
+    };
     ~Message()
     {
         delete[] data;
@@ -62,9 +73,10 @@ public:
     /**
      * @return Permite obter o numero de bytes do payload que sao considerados "uteis", o resto de bytes do payload devem ser considerados como trash data
      */
-    size_t getFilledSize() {return filledSize;};
-    char* getPayload() {return data + STATUS_HEADER_SIZE;};
-    char* getData() {return data;};
+    size_t getFilledSize() const {return filledSize;};
+    char* getPayload() const {return data + STATUS_HEADER_SIZE;};
+    char* getHeader() const {return data;};
+    char* getData() const {return data;};
 private:
     //Numero de bytes do payload que podemos considerar "preenchidos"
     //Por default considera-se que o payload inteiro esta preenchido
@@ -81,8 +93,6 @@ public:
         {
             throw std::runtime_error("Message size not enough.");
         }
-
-
         data = buffer;
         if (copy)
         {
@@ -90,10 +100,18 @@ public:
             memcpy(data, buffer, size);
         }
     };
+    /*
+     * @brief Cria so um messageview vazio
+     */
+    MessageView() : AbstractMessage(0), copy(true)
+    {
+        data = new char[STATUS_HEADER_SIZE];
+        intToCharArray(static_cast<int32_t>(UNEXPECTED_HEADER), data, 0);
+    };
     ~MessageView() { if (copy) delete[] data; }
-
-    const char* getPayload() {return data + STATUS_HEADER_SIZE;};
-    const char* getData() {return data;};
+    const char* getHeader() const {return data;};
+    const char* getPayload() const {return data + STATUS_HEADER_SIZE;};
+    const char* getData() const {return data;};
 
 private:
     const bool copy;
