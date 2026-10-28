@@ -19,7 +19,7 @@ public:
 
 private:
     App* app; /**< @brief Pointer to the app, usado para acceder al netManager y enviar el mensaje. */
-    char messageBuffer[512] = "";
+    std::string messageBuffer;
 };
 
 #endif //BASICSVULKAN_SENDMESSAGEMENU_H

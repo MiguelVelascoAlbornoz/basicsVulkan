@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <cstring>
 #include <stdexcept>
+#include <vector>
 
 /** @brief Bytes que ocupa el status al inicio de cada mensaje. */
 static constexpr size_t STATUS_HEADER_SIZE = sizeof(int32_t);
@@ -21,100 +22,45 @@ enum PackageHeader
     VIDEO_FRAME
 };
 
-class AbstractMessage
-{
+class MessageView {
 public:
-    virtual ~AbstractMessage();
-    PackageHeader getPackageHeader() const;
-    size_t getSize() const {return size;};
-    /**
-     * @return Devolve o numero de bytes da mensagem sem o header
-     */
-    size_t getPayloadSize() const {return size-STATUS_HEADER_SIZE;};
-    static void intToCharArray(int value, char* buffer, size_t offset);
-    static int charArrayToInt(const char* buffer, size_t offset);;
-protected:
-    const size_t size;//Numero de bytes da mensagem (header+payload)
-    char* data;
-    explicit AbstractMessage(size_t payloadSize) : size(payloadSize + STATUS_HEADER_SIZE) {};
-};
-class Message : public AbstractMessage
-{
-public:
-
-    Message(PackageHeader header,size_t payloadSize) : AbstractMessage(payloadSize)
-    {
-        data = new char[payloadSize + STATUS_HEADER_SIZE];
-        intToCharArray(static_cast<int32_t>(header), data, 0);
-        filledSize = payloadSize;
-    };
-    /*
-     * @brief altamente ineficiente mas pratico
-     */
-    Message(PackageHeader header,std::string& payload) : AbstractMessage(payload.size())
-    {
-        data = new char[payload.size() + STATUS_HEADER_SIZE];
-        intToCharArray(static_cast<int32_t>(header), data, 0);
-        memcpy(getPayload(), payload.data(), payload.size());
-        filledSize = payload.size();
-    };
-    ~Message()
-    {
-        delete[] data;
+    MessageView(const char* buf, size_t n) : data(buf), len(n) {
+        if (n < STATUS_HEADER_SIZE) throw std::runtime_error("Message too short");
     }
-    /*
-     * Permite de alguma forma manter registo de quantos bytes "uteis" o payload possui
-     */
-    void setFilledSize(size_t count) {
-    if (count > getPayloadSize())
-        throw std::length_error("filled bytes count cannot be bigger than payload size");
-    filledSize = count;
-    };
-    /**
-     * @return Permite obter o numero de bytes do payload que sao considerados "uteis", o resto de bytes do payload devem ser considerados como trash data
-     */
-    size_t getFilledSize() const {return filledSize;};
-    char* getPayload() const {return data + STATUS_HEADER_SIZE;};
-    char* getHeader() const {return data;};
-    char* getData() const {return data;};
+    PackageHeader getPackageHeader() const {
+        int32_t h; memcpy(&h, data, sizeof(h));
+        return static_cast<PackageHeader>(h);
+    }
+    const char* getHeader() const { return data; }
+    const char* getPayload() const { return data + STATUS_HEADER_SIZE; }
+    size_t getPayloadSize() const { return len - STATUS_HEADER_SIZE; }
+    const char* getData() const { return data; }
+    size_t getSize() const { return len; }
 private:
-    //Numero de bytes do payload que podemos considerar "preenchidos"
-    //Por default considera-se que o payload inteiro esta preenchido
-    size_t filledSize;
-
+    const char* data;
+    size_t len;
 };
-class MessageView : public AbstractMessage
-{
+
+class Message {
 public:
-
-    MessageView(char* buffer, size_t bufferSize,const bool copy = false) : AbstractMessage(bufferSize-STATUS_HEADER_SIZE), copy(copy)
-    {
-        if (bufferSize < STATUS_HEADER_SIZE)
-        {
-            throw std::runtime_error("Message size not enough.");
-        }
-        data = buffer;
-        if (copy)
-        {
-            data = new char[size];
-            memcpy(data, buffer, size);
-        }
-    };
-    /*
-     * @brief Cria so um messageview vazio
-     */
-    MessageView() : AbstractMessage(0), copy(true)
-    {
-        data = new char[STATUS_HEADER_SIZE];
-        intToCharArray(static_cast<int32_t>(UNEXPECTED_HEADER), data, 0);
-    };
-    ~MessageView() { if (copy) delete[] data; }
-    const char* getHeader() const {return data;};
-    const char* getPayload() const {return data + STATUS_HEADER_SIZE;};
-    const char* getData() const {return data;};
-
+    Message(PackageHeader h, size_t payloadSize) : buf(STATUS_HEADER_SIZE + payloadSize) {
+        int32_t v = h; memcpy(buf.data(), &v, sizeof(v));
+    }
+    Message(PackageHeader h, std::string_view p) : Message(h, p.size()) {
+        memcpy(getPayload(), p.data(), p.size());
+    }
+    PackageHeader getPackageHeader() const {
+        int32_t h; memcpy(&h, buf.data(), sizeof(h));
+        return static_cast<PackageHeader>(h);
+    }
+    char* getPayload()  { return buf.data() + STATUS_HEADER_SIZE; }
+    size_t getPayloadSize() const { return buf.size() - STATUS_HEADER_SIZE; }
+    char* getHeader()  { return buf.data(); }
+    void resizePayload(size_t n) { buf.resize(STATUS_HEADER_SIZE + n); } // sustituye a filledSize
+    size_t getSize() const { return buf.size(); }
+    const char* getData() const { return buf.data(); }
+    MessageView view() const { return MessageView(buf.data(), buf.size()); }
 private:
-    const bool copy;
+    std::vector<char> buf;
 };
-
-#endif //BASICSVULKAN_MESSAGE_H
+#endif

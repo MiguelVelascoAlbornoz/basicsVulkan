@@ -3,6 +3,7 @@
 //
 
 #include "Message.h"
+/*
 void AbstractMessage::intToCharArray(int value, char* buffer, size_t offset)
 {
     for (size_t i = 0; i < sizeof(int); ++i) {
@@ -22,3 +23,4 @@ PackageHeader AbstractMessage::getPackageHeader() const
 
     return static_cast<PackageHeader>(charArrayToInt(data, 0));
 }
+*/

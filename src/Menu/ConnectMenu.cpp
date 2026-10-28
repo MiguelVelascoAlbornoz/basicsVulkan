@@ -119,7 +119,7 @@ void ConnectMenu::render()
             ImVec2(centerX + fieldWidth / 2 - buttonWidth / 2, y),
             ImVec2(buttonWidth, buttonHeight), true))
         {
-            app->netManager->tryConnection(ipBuffer, port, passwordBuffer);
+            app->netManager->clientRequestConnection(ipBuffer, port, passwordBuffer);
             state = State::CONNECTING;
         }
 

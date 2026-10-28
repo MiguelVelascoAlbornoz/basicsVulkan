@@ -76,6 +76,7 @@ void App::startServer()
     {
         runnig = false;
     }
+    Menus::openMenu("listening_menu");
 
 }
 void App::startClient()

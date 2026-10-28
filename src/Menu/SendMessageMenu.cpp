@@ -80,7 +80,7 @@ void SendMessageMenu::render()
     ImGui::TextUnformatted("Mensaje");
     ImGui::SetCursorPos(ImVec2(centerX, y + 32));
     ImGui::SetNextItemWidth(fieldWidth);
-    bool enterPressed = ImGui::InputText("##message", messageBuffer, IM_ARRAYSIZE(messageBuffer),
+    bool enterPressed = ImGui::InputText("##message", messageBuffer.data(), messageBuffer.size(),
                                           ImGuiInputTextFlags_EnterReturnsTrue);
 
     ImGui::PopFont();
@@ -99,7 +99,7 @@ void SendMessageMenu::render()
     {
         if (messageBuffer[0] != '\0')
         {
-            app->netManager->sendPackage(messageBuffer, NetManager::MESSAGE);
+            app->netManager->encryptAndSendMessage(messageBuffer,MESSAGE);
             messageBuffer[0] = '\0';
         }
     }

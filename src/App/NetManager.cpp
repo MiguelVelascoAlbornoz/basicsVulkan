@@ -12,21 +12,21 @@
 #include <Ws2tcpip.h>
 #include "Logger.h"
 
-std::string NetManager::obtainPublicIP() {
-    std::string result;
+void NetManager::obtainPublicIP(std::string& ip)
+{
     HINTERNET hSession = WinHttpOpen(L"MyApp/1.0",
         WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
         WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
-    if (!hSession) return result;
+    if (!hSession) return;
 
     HINTERNET hConnect = WinHttpConnect(hSession, L"api.ipify.org",
         INTERNET_DEFAULT_HTTPS_PORT, 0);
-    if (!hConnect) { WinHttpCloseHandle(hSession); return result; }
+    if (!hConnect) { WinHttpCloseHandle(hSession); return; }
 
     HINTERNET hRequest = WinHttpOpenRequest(hConnect, L"GET", L"/",
         nullptr, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES,
         WINHTTP_FLAG_SECURE);
-    if (!hRequest) { WinHttpCloseHandle(hConnect); WinHttpCloseHandle(hSession); return result; }
+    if (!hRequest) { WinHttpCloseHandle(hConnect); WinHttpCloseHandle(hSession); return ; }
 
     if (WinHttpSendRequest(hRequest, WINHTTP_NO_ADDITIONAL_HEADERS, 0,
                             WINHTTP_NO_REQUEST_DATA, 0, 0, 0) &&
@@ -41,26 +41,25 @@ std::string NetManager::obtainPublicIP() {
             std::vector<char> buffer(available + 1, 0);
             DWORD downloaded = 0;
             WinHttpReadData(hRequest, buffer.data(), available, &downloaded);
-            result.append(buffer.data(), downloaded);
+            ip.append(buffer.data(), downloaded);
         } while (true);
         }
 
     WinHttpCloseHandle(hRequest);
     WinHttpCloseHandle(hConnect);
     WinHttpCloseHandle(hSession);
-    return result;
 }
 
 
- std::vector<std::string> NetManager::obtainAllPrivateIPs() {
-    std::vector<std::string> ips;
+void NetManager::obtainAllPrivateIPs(std::vector<std::string>& ips) {
+
     ULONG bufferSize = 15000;
     std::vector<char> buffer(bufferSize);
     auto* addresses = reinterpret_cast<IP_ADAPTER_ADDRESSES*>(buffer.data());
 
     const ULONG result = GetAdaptersAddresses(AF_INET, GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST,
                                          nullptr, addresses, &bufferSize);
-    if (result != NO_ERROR) return ips;
+    if (result != NO_ERROR) return ;
 
     for (const auto* adapter = addresses; adapter != nullptr; adapter = adapter->Next) {
         if (adapter->OperStatus != IfOperStatusUp) continue; // solo adaptadores activos
@@ -69,10 +68,10 @@ std::string NetManager::obtainPublicIP() {
             const auto* addr = reinterpret_cast<sockaddr_in*>(unicast->Address.lpSockaddr);
             char ipStr[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, &addr->sin_addr, ipStr, sizeof(ipStr));
-            ips.emplace_back(ipStr);
+            ips.push_back(ipStr);
         }
     }
-    return ips;
+
 }
 
 bool NetManager::sendMessage(const Message& m, const sockaddr_in& addr)
@@ -116,7 +115,7 @@ Message NetManager::decryptMessage(const MessageView& cryptedMessage)
     }
 
     lastRecvSeq = recvSeq;
-    out.setFilledSize(decryptedLen);
+    out.resizePayload(decryptedLen);
     return out;
 }
 Message NetManager::encryptMessage(const Message& message)
@@ -131,34 +130,27 @@ Message NetManager::encryptMessage(const Message& message)
 
     // 3. Encriptar
     unsigned long long ciphertextLen = 0;
-    unsigned char* ciphertext = reinterpret_cast<unsigned char*>(out.getHeader() + crypto_aead_xchacha20poly1305_ietf_NPUBBYTES);
+    unsigned char* ciphertext = nonce+ crypto_aead_xchacha20poly1305_ietf_NPUBBYTES;
     crypto_aead_xchacha20poly1305_ietf_encrypt(
         ciphertext, &ciphertextLen,
-        reinterpret_cast<const unsigned char*>(message.getPayload()), payloadSize,
-        reinterpret_cast<const unsigned char*>(message.getHeader()), STATUS_HEADER_SIZE, // AAD
+        reinterpret_cast<const unsigned char*>(message.view().getPayload()), payloadSize,
+        reinterpret_cast<const unsigned char*>(message.view().getHeader()), STATUS_HEADER_SIZE, // AAD
         nullptr, nonce, txKey);
 
     sendSeq++; // avanzar el contador, SIEMPRE, incluso si algo falla después
 
     // 4. Armar el paquete final: header + nonce + ciphertext
-    out.setFilledSize(crypto_aead_xchacha20poly1305_ietf_NPUBBYTES + ciphertextLen);
+    out.resizePayload(crypto_aead_xchacha20poly1305_ietf_NPUBBYTES + ciphertextLen);
     return out;
 }
 
-void NetManager::handleIncomingPacket()
+bool NetManager::getIncomingPackage(char* buffer ,int& n)
 {
-
-    char buffer[MAX_UDP_RECEIVE_BUFFER_SIZE];
     sockaddr_in replyAddr{};
     int replyAddrLen = sizeof(replyAddr);
-    int bytesReceived = recvfrom(udpSocket, buffer, sizeof(buffer), 0,
-                                  reinterpret_cast<sockaddr*>(&replyAddr), &replyAddrLen);
-
+    int bytesReceived = recvfrom(udpSocket, buffer, sizeof(buffer), 0, reinterpret_cast<sockaddr*>(&replyAddr), &replyAddrLen);
     //Validar si la respuesta se recibio
-    if (bytesReceived == SOCKET_ERROR)
-    {
-        return;
-    }
+    if (bytesReceived == SOCKET_ERROR) return false;
     if (replyAddr.sin_addr.s_addr != connectionAddr.sin_addr.s_addr ||
         replyAddr.sin_port != connectionAddr.sin_port) {
         //Obtener la IP de quien sea que se conecto
@@ -170,7 +162,7 @@ void NetManager::handleIncomingPacket()
         senderIP,
         INET_ADDRSTRLEN);
         stdout_logger.log("Package from unknown sender: ", senderIP);
-        return; // respuesta de origen no esperado, descartar
+        return false; // respuesta de origen no esperado, descartar
         }
     if (bytesReceived < MAX_UDP_RECEIVE_BUFFER_SIZE)
     {
@@ -180,37 +172,65 @@ void NetManager::handleIncomingPacket()
         stdout_logger.log("<Mensaje truncado>");
         buffer[MAX_UDP_RECEIVE_BUFFER_SIZE-1] = '\0';
     }
-    MessageView messageIn = MessageView(buffer, bytesReceived);
+    n = bytesReceived;
+    return true;
+}
+void NetManager::handleIncomingPacket()
+{
+    char buffer[MAX_UDP_RECEIVE_BUFFER_SIZE];
+    int bytesRecieved;
+    if (!getIncomingPackage(buffer,bytesRecieved)) return;
+
+    MessageView messageIn = MessageView(buffer, bytesRecieved);
     Message decryptedMessage = decryptMessage(messageIn);
     if (decryptedMessage.getPayloadSize() == 0) {
         stdout_logger.log("Invalid package recivec");
         return; // paquete inválido, corrupto, repetido o manipulado — se descarta silenciosamente
     }
-    switch (decryptedMessage.getPackageHeader()   )
+    switch (decryptedMessage.getPackageHeader())
     {
         case HEARTBEAT:
             if (strcmp(decryptedMessage.getPayload(), "START") == 0)
             {
-            sendPackage("ANSWER",HEARTBEAT);
+                encryptAndSendMessage("ANSWER",HEARTBEAT);
             } else
             {
-            waitingHeartbeat = false;
-            auto ping = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now()- lastHeartBeatSendTime);
-            stdout_logger.log("ping: ", ping.count(), " ms");
+                waitingHeartbeat = false;
+                auto ping = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now()- lastHeartBeatSendTime);
+                stdout_logger.log("ping: ", ping.count(), " ms");
             }
+            break;
         case MESSAGE:
-        stdout_logger.log(connectionIP + ": ", decryptedMessage.getPayload());
+            stdout_logger.log(connectionIP + ": ", decryptedMessage.getPayload());
+            break;
         default:
             return;
     }
 }
 
-bool NetManager::sendMessage(Message& message)
+bool NetManager::sendMessage(const Message& message)
 {
     return sendMessage(message,connectionAddr);
 }
 
-NetManager::ConexionStatus NetManager::tryAuth(MessageView& messageIn,unsigned char* pkS,unsigned char* tag2,unsigned char* skS,sockaddr_in& senderAddr)
+bool NetManager::encryptAndSendMessage(const Message& message)
+{
+    Message encryptedMessage = encryptMessage(message);
+    return sendMessage(encryptedMessage,connectionAddr);
+}
+bool NetManager::encryptAndSendMessage(const std::string& messageString)
+{
+    Message message = Message(MESSAGE,messageString);
+    Message encryptedMessage = encryptMessage(message);
+    return sendMessage(encryptedMessage,connectionAddr);
+}
+bool NetManager::encryptAndSendMessage(const std::string& messageString,PackageHeader header)
+{
+    Message message = Message(header,messageString);
+    Message encryptedMessage = encryptMessage(message);
+    return sendMessage(encryptedMessage,connectionAddr);
+}
+NetManager::ConexionStatus NetManager::tryAuth(MessageView& messageIn,unsigned char* pkS,unsigned char* tag2,unsigned char* skS)
 {
     unsigned char passwordKey[crypto_generichash_KEYBYTES];
     crypto_generichash(passwordKey, sizeof(passwordKey),
@@ -295,7 +315,7 @@ MessageView NetManager::waitForServerConnectRequest(sockaddr_in& senderAddr)
         }
         return MessageView(buffer, bytesReceived);;
     }
-    return MessageView();
+    return Message(UNEXPECTED_HEADER,0).view();
 }
 
 NetManager::ConexionStatus NetManager::sendHandShakeResponse(MessageView& messageIn, sockaddr_in& clientAddr)
@@ -305,7 +325,7 @@ NetManager::ConexionStatus NetManager::sendHandShakeResponse(MessageView& messag
     unsigned char*  pkS = reinterpret_cast<unsigned char*>(messageOut.getPayload());
     unsigned char* tag2 = reinterpret_cast<unsigned char*>(messageOut.getPayload() + crypto_box_PUBLICKEYBYTES);
 
-    NetManager::ConexionStatus s= (tryAuth(messageIn,pkS,tag2,skS, clientAddr));
+    NetManager::ConexionStatus s= (tryAuth(messageIn,pkS,tag2,skS));
     if (s != CONNECTED)
     {
         std::string m;
@@ -351,7 +371,7 @@ void NetManager::serverWaitForConnection()
     }
 }
 
-void NetManager::tryConnection(const std::string& ip, const int port, const std::string& password)
+void NetManager::clientRequestConnection(const std::string& ip, const int port, const std::string& password)
 {
     sockaddr_in addr{};
     int result = inet_pton(AF_INET, ip.c_str(), &addr.sin_addr);
@@ -391,7 +411,7 @@ bool NetManager::manageHeartBeat()
        }
        lastHeartBeatSendTime =  now;
        waitingHeartbeat = true;
-       sendPackage("START",HEARTBEAT);
+       encryptAndSendMessage("START",HEARTBEAT);
    }
 
     if ( heartbeatsTry > heartbeatsMaxTrys )
@@ -459,12 +479,11 @@ void NetManager::waitForClientConnectRequest()
     shoulTryConnection = false;
 }
                            // 2. ya la tienes (envía CONNECTION_TRY)
-NetManager::ConexionStatus NetManager::receiveHandshakeResponse(const sockaddr_in& server, char* buf, int& n)
+NetManager::ConexionStatus NetManager::receiveHandshakeResponse(const sockaddr_in& server, char* buffer, int* n)
 {
     //Espera por una respuesta del server
     DWORD timeout = 10000; // 1000 ms = 1 segundo
     setsockopt( udpSocket,SOL_SOCKET,SO_RCVTIMEO,(char*)&timeout,sizeof(timeout));
-    char buffer[65536];
     sockaddr_in replyAddr{};
     int replyAddrLen = sizeof(replyAddr);
     int bytesReceived = recvfrom(udpSocket, buffer, sizeof(buffer), 0,(sockaddr*)&replyAddr, &replyAddrLen);
@@ -483,10 +502,10 @@ NetManager::ConexionStatus NetManager::receiveHandshakeResponse(const sockaddr_i
 
     }
     if (replyAddr.sin_addr.s_addr != server.sin_addr.s_addr ||replyAddr.sin_port != server.sin_port)  return UNEXPECTED_ERROR;
-
+    *n = bytesReceived;
     return CONNECTED;
 }
-NetManager::ConexionStatus NetManager::processHandshakeResponse(const MessageView& handShakeResponse, const sockaddr_in& server, HandshakeState& hs)
+NetManager::ConexionStatus NetManager::processHandshakeResponse(const MessageView& handShakeResponse,  HandshakeState& hs)
 {
     if (handShakeResponse.getPackageHeader() != CONNECTION_SUCCESS)
     {
@@ -534,10 +553,10 @@ void NetManager::clientWaitForConnection()
 
         char buf[65536];
         int n = 0;
-        ConexionStatus s = receiveHandshakeResponse(server, buf, n);
+        ConexionStatus s = receiveHandshakeResponse(server, buf, &n);
         if (s != CONNECTED) { status = s; continue; }
 
-        status = processHandshakeResponse(MessageView(buf, n), server, hs);
+        status = processHandshakeResponse(MessageView(buf, n), hs);
         if (status != CONNECTED) continue;
 
         sendSeq = 0;
@@ -600,8 +619,8 @@ bool NetManager::init()
         WSACleanup();
         return false;
     }
-    privateIps = obtainAllPrivateIPs();
-    publicIP = obtainPublicIP();
+    obtainAllPrivateIPs(privateIps);
+    obtainPublicIP(publicIP);
 
     return true;
 }

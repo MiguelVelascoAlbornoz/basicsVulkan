@@ -96,7 +96,8 @@ ImGuiWindowFlags_NoScrollWithMouse;
 
     // Private IPs
     ImGui::Indent(8.0f);
-    std::vector<std::string> privateIPs = app->netManager->getPrivateIPs();
+    std::vector<std::string> privateIPs =     app->netManager->getPrivateIPs();;
+
     for (const auto& ip : privateIPs)
     {
         ImGui::TextUnformatted(ip.c_str());
@@ -109,6 +110,7 @@ ImGuiWindowFlags_NoScrollWithMouse;
 
     // Cambiamos a la columna derecha
     ImGui::NextColumn();
+
 
     ImGui::TextUnformatted(app->netManager->getPublicIP().c_str());
 
